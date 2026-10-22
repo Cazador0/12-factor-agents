@@ -12,8 +12,11 @@ from .rows import BY_ID, GROUP_ORDER, OPENING_ROWS
 def scaffold_question(intake: Intake, row_id: str) -> Question | None:
     """The next unused scaffold for a row: its opener, then its follow-ups; ``None`` once exhausted."""
     rowdef = BY_ID[row_id]
-    used = {q.text for q in intake.questions if row_id in q.rows}
-    sc = next((v for v in (rowdef.scaffold, *rowdef.followups) if v and v["text"] not in used), None)
+    mine = [q for q in intake.questions if row_id in q.rows]
+    used = {q.text for q in mine}
+    # A row that already has a question needs its follow-ups, never its opener again (a re-ask).
+    variants = rowdef.followups if mine else (rowdef.scaffold, *rowdef.followups)
+    sc = next((v for v in variants if v and v["text"] not in used), None)
     if sc is None:
         return None
     options = [Option(**o) for o in sc["options"]]

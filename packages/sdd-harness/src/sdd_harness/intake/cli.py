@@ -30,7 +30,12 @@ from .graph import has_checkpoint, run, sessions_db
 def _read_json(arg: str | None) -> dict | list | None:
     if not arg:
         return None
-    raw = sys.stdin.read() if arg == "-" else (Path(arg).read_text("utf-8") if Path(arg).is_file() else arg)
+    if arg == "-":
+        raw = sys.stdin.read()
+    elif arg.lstrip().startswith(("{", "[")):  # inline JSON; never stat it as a path (it may be too long)
+        raw = arg
+    else:
+        raw = Path(arg).read_text("utf-8")
     return json.loads(raw)
 
 
@@ -92,6 +97,11 @@ def main(argv: list[str] | None = None) -> int:
     rs.add_argument("qid")
     rs.add_argument("--by", required=True)
     rs.add_argument("--reason", required=True)
+
+    rv = sub.add_parser("revise", help="Record a changed answer; the earlier one stays visible as superseded")
+    rv.add_argument("slug")
+    rv.add_argument("qid")
+    rv.add_argument("--answer", required=True, help="The person's new answer, verbatim (option label or own words)")
 
     asm = sub.add_parser("assume", help="Add an assumption (unconfirmed unless cited)")
     asm.add_argument("slug")
@@ -198,6 +208,9 @@ def main(argv: list[str] | None = None) -> int:
         if args.cmd == "resolve":
             session.resolve(settings, path, args.qid, args.by, args.reason)
             _emit({"ok": True})
+            return 0
+        if args.cmd == "revise":
+            _emit(session.revise(settings, path, args.qid, args.answer))
             return 0
         if args.cmd == "assume":
             _emit({"ok": True, "id": session.add_assumption(settings, path, args.text, args.citation)})

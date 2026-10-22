@@ -23,7 +23,12 @@ from .graph import run
 
 
 def _read_json(arg: str) -> dict:
-    raw = sys.stdin.read() if arg == "-" else (Path(arg).read_text("utf-8") if Path(arg).is_file() else arg)
+    if arg == "-":
+        raw = sys.stdin.read()
+    elif arg.lstrip().startswith(("{", "[")):  # inline JSON; never stat it as a path (it may be too long)
+        raw = arg
+    else:
+        raw = Path(arg).read_text("utf-8")
     return json.loads(raw)
 
 

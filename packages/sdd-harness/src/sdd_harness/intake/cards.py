@@ -14,12 +14,13 @@ STOP = re.compile(r"\b(that's enough|thats enough|wrap up|stop here|wrap up now)
 
 
 def to_card(q: Question) -> dict:
-    """One ``AskUserQuestion`` entry. The recommended option leads and carries the tool's suffix."""
-    ordered = sorted(q.options, key=lambda o: not o.recommended) if not q.multi_select else q.options
-    options = []
-    for opt in ordered:
-        label = opt.label + (REC if opt.recommended and not q.multi_select else "")
-        options.append({"label": label, "description": opt.description})
+    """One ``AskUserQuestion`` entry. Recommended options lead and carry the tool's suffix.
+
+    Single-choice cards have one recommendation; on multi-select cards every option the drafter would
+    actually pick is marked and listed first (intake start command, step 3f).
+    """
+    ordered = sorted(q.options, key=lambda o: not o.recommended)
+    options = [{"label": o.label + (REC if o.recommended else ""), "description": o.description} for o in ordered]
     return {"question": q.text, "header": q.header, "multiSelect": q.multi_select, "options": options}
 
 
@@ -94,12 +95,22 @@ def read_answer(q: Question, raw: str | list[str] | None, note: str | None = Non
             letters.append(by_label[key])
         elif re.fullmatch(r"[a-d]", key):
             letters.append(key.upper())
+        elif prefix := next(
+            (lbl for lbl in sorted(by_label, key=len, reverse=True) if key.startswith(lbl + " ")), None
+        ):
+            letters.append(by_label[prefix])  # "Label (Recommended) and also …": the pick plus the person's words
+            leftovers.append(str(part).strip())
         elif key:
             leftovers.append(str(part).strip())
     if letters and not leftovers:
         if any(_is_delegate_option(q.options["ABCD".index(x)]) for x in letters):
             return Reading("delegated", letters, note=note)
         return Reading("answered", sorted(set(letters)), note=note)
+    if letters:
+        # A pick plus the person's own words: keep the pick, and keep their whole answer verbatim as a note.
+        verbatim = raw if isinstance(raw, str) else ", ".join(map(str, raw))
+        merged = f'"{verbatim.strip()}"' + (f" — {note}" if note else "")
+        return Reading("answered", sorted(set(letters)), note=merged)
     words = ", ".join(leftovers) if leftovers else str(raw)
     if STOP.search(words):
         return Reading("stop", [], words, note)

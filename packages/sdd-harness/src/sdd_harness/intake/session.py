@@ -245,11 +245,11 @@ def plan_round(settings: Settings, path: Path) -> RoundPlan:
     text, intake = load(path)
     if intake.status.startswith("Answered"):
         return RoundPlan("done", intake.round, progress=f"Intake already reads {intake.status}.")
+    intake.rows = rate(intake)
+    if all_settled(intake):  # nothing left to ask: a "keep going?" card would be noise
+        return RoundPlan("done", intake.round, progress="Every row is sufficient, delegated or N/A.")
     if checkin_due(intake, settings.checkin_every):
         return RoundPlan("checkin", intake.round, progress="Check-in", card={"questions": [checkin_card(intake)]})
-    intake.rows = rate(intake)
-    if all_settled(intake):
-        return RoundPlan("done", intake.round, progress="Every row is sufficient, delegated or N/A.")
     round_no = intake.round + 1
     new: list[Question] = []
     if assumption_check_due(intake):
@@ -349,6 +349,8 @@ def record(settings: Settings, path: Path, plan: RoundPlan, answers: dict, notes
             text = _apply_assumption_check(text, intake, q)
         text = doc.replace_question(text, q)
         if reading.state != "unknown" or q.state == "open":
+            if reading.note:  # the person's own words travel with the answer, verbatim
+                clar = f"{clar} — note: {reading.note}"
             text = doc.append_clarification(text, f"- Q: {q.text} → A: {clar}", session)
     intake.rows = rate(intake)
     for row in intake.rows:
@@ -477,6 +479,63 @@ def set_row(settings: Settings, path: Path, row_id: str, status: str, evidence: 
         raise KeyError(row_id)
     text = doc.update_row(text, row.model_copy(update={"status": status, "evidence": evidence, "still_needed": still}))
     path.write_text(text, encoding="utf-8")
+
+
+def revise(settings: Settings, path: Path, qid: str, raw: str) -> dict:
+    """The person changed an answer they already gave. The new answer wins; the earlier one stays visible.
+
+    The question's Answer line takes the new answer, its note keeps the superseded one struck through, a new
+    clarification line records the revision, and the rows are re-rated.
+    """
+    text, intake = load(path)
+    q = intake.question(qid)
+    if q is None:
+        raise KeyError(qid)
+    if q.state not in {"answered", "other", "delegated", "open"}:
+        raise ValueError(f"{qid} has no answer to revise (state {q.state}); answer it in a round instead")
+    late = q.state == "open"  # the session ended with this open; the person answered it afterwards
+    reading = read_answer(q, raw)
+    if reading.state in {"stop", "unknown"}:
+        raise ValueError("a revision must be an answer, not a stop or 'not sure'")
+    previous, rnd = q.answer, intake.round
+    line, clar = _answer_text(q, reading, rnd)
+    line = line.replace(f"— round {rnd}", f"— {'answered' if late else 'revised'} after round {rnd}")
+    q.state = reading.state
+    q.chosen = reading.letters if reading.state in {"answered", "delegated"} else []
+    q.answer = line
+    earlier = (
+        f"Answered after the session; was ~~{previous}~~"
+        if late
+        else f"Revised by the person; earlier answer superseded: ~~{previous}~~"
+    )
+    q.note = f"{reading.note} — {earlier}" if reading.note else earlier
+    text = doc.replace_question(text, q)
+    session = intake.session_date or date.today().isoformat()
+    suffix = "(answered after the session)" if late else f"(revised; supersedes: {previous})"
+    text = doc.append_clarification(text, f"- Q: {q.text} → A: {clar} {suffix}", session)
+    intake.rows = rate(intake)
+    for row in intake.rows:
+        text = doc.update_row(text, row)
+    ok, n = intake.counts()
+    text = doc.append_log(
+        text,
+        {
+            "Round": f"revision after {rnd}",
+            "Questions": qid,
+            "Answered": "1",
+            "Rows sufficient": f"{ok} of {n}",
+            "Notes": "Person revised an earlier answer.",
+        },
+    )
+    path.write_text(text, encoding="utf-8")
+    _trace(settings, intake.slug).record(
+        "revise",
+        f"{qid} revised",
+        f"New answer: {clar}; supersedes: {previous}",
+        changed_state=[settings.rel(path)],
+        next_action="re-check rows and open items that cite this question",
+    )
+    return {"question": qid, "answer": line, "superseded": previous, "rows_sufficient": f"{ok} of {n}"}
 
 
 def resolve(settings: Settings, path: Path, qid: str, by: str, reason: str) -> None:

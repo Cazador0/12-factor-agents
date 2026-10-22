@@ -112,6 +112,7 @@ def test_round_record_and_sufficiency(project):
     assert q2.note == "just me and 12 plants" and q2.chosen == ["A"]
     assert intake.question(plan.questions[2].id).answer.startswith("Delegated — agent chose")
     assert any(c.endswith("→ A: Prevents mistakes") for c in intake.clarifications)
+    assert any("One person — note: just me and 12 plants" in c for c in intake.clarifications)
     assert intake.status == "In session (round 1)"
     nxt = session.plan_round(s, path)
     assert plan.questions[3].id in [q.id for q in nxt.questions]  # the unknown gets a second try
@@ -226,3 +227,91 @@ def test_question_feeding_two_rows_settles_both(project):
     session.record(s, path, plan, {q.text: "Phone app"})
     rows = {r.id: r.status for r in doc.parse(path.read_text()).rows}
     assert rows["T1"] == rows["T6"] == "Sufficient"
+
+
+def test_row_with_a_drafted_question_gets_followups_not_the_opener(project):
+    s = Settings.load(project)
+    draft = session.DraftInput.from_host(
+        {
+            "questions": [
+                {
+                    "header": "First job",
+                    "row": "S3",
+                    "text": "Which job should the model do well first?",
+                    "options": [
+                        {"label": "Find knowledge", "description": "Search.", "recommended": True, "why": "x"},
+                        {"label": "Track lineage", "description": "Audit."},
+                    ],
+                }
+            ]
+        }
+    )
+    path, _ = session.create(s, IDEA, draft=draft)
+    plan = session.plan_round(s, path)
+    first = next(q for q in plan.questions if q.row == "S3")
+    session.record(s, path, plan, {first.text: "Find knowledge"})
+    session.plan_round(s, path)
+    s3 = [q for q in doc.parse(path.read_text()).questions if "S3" in q.rows]
+    opener = "Which journey should the first version get right before anything else?"
+    assert opener not in [q.text for q in s3]
+    assert any(q.header == "Acceptance" for q in s3)
+
+
+def test_cli_accepts_long_inline_json(project):
+    from sdd_harness.intake.cli import _read_json
+
+    long = '{"text": "' + "x" * 600 + '"}'
+    assert _read_json(long)["text"].startswith("x")
+
+
+def test_multiselect_marks_every_recommended_pick_first():
+    q = _q(
+        multi_select=True,
+        options=[
+            Option(label="Code", description="c"),
+            Option(label="Specs", description="s", recommended=True),
+            Option(label="Runtime", description="r", recommended=True),
+        ],
+    )
+    labels = [o["label"] for o in to_card(q)["options"]]
+    assert labels == ["Specs (Recommended)", "Runtime (Recommended)", "Code"]
+    assert read_answer(q, "Specs (Recommended), Code").letters == ["A", "B"]
+
+
+def test_pick_plus_own_words_keeps_both():
+    q = _q()
+    r = read_answer(q, "One person (Recommended) and also log every session")
+    assert r.state == "answered" and r.letters == ["A"] and "and also log every session" in r.note
+    multi = _q(multi_select=True)
+    r = read_answer(multi, "Then A small team last,One person (Recommended)")
+    assert r.state == "answered" and r.letters == ["A"] and "Then A small team last" in r.note
+
+
+def test_no_checkin_when_every_row_is_settled(project):
+    s = Settings.load(project)
+    path, _ = session.create(s, IDEA, draft=session.DraftInput(software=False))
+    text = path.read_text()
+    intake = doc.parse(text)
+    for row in intake.rows:
+        if row.status != "N/A":
+            text = doc.update_row(text, row.model_copy(update={"status": "Sufficient", "evidence": "idea text"}))
+    for n in range(1, 6):
+        text = doc.append_log(
+            text, {"Round": str(n), "Questions": "", "Answered": "0", "Rows sufficient": "", "Notes": ""}
+        )
+    path.write_text(text)
+    assert session.plan_round(s, path).kind == "done"
+
+
+def test_revise_supersedes_but_keeps_the_earlier_answer(project):
+    s = Settings.load(project)
+    path, _ = session.create(s, IDEA)
+    plan = session.plan_round(s, path)
+    q = next(q for q in plan.questions if q.row == "S2")
+    session.record(s, path, plan, {q.text: "One person (Recommended)"})
+    out = session.revise(s, path, q.id, "my 12 houseplants and my partner")
+    assert "superseded" not in out["answer"] and out["superseded"].startswith("A. One person")
+    revised = doc.parse(path.read_text()).question(q.id)
+    assert revised.state == "other" and '"my 12 houseplants and my partner"' in revised.answer
+    assert "~~A. One person" in revised.note
+    assert any("(revised; supersedes: A. One person" in c for c in doc.parse(path.read_text()).clarifications)
