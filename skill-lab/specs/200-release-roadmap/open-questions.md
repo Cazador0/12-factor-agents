@@ -323,3 +323,18 @@ Priority:
 | SPEC-201 Q1, Q2, Q3, Q4, Q5, Q6, Q7, Q8 | OQ-01, OQ-10, OQ-02, OQ-15, OQ-03, OQ-14, OQ-16, OQ-04 |
 | SPEC-202 Q-1, Q-2, Q-3, Q-4, Q-5, Q-6, Q-7, Q-8, Q-9, Q-10 | OQ-07, OQ-06, OQ-05, OQ-11, OQ-05 (sequencing) and OQ-23 (L1 alongside R3), OQ-20, OQ-14, OQ-21, OQ-12, OQ-22 |
 | SPEC-203 Q-1, Q-2, Q-3, Q-4, Q-5, Q-6, Q-7, Q-8, Q-9, Q-10, Q-11, Q-12, Q-13, Q-14 | OQ-08, OQ-06, OQ-13, OQ-05, OQ-17, OQ-18, OQ-09, OQ-19, OQ-04, OQ-18, OQ-08, OQ-24, OQ-25, OQ-26 |
+
+## Answers recorded 2026-10-22 (release alignment, rounds 1–2)
+
+The person's answers, verbatim where they typed their own words. They resolve the questions named.
+
+- Q: Agents may not edit the per-skill criteria files, yet R1 planned one per skill. Who writes them? → A: Ship none in R1: R1 ships no per-skill criteria files; scoring falls back to the shared defaults (the floor); later only the person adds a file to raise a skill's bar.
+- Q: Should run-monitor also watch your own machine when work runs there (R2 local-inference runs, R3 webhook gateway)? → A: "run-monitor for Rancher Desktop local containers". (Resolves OQ-22, OQ-25.)
+- Q: How should run-monitor read your Rancher Desktop local containers? → A: From inside each container: run-monitor runs inside the container doing the work and reads that container's own CPU and memory limits and use; no Docker or containerd socket access; nothing else on the machine is read.
+- Q: How many fully passing live runs must the R3 PR wait for before it can merge? → A: Three in a row (the same bar that unlocks local inference). (Resolves OQ-24.)
+- Q: Which local model should the profiles use once local inference unlocks? → A: Decide at unlock time: list what fits the GPU at 32k context with tool support, verify it, and the person picks. (Resolves OQ-07.)
+- Q: Which R2 defaults should stay as written? → A: All four: three local parity runs (OQ-11); L1 measured on the suite installed at unlock time (OQ-12); one Gitea issue per task (OQ-20); L1 can run alongside R3 and blocks neither the R2 merge nor R3 (OQ-23).
+- Q: Which R3 defaults should stay as written (set 1)? → A: All four: the promotion thresholds and 7-day lag (OQ-08); no headless edit sessions, outbox plus human-started sessions (OQ-09); dispatch limits 1 PSE (max 2), 10/day (max 20), merge schedule expires after 30 min (OQ-13); docs-only auto-merge paths, at most 400 changed lines (OQ-17).
+- Q: Which R3 defaults should stay as written (set 2)? → A: All four: five demotion triggers with the `Caused-by:` convention and unattributed labels also demoting (OQ-18); merge commits (OQ-19); the promotion streak must be on the installed profiles' model (OQ-26a); no extra demotion trigger for a failing run or unstable case after promotion (OQ-26b).
+
+Correction (orchestrator, 2026-10-22): the release-alignment run of 2026-10-22 changed R2 and R3 to branch from `main` after the previous release merges. That contradicted the person's decision that the releases ship as **stacked PRs** (intake A4). Restored: R2's branch is created from `release/r1-shadow` once R1 has an APPROVE verdict and its live gates passed, its PR targets `release/r1-shadow`, and it is retargeted to `main` when R1 merges. R3 stacks on R2 the same way. Merges happen in order R1 → R2 → R3, each by a human.
