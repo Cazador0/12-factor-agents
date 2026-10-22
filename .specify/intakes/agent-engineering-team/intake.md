@@ -395,3 +395,12 @@ Spec 007 asks: should a cost ceiling per accepted issue block promotion to a hig
 
 <!-- Written by the refine command: ### <Phase> · YYYY-MM-DD, then the decision ledger
      | # | Decision | Where | Group | Question | Answer | -->
+
+### Specify · 2026-10-22
+
+| # | Decision | Where | Group | Question | Answer |
+|---|---|---|---|---|---|
+| R1 | How the 3 agent sessions are divided among Lead, PSE and Review | spec 001 FR-035 | Unbacked | Spec 001 caps the team at 3 agent sessions. How should those 3 be split between Lead, PSE and Review? | "One per role (Recommended)" — one session each for Lead, PSE and Review; at most one issue in build at a time |
+| R2 | Who may switch Lead into implementation-worker mode | spec 003 (Lead contract) | Unbacked | Spec 003: Lead normally plans and does not write code. Who may switch Lead into implementation-worker mode for an issue? Lead may never grant this to itself (Art. VI). | "Owner, per issue (Recommended)" — a person (the owner) approves each switch, per issue |
+| R3 | How a person applies the bridge's dry-run plan in Shadow mode | spec 004 FR-022; spec 002 FR-024; spec 007 FR-002 | Unbacked | Spec 004: in Shadow mode, the Spec Kit→Gitea bridge only produces a dry-run plan. How should a person apply that plan? | "Both Create issues by hand and Approve; gateway writes it" — both paths: a person creates the issues by hand (the bridge reports them unconfirmed for Lead to confirm), or a person approves the plan and the gateway carries it out as a human-approved write (changes spec 002 FR-024 and spec 007 FR-002) |
+| R4 | Adding read-only issue search and milestone lookup to the gateway | spec 004; spec 002 tool set | Unbacked (Critical-risk change, needs a person) | Spec 004: do you approve adding read-only issue search (by feature/task ID or label) and milestone lookup to the Gitea gateway? | "Approve read-only search (Recommended)" — a person approved it (Art. VI; spec 002 FR-003) |
