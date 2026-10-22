@@ -60,6 +60,51 @@ bin/sdd index query 'how are leases recovered' --spec SPEC-001 -k 5
 
 Hidden model reasoning is never stored (Constitution Art. IX).
 
+## Jev, the progress watchdog (spec 008)
+
+`jev/` scans every supervised session every 10 minutes. Plain code decides its health: `decide()` is pure,
+taking evidence and scan history and returning a verdict.
+
+**Signals**
+
+| Signal | When it fires |
+|---|---|
+| Dead | The lease heartbeat is older than its TTL. Jev tells the Lead at once. |
+| Hung | 20 minutes of loop silence. Paused while a tool call is still inside its own timeout, while the session waits on a person, and during start-up grace. |
+| Spinning | 60 minutes without durable progress. |
+| Loop fingerprints | From the command log: an action-error pair repeated 3 times warns and 4 times is stuck; an action-observation pair repeated 4 times; a 6-step alternation; 3 command timeouts in a row. |
+| CI not converging | 3 completed, non-cancelled failing runs. |
+
+**From bad scans to escalation**
+
+- One bad scan warns and nudges the session; two in a row mean the session is stuck.
+- A scan Jev could not observe (for example, Gitea is unreachable) changes nothing.
+- A stuck session goes up a ladder:
+  1. Jev asks the session to stop.
+  2. After one scan of grace, the Lead stops it.
+  3. Jev pages a person if the Lead stays silent, or if the episode is still unresolved after three scans.
+  4. After two restarts, Jev parks the session.
+
+**What Jev may and may not do**
+
+- Jev only comments and labels. It never edits code, pushes, approves or merges.
+- It refuses to run if its token can push or merge.
+- Each episode gets one living comment. Jev finds it by a hidden marker and edits it in place, and an intent record keeps this safe across crashes.
+- Each episode gets one exclusive label, added by ID: `jev/warning`, `jev/stuck` or `jev/parked`.
+
+**Messages and explanations**
+
+- Messages follow the strict, frozen `JevMessage` model, which is exported to `schemas/jev-message.v1.json`. CI fails when the export is stale.
+- Explanations written by a model (`--explain claude|ollama`) describe a verdict; they never decide it.
+- The command log comes from `.claude/hooks/command_log.py`, which writes one JSON line per tool call to `.specify/sessions/commands/`. It stores output hashes, never output text.
+
+```bash
+sdd-jev scan --sessions sessions.json --dry-run   # decide and record locally; write nothing to Gitea
+sdd-jev scan --sessions sessions.json             # token from $JEV_GITEA_TOKEN, URL from $JEV_GITEA_URL
+sdd-jev history pse-184
+sdd-jev schema --check
+```
+
 ## Develop
 
 ```bash

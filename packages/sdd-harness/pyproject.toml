@@ -24,6 +24,7 @@ sdd-intake = "sdd_harness.intake.cli:main"
 sdd-route = "sdd_harness.router.cli:main"
 sdd-refine = "sdd_harness.ledger.cli:main"
 sdd-index = "sdd_harness.rag.cli:main"
+sdd-jev = "sdd_harness.jev.cli:main"
 
 [dependency-groups]
 dev = ["pytest>=8", "ruff>=0.6"]
