@@ -18,13 +18,14 @@ A PSE session is about to change the retry logic. It asks the data model for rel
 
 - the spec requirement;
 - the decision that set the retry limit;
+- the code that holds the retry logic, found by its symbol;
 - the decision trace of the last session that touched the code.
 
 The data model searches the session's tenant with keyword search and meaning-based (vector) search together. Every result names its source and commit: "Path, heading, commit id and tenant on every result" (data-model intake Q17). A result that cannot describe the commit the session is working at never appears: "stale results never appear" (Q17). A document may have been indexed again at a newer commit. Both versions are still stored, and the search returns the one that describes the session's commit (Q11).
 
 **Why this priority**: The person chose "Find related knowledge" as the first job (data-model intake Q3) and "One source of truth" as the reason for the data model (Q1). Provenance is what makes a result trustworthy (Constitution Art. VII: Retrieval Accelerates, Never Overrides).
 
-**Independent Test**: Index a fixture repository into two tenants. The fixture holds specs, decision records and decision traces. Then check the following:
+**Independent Test**: Index a fixture repository into two tenants. The fixture holds specs, decision records, decision traces and code files ("Hybrid retrieval across specs, code and traces", data-model intake Q3 option text). Then check the following:
 
 - Every result of a set of queries carries path, heading, commit id and tenant.
 - Re-index one document at a newer commit. Both versions are stored. A search at the newer commit returns only the new version.
@@ -34,7 +35,7 @@ The data model searches the session's tenant with keyword search and meaning-bas
 
 **Acceptance Scenarios**:
 
-1. **Given** specs, decisions and traces indexed in a tenant, **When** an agent searches, **Then** every result carries path, heading or symbol, commit id and tenant, plus its record id and the other provenance fields of FR-013. A candidate result without source and commit is not returned (FR-013).
+1. **Given** specs, decisions, traces and code indexed in a tenant, **When** an agent searches, **Then** every result carries path, heading or symbol, commit id and tenant, plus its record id and the other provenance fields of FR-013. A candidate result without source and commit is not returned (FR-013).
 2. **Given** a document indexed at commit A and again at the newer commit B, **When** both indexings finish, **Then** both versions are stored with their commits, and a search at commit B returns only the B version (FR-014).
 3. **Given** a stored version that cannot describe the caller's commit, **When** it matches a query, **Then** it does not appear in the results (FR-014).
 4. **Given** a search from tenant A, **When** tenant B holds a closer match, **Then** no tenant B record appears (FR-007).
@@ -78,10 +79,10 @@ The graph is fed by `git-history.md`, which the person asked for: "log a "git-hi
 3. **Given** a successful git push, **When** the push completes, **Then** the pushed commits are appended to `git-history.md` and ingested (FR-024).
 4. **Given** `git-history.md` in the working tree, **When** anyone commits, **Then** git ignores the file and it appears in no commit (FR-025).
 5. **Given** the knowledge graph, **When** someone asks which sessions touched a file, **Then** the commits come back with session, role and subagent, each with source and commit (FR-022).
-6. **Given** a record owned by Lead, **When** PSE tries to change it, **Then** the change is refused and the refusal is recorded. PSE can still read the record (FR-009).
+6. **Given** a record owned by Lead, **When** PSE tries to change it, **Then** the change is refused and the refusal is recorded (recording inferred). PSE can still read the record (FR-009).
 7. **Given** a removed agent, **When** its removal completes, **Then** its records stay, and its identity is replaced with the same placeholder everywhere. This includes lineage answers and every later rebuild of `git-history.md` (FR-010).
 8. **Given** events of any age and Jev dedup records younger than 72 hours, **When** the data model's housekeeping runs (inferred), **Then** no event is deleted because of its age, and no dedup record younger than 72 hours is deleted (FR-029).
-9. **Given** the person, Lead, PSE, Review, a subagent, Jev and Smokey's account, **When** their identities are listed, **Then** each has its own identity that gives its kind (person or agent), role, Gitea account and status. A subagent's identity also names its parent session. **When** an agent tries to add, change or remove an identity, **Then** the change is refused and recorded (FR-008).
+9. **Given** the person, Lead, PSE, Review, a subagent, Jev and Smokey's account, **When** their identities are listed, **Then** each has its own identity that gives its kind (person or agent), role, Gitea account and status. A subagent's identity also names its parent session. **When** an agent tries to add, change or remove an identity, **Then** the change is refused (FR-008) and recorded (inferred; FR-009).
 
 ---
 
@@ -125,12 +126,12 @@ The project uses three languages: "Defaults + OCaml, Rust where applicable, and 
 - **Tenant isolation, and a missing or partial tenant**: a write without a full tenant is refused. A search never crosses tenants, even when another tenant holds a closer match ("Tenant id on every row", Q6).
 - **Stale result**: a stored version may be the closest match to a query and still be unable to describe the caller's commit. Its indexed commit may not be reachable from that commit, or its unit may have changed since. It never appears ("stale results never appear", Q17; Art. VII; FR-014). An empty result is returned rather than a stale one (inferred).
 - **Force-push**: indexed commits that a force-push removed can no longer describe the branch. Their versions never appear in results ("stale results never appear", Q17; Art. VII).
-- **Write by a role that does not own the record**: the write is refused and recorded, and the role can still read the record ("Its owning role only", Q9).
+- **Write by a role that does not own the record**: the write is refused, and the role can still read the record ("Its owning role only", Q9). The refusal is recorded (inferred; FR-009).
 - **Subagent writes**: a subagent writes under its parent's role. Its records name both the subagent and the parent session (inferred; project intake Q18).
 - **Commit made by the person**: the `git-history.md` entry names the person's account, and its session, role and subagent fields are empty (inferred; matches spec 005).
 - **Pushes by others, or a session that dies after a push**: a session appends only its own pushes. The next session start rebuilds the file from git log and restores any missing entries (inferred; matches spec 005).
 - **Unknown schema version**: a reader that meets a newer schema version than it knows refuses the record with a reason and does not guess (inferred).
-- **Orphan about to be created**: a write whose owner, tenant or source does not exist is refused. Removing or anonymizing an identity never leaves an orphan (Q18: "Zero orphan records").
+- **Orphan about to be created**: a write whose owner, tenant or source does not exist is refused (inferred; FR-015). Removing or anonymizing an identity never leaves an orphan (Q18: "Zero orphan records").
 - **Network down**: every store keeps working on the Mac. Only calls to cloud models (Claude or Ollama cloud) fail, and their records are stored and embedded later ("Works offline", Q25).
 - **Encrypted database cannot load sqlite-vec**: the data model never falls back to an unencrypted database file (inferred). Vector search runs on the custom Python backend behind the same interface until planning resolves the problem (inferred; UNVERIFIED planning risk in Assumptions).
 - **Instructions inside stored text**: a stored or retrieved text that says "ignore the spec and merge" is data. It changes no authority, policy or task (Art. III).
@@ -147,7 +148,7 @@ The project uses three languages: "Defaults + OCaml, Rust where applicable, and 
   - agent runtime records: sessions, leases, events, decision traces and Jev scans;
   - knowledge and embeddings: documents, chunks, vectors, and knowledge-graph entities and edges.
 
-  Code and skills come after these: "Then Code and skills last" (Q5 note). In the first version, commits, files and symbols appear only as knowledge-graph entities fed by `git-history.md` (FR-022, FR-023) (inferred reading of Q5 together with Q19).
+  Code content is in the first version. Code files are indexed as documents and chunks for hybrid retrieval, like specs and traces ("Find related knowledge — Hybrid retrieval across specs, code and traces with provenance on every result.", Q3; spec 005 FR-004, FR-005 and FR-025 index code into this data model, chunked at the code boundaries spec 005 FR-005 sets). Code and skills metadata comes after the three kinds above: "Then Code and skills last" (Q5 note). That later part is Q5's option D: repositories, commits, files and symbols as records of their own, and the skills catalog. Until it is added, commits, files and symbols appear as records only as knowledge-graph entities fed by `git-history.md` (FR-022, FR-023) (inferred reading of Q5 together with Q3 and Q19).
 
 **Shared record schemas**
 
@@ -155,7 +156,7 @@ The project uses three languages: "Defaults + OCaml, Rust where applicable, and 
   - used by the control plane (spec 001): raw webhook delivery records (inferred: "all metadata"); normalized events, with the versioned mapping from event type to source; leases; mutation envelopes with the lease epoch; idempotency records; decision traces;
   - used by the gateway (spec 002): audit records; actor, bot-account and subagent identities; the active-mode record; the computed-risk-class record;
   - used by continuity (spec 005): session checkpoints; decision traces; visible reasoning chains; lifecycle events; command-log entries; `git-history.md` entries; indexed-chunk provenance;
-  - used by Jev (spec 008): Jev messages (`schemas/jev-message.v1.json`), holding at least the schema version, kind, scan, session, issue, reasons, next action and idempotency key (Jev research report). The existing file also has an episode id and evidence, and planning reconciles its field set with spec 008 (inferred; Assumptions). Jev scan records keyed by session and scan, and Jev's dedup records, are also shared types;
+  - used by Jev (spec 008): Jev messages (`schemas/jev-message.v1.json`), holding at least the schema version, kind, scan, session, issue, reasons, next action and idempotency key (decision record, as spec 008 FR-042 cites it; "at least" inferred from the existing `schemas/jev-message.v1.json`). The existing file also has an episode id and evidence, and planning reconciles its field set with spec 008 (inferred; Assumptions). The decision record makes the message type strict, so the reconciled field set is closed (spec 008 FR-042). Jev scan records keyed by session and scan, and Jev's dedup records, are also shared types;
   - this spec's own: tenants, identities, sessions, documents and their versions, chunks, embeddings, knowledge-graph entities and edges, and migrations.
 
   A record type not listed here keeps its field set in the spec that defines it, for example the Review verdict (spec 003 FR-019). Its stored rows still carry the common fields of FR-005, FR-007, FR-009 and FR-012 ("all metadata", fixed dependency map) (inferred).
@@ -181,7 +182,7 @@ The project uses three languages: "Defaults + OCaml, Rust where applicable, and 
   Smokey's account is a person's account, not an agent (project intake Q13). The control plane's `system` actor (spec 001) also gets an identity (inferred). Only a person may add, change or remove an identity (inferred; Art. VI: agent permissions are Critical risk).
 - **FR-009**: Only a record's owning role MAY change it, and everyone in the tenant MAY read it ("Its owning role only — Lead owns specs, PSE owns code records, Review owns verdicts, Jev owns scans; everyone in the tenant reads.", data-model intake Q9; Art. II: Separated Authority). The following rules apply:
   - Every record type MUST name its owning role (the Record ownership table under Key Entities).
-  - A change by any other role MUST be refused. The refusal MUST be recorded with the caller's identity, role and session.
+  - A change by any other role MUST be refused. The refusal MUST be recorded with the caller's identity, role and session (inferred: Q9 sets who may change a record, not that refusals are recorded).
   - Only two operations cross owners, and both need a person: anonymization (FR-010) and migrations (FR-004) (inferred).
 - **FR-010**: When a person or agent is removed, their records MUST stay, and their identity MUST be replaced with a placeholder ("Anonymize them — Records stay but the identity is replaced with a placeholder.", data-model intake Q12). The following rules apply:
   - The placeholder MUST be the same for every record of that identity, so lineage stays connected (inferred).
@@ -208,14 +209,14 @@ The project uses three languages: "Defaults + OCaml, Rust where applicable, and 
   - A version cannot describe a commit in two cases (Art. VII; the same rule spec 005 FR-008 applies to retrieval): (a) its indexed commit is not reachable from that commit; (b) its unit's content changed between the two commits.
   - For each version, the data model MUST store what that rule reads: the indexed commit, the branch it was indexed from, the path and structural unit, and a fingerprint of the unit's content (inferred).
 - **FR-015**: Every record MUST link to a valid owner, tenant and source. For a runtime record, the source is the delivery, session or rule that produced it (inferred). The following rules apply:
-  - A write that would create a record without them MUST be refused.
+  - A write that would create a record without them MUST be refused (inferred: Q18 asked for a nightly check that finds zero orphans, not for a refusal at write time).
   - A check MUST run nightly and find zero orphans ("Zero orphan records — A nightly check finds no record without a valid owner, tenant and source.", data-model intake Q18).
   - Every knowledge-graph edge MUST link two existing entities (inferred).
 
 **Search, vectors and embeddings**
 
 - **FR-016**: One vector-store interface MUST serve every vector search, with two backends behind it: sqlite-vec as the default and the custom Python index as the second ("A vector-store interface with sqlite-vec as the default and our own Python index as a second backend.", data-model intake Q7; project intake Q9). Both backends MUST accept the same calls and return results in the same shape, with the same provenance. A caller MUST NOT need to know which backend served it. Which backend is active is a configuration setting (inferred).
-- **FR-017**: Search MUST combine keyword (lexical) search and vector search ("Hybrid retrieval", data-model intake Q3; "hybrid searches", Q4) over the three kinds of FR-001. It MUST filter by tenant and commit, and also by kind of record, spec and issue (inferred from the provenance fields of Art. VII). Reranking and the full retrieval pipeline belong to spec 005.
+- **FR-017**: Search MUST combine keyword (lexical) search and vector search ("Hybrid retrieval", data-model intake Q3; "hybrid searches", Q4) over the three kinds of FR-001, including the code files indexed as documents and chunks (FR-001; "Hybrid retrieval across specs, code and traces", Q3 option text). It MUST filter by tenant and commit, and also by kind of record, spec and issue (inferred from the provenance fields of Art. VII). Reranking and the full retrieval pipeline belong to spec 005.
 - **FR-018**: Every vector MUST be stored with the name and dimension of the model that produced it (D3, confirmed by data-model intake Q21: "Keep D3"). A search MUST compare only vectors of the same model and dimension (inferred).
 - **FR-019**: The embedding model (Ollama or Claude) may be unreachable while records are being indexed. The records MUST then be saved with their text and metadata, and their vectors queued and filled in when the model is back. Keyword search MUST return them meanwhile ("Store now embed later — Records are saved with text and metadata; vectors are queued and filled in when the model is back; keyword search works meanwhile.", data-model intake Q22). No record is lost. The queue MUST survive a restart (inferred).
 - **FR-020**: Records marked sensitive MUST be embedded only by local Ollama or the offline embeddings ("Sensitive text stays local", data-model intake Q25). Their text MUST NOT be sent to a cloud model. If no local model is reachable, FR-019 applies, and the record never falls back to a cloud model (inferred). A record is sensitive when its owning role or the person marks it so (inferred).
@@ -269,7 +270,7 @@ The project uses three languages: "Defaults + OCaml, Rust where applicable, and 
   - the earlier values of every change.
 - **Shared record schema**: one versioned JSON Schema in `schemas/` for one shared type, read by Python, OCaml and Rust (FR-002, FR-003).
 - **Migration**: a numbered change, kept in git, that moves stored data from one schema version to the next (FR-004).
-- **Document version**: one source (a spec, decision, trace or document) at one commit. Several versions of one document can coexist (FR-014).
+- **Document version**: one source (a spec, decision, trace, code file or other document) at one commit. Several versions of one document can coexist (FR-014).
 - **Chunk**: one structural unit of a document version, with its text and provenance. Keyword search finds it even before it has a vector (FR-013, FR-019).
 - **Embedding**: a chunk's vector, with the name and dimension of the model that produced it. It is pending until the vector is filled in (FR-018, FR-019).
 - **Vector-store backend**: sqlite-vec (the default) or the custom Python index, behind one interface (FR-016).
@@ -292,7 +293,8 @@ The project uses three languages: "Defaults + OCaml, Rust where applicable, and 
 | Active-mode record | spec 007's mode evaluation | spec 007 FR-018 |
 | Computed-risk-class record | spec 006's classifier | inferred, matching spec 002 FR-026 |
 | Documents, versions, chunks, embeddings, knowledge-graph entities and edges, `git-history.md` entries | the ingestion, acting as `system` | inferred |
-| Tenants, identities, migrations, anonymization | a person | inferred (Art. VI) |
+| Tenants, identities, anonymization | a person | inferred: identities from Art. VI (agent permissions); anonymization from spec 001's Edge Cases (no agent makes it) |
+| Migrations | a person approves each one | inferred from the constitution's risk-class table: a database migration is High risk (Review, CI and human approval), and Critical when destructive (FR-004) |
 
 ### Non-goals
 
@@ -302,7 +304,7 @@ The constitution's Art. V lists explicit non-goals as part of a complete specifi
 - Rerank results or run the full retrieval pipeline. Spec 005 owns these (spec 005 FR-007).
 - Define how events are received, how leases are granted, how Gitea is written, or how Jev decides health. Specs 001, 002 and 008 own these.
 - Write to Gitea. The data model makes no Gitea write (inferred).
-- Cover code and skills metadata in the first version, beyond the knowledge-graph entities fed by `git-history.md` ("Then Code and skills last", data-model intake Q5). The skill catalog is deferred (project intake Q8).
+- Cover code and skills metadata in the first version, beyond the knowledge-graph entities fed by `git-history.md` ("Then Code and skills last", data-model intake Q5). That metadata is Q5's option D: repositories, commits, files and symbols as records of their own, and the skills catalog. Code content is still indexed for retrieval in the first version (FR-001; Q3). The skill catalog is deferred (project intake Q8).
 - Rewrite git history, even to anonymize (git stays the source, Q26) (inferred).
 - Plan for a server database or more than one machine in the first year ("10 Agents and 1 User", Q8). Ids and migrations leave room to grow (FR-005, FR-028) (inferred).
 - Choose the embedding model, the lexical method, the approximate-nearest-neighbor method or vector quantization. Planning chooses these (Assumptions).
@@ -323,7 +325,7 @@ The constitution's Art. V lists explicit non-goals as part of a complete specifi
   - 100% of the `git-history.md` entries written at a session start or after a push are ingested into the vector store and the knowledge graph at that moment;
   - a lineage query for each commit returns its session, role and subagent, with source and commit;
   - 0 commits contain `git-history.md`.
-- **SC-007**: In the access test suite, 100% of changes attempted by a role that does not own the record are refused and recorded, and 100% of reads by roles in the tenant succeed (data-model intake Q9).
+- **SC-007**: In the access test suite, 100% of changes attempted by a role that does not own the record are refused and recorded, and 100% of reads by roles in the tenant succeed (data-model intake Q9; recording inferred, FR-009).
 - **SC-008**: With the embedding model unreachable during indexing, 0 records are lost. 100% of them are returned by keyword search as soon as they are stored, and 100% by vector search once the model is back (data-model intake Q22).
 - **SC-009**: With the network cut, 100% of data-model operations in the offline suite succeed. The only exception is cloud model calls, which fall back to FR-019 (data-model intake Q25).
 - **SC-010**: 0 records marked sensitive are sent to a cloud model in the sensitivity fixture suite (data-model intake Q25).
@@ -335,7 +337,7 @@ The constitution's Art. V lists explicit non-goals as part of a complete specifi
   - every migration, applied to a fixture database at the previous version, loses 0 records;
   - a schema change without a version bump fails the merge check in 100% of seeded cases;
   - the check on every merge finds 0 definitions of a shared type outside `schemas/`.
-- **SC-013**: On the host, 100% of database and vector files are encrypted at rest, by both FileVault and database file encryption (data-model intake Q25). This is checked at first install and after every migration (inferred checks).
+- **SC-013**: On the host, 100% of database and vector files are encrypted at rest, by both FileVault and database file encryption (data-model intake Q25; database file encryption of the custom backend's vector files inferred, FR-027). This is checked at first install and after every migration (inferred checks).
 
 ## Assumptions
 
@@ -353,12 +355,15 @@ The constitution's Art. V lists explicit non-goals as part of a complete specifi
   - The 1 user is read as the person. They may act through more than one account, including Smokey's, which is a person's account (project intake Q13) (inferred).
 - **Storage**: the data model starts as one SQLite file for all tenants ("one SQLite file to start", option text of Q6, which the person picked), plus the custom backend's index files.
 - **Existing artifacts**: `schemas/jev-message.v1.json` and the Python models `DecisionTrace`, `SessionCheckpoint` and `JevMessage` in `packages/sdd-harness` already exist. This spec adopts them as starting points, and planning reconciles them with FR-002 (inferred).
-- **Owners not named by Q9**: Q9 named four owners: Lead for specs, PSE for code records, Review for verdicts and Jev for scans. Every other row of the Record ownership table is inferred from specs 001, 002, 005, 006 and 007, or from Art. VI. These rows go back to the person through `/speckit-intake-refine`.
+- **Owners not named by Q9**: Q9 named four owners: Lead for specs, PSE for code records, Review for verdicts and Jev for scans. Every other row of the Record ownership table is inferred from specs 001, 002, 005, 006 and 007, from Art. VI (identities), or from the constitution's risk-class table (migrations). These rows go back to the person through `/speckit-intake-refine`.
 - **Sensitive marking**: the person chose the rule ("Records marked sensitive are embedded only by local Ollama or the offline embeddings", Q25) but not who marks a record. This spec assumes the owning role or the person marks it, and that records are unmarked by default (inferred).
 - **Session attribution in commits**: `git-history.md` must name the session, role and subagent behind each commit. Those must be readable from the commit itself or from the data model's session records. Planning decides how, for example with commit trailers (inferred).
 - **Anonymization lookup**: rebuilding `git-history.md` from git log must recognize a removed identity's commits so that it can apply the placeholder. Planning decides how that lookup works without keeping the identity readable (inferred).
 - **Re-index reference**: SC-004's "one repository" is proposed as this repository at its current size (inferred). Planning decides whether a re-index may reuse vectors for unchanged content under the same embedding model (inferred).
-- **Code and skills**: Q5's note ("Then Code and skills last") is read to mean that code and skills metadata comes after the first version. In the first version, commits, files and symbols appear only through `git-history.md` (Q19) (inferred reading).
+- **Code and skills**: this spec separates code content from code metadata (inferred reading of Q3 together with Q5).
+  - Code content is in the first version: code files are indexed as documents and chunks for hybrid retrieval ("Hybrid retrieval across specs, code and traces with provenance on every result.", Q3; spec 005 FR-004, FR-005 and FR-025).
+  - Q5's note ("Then Code and skills last") is read to mean that the code and skills metadata of Q5's option D comes after the first version: repositories, commits, files and symbols as records of their own, and the skills catalog.
+  - Until then, commits, files and symbols appear as records only through `git-history.md` and its knowledge-graph entities (Q19).
 - **Success Criteria origin**: these targets are the person's:
   - 200 ms p95 at 1 million chunks (Q4);
   - zero orphan records, one schema in three languages, and a re-index within 10 minutes (Q18);
@@ -371,10 +376,10 @@ The constitution's Art. V lists explicit non-goals as part of a complete specifi
 
 - **Upstream**: none. 009 is the foundation spec and consumes no other spec (fixed dependency map).
 - **Downstream**:
-  - **001-engineering-control-plane**: consumes the schemas for normalized events (with the event-type mapping), leases, mutation envelopes, idempotency records, decision traces and session checkpoints (read during recovery assessment), plus identities, tenant ids and the anonymization of removed people and agents (001 FR-003, FR-004, FR-017, FR-024, FR-026, FR-033; 001 Edge Cases: removed person or agent).
+  - **001-engineering-control-plane**: consumes the schemas for normalized events (with the event-type mapping), leases, mutation envelopes, idempotency records, decision traces and session checkpoints (read during recovery assessment), plus the anonymization of removed people and agents (001 FR-003, FR-004, FR-017, FR-024, FR-026, FR-033; 001 Edge Cases: removed person or agent). 001's stored records also carry this spec's common fields, the tenant included (inferred: FR-007 puts the tenant on every record; spec 001 does not mention tenants).
   - **002-gitea-mcp-gateway**: consumes the schemas for the mutation envelope, idempotency records, audit records, actor, bot-account and subagent identities, the active-mode record and the computed-risk-class record (002 FR-010, FR-022, FR-024, FR-026, FR-029, FR-032).
   - **005-context-continuity**: consumes the schemas for session checkpoints, decision traces, visible reasoning chains, lifecycle events, command-log entries, `git-history.md` entries and indexed-chunk provenance, plus the retrieval store (one vector-store interface over sqlite-vec and the custom Python backend, with store now and embed later) and the knowledge-graph ingestion it calls at session start and after every push (005 FR-024, FR-025, FR-026, FR-030).
-  - **008-jev-progress-watchdog**: consumes the Jev message schema (`schemas/jev-message.v1.json`), Jev scan records keyed by session and scan, dedup records kept at least 72 hours, Jev's identity and bot account, and the schemas for decision traces, checkpoints and command-log entries, which it reads as evidence.
+  - **008-jev-progress-watchdog**: consumes the Jev message schema (`schemas/jev-message.v1.json`), Jev scan records keyed by session and scan, dedup records kept at least 72 hours, Jev's identity and bot account, and the schemas for decision traces, checkpoints and command-log entries, which it reads as evidence (008 FR-005, FR-010, FR-039, FR-040, FR-042, FR-045, FR-051).
 - **Related (not build dependencies)**: specs 003, 006 and 007 have no direct edge to 009 under the fixed dependency map. Records they write or read in 009's common fields or schemas reach them through their upstreams (inferred, matching spec 007's Assumptions). Those records are Review verdicts and evidence (field sets owned by spec 003), the computed risk class (written by spec 006) and the active-mode record (written by spec 007).
 - **Build order**: 009 → 001 → 002, 005 → 003, 004 → 006, 008 → 007. This spec is built first.
 - **Constitution** (v1.1.0):
@@ -383,7 +388,8 @@ The constitution's Art. V lists explicit non-goals as part of a complete specifi
   - Art. III: stored and retrieved text is data; access, staleness, sensitivity and orphan decisions are plain code; the mutation envelope schema carries the six required fields.
   - Art. IV: evidence fields record "not run", never a silent pass (FR-006).
   - Art. V: this spec is complete before any spec that builds on its schemas.
-  - Art. VI: identities, ownership and migrations are changed only by a person.
+  - Art. VI: identities and record ownership, which are agent permissions, are changed only by a person (inferred).
+  - Additional Constraints, risk classes: a database migration is High risk (Review, CI and human approval), and a destructive one is Critical (FR-004). Migrations are not an Art. VI matter.
   - Art. VII: provenance on every result, stale versions never returned, and the knowledge layer derived and rebuildable.
   - Art. VIII: the orphan check, the schema-version check and the no-second-copy check turn drift into failures.
   - Art. IX: the trace schemas reject fields outside their allowlist; visible chains are a separate debug schema; hidden reasoning is never stored.

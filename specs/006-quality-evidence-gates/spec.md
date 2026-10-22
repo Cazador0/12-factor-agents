@@ -31,7 +31,7 @@ A pull request is ready. Before the Review agent can return APPROVE, it must pro
 
 ### User Story 2 - Review returns a machine-readable verdict from an opposing objective (Priority: P1)
 
-Review rebuilds expectations from the specification rather than from the PSE's interpretation, examines the diff and the running behavior, and asks what evidence would prove the implementation fails. It returns the machine-readable verdict whose fields spec 003 defines: APPROVE, CHANGES_REQUESTED or BLOCKED_BY_ENV, with requirement counts, blockers, findings and evidence. It never repairs PSE's production code and then approves the combined result; production fixes go back to PSE. It never pushes commits to the branch of the PR it reviews: a regression test it writes goes on a separate test-only branch, which PSE may adopt.
+Review rebuilds expectations from the specification rather than from the PSE's interpretation, examines the diff and the running behavior, and asks what evidence would prove the implementation fails. It returns the machine-readable verdict whose fields spec 003 defines: APPROVE, CHANGES_REQUESTED or BLOCKED_BY_ENV, with requirement counts, blockers, findings and evidence. It never repairs PSE's production code and then approves the combined result; production fixes go back to PSE. It never pushes commits to the branch of the PR it reviews: a regression test it writes stays off that branch, on a separate test-only branch or inside its verdict, and PSE may adopt it by committing it again under PSE's own account.
 
 **Why this priority**: Independence is what keeps three agents from validating one another's assumptions (Article II: Separated Authority). The verdict is the input every gate and metric reads.
 
@@ -41,8 +41,8 @@ Review rebuilds expectations from the specification rather than from the PSE's i
 
 1. **Given** a PR that violates an acceptance criterion, **When** Review completes, **Then** the verdict is CHANGES_REQUESTED, the failed requirement is counted, and the blocking finding cites evidence.
 2. **Given** a PR that cannot be verified because CI is unavailable, **When** Review completes, **Then** the verdict is BLOCKED_BY_ENV, not APPROVE and not CHANGES_REQUESTED.
-3. **Given** Review finds a defect and writes a failing regression test for it, **When** it records the verdict, **Then** the test sits on test-only paths (spec 003 FR-033) in a separate test-only branch, and the PR's branch carries no commit from Review's bot account (FR-008).
-4. **Given** PSE adopts Review's regression test into the PR, **When** the new head is pushed, **Then** the earlier manifest and any approval are void (FR-011), and Review builds a new manifest for the new head, whose commits are all PSE's.
+3. **Given** Review finds a defect and writes a failing regression test for it, **When** it records the verdict, **Then** the test sits on test-only paths (spec 003 FR-033), on the test-only branch the control plane created for Review or inside the verdict, and the PR's branch carries no commit from Review's bot account (FR-008).
+4. **Given** PSE adopts Review's regression test into the PR, **When** the new head is pushed, **Then** the test arrives as a commit PSE authored and pushed, the earlier manifest and any approval are void (FR-011), and Review builds a new manifest for the new head, whose commits are all PSE's.
 
 ---
 
@@ -61,6 +61,7 @@ Every PR carries a risk class computed from its changed paths. The class sets th
 3. **Given** a PR that adds a tool to the Gitea gateway, which the "agent tools" example alone would make High, **When** risk is classified, **Then** it is Critical, because gateway tool changes are in the rule-defining scope (spec 002 FR-003).
 4. **Given** Guarded autonomous mode and a Medium-risk PR with Review approval and complete CI, **When** auto-merge is requested, **Then** the PR does not merge until a person approves, because the mode requires more than the class's ceiling (FR-021; spec 002 FR-025).
 5. **Given** a High-risk PR whose only approvals come from the Review and Lead bot accounts, **When** the human-approval requirement is checked, **Then** it is unmet: only an approving review from a person's Gitea account counts (FR-024).
+6. **Given** Shadow mode and a PR whose head has a passing manifest and Review's recommended APPROVE, **When** a person submits an approving review on that head, **Then** the Review approval FR-013 requires is met by the person's review, the review is recorded next to Review's recommendation, and the person can merge. No approval from Review's bot account is needed, because the gateway refuses Review's writes in Shadow mode (FR-013, FR-024; spec 002 FR-024).
 
 ---
 
@@ -114,7 +115,7 @@ When a defect is confirmed, it gets a regression test that first demonstrates th
 - A security scanner is unavailable for a high-risk PR. The verdict is BLOCKED_BY_ENV; the PR waits rather than merging without security evidence. Returning BLOCKED_BY_ENV is a completed verdict, so the Review session ends normally with a checkpoint. Waiting on the environment is not, by itself, a stuck session ("A session stops only when it is not making successful progress or is stuck.", project intake Q17; inferred).
 - Review runs on Claude for one PR and on a local Ollama model for the next. The risk class, the manifest's pass or fail and the approval checks are identical, because plain code decides them (FR-023).
 - A High-risk PR carries an approval from the Lead bot account, or a comment claiming Smokey approved it. Neither counts as a human approval. An approving review recorded by Smokey's own account counts, because Smokey is a person's account (FR-024; project intake Q13).
-- Review writes a failing regression test for a defect it found. The test goes on a separate test-only branch. If PSE adopts it into the PR, the new head invalidates the manifest and approval, and Review reviews the new head (FR-008, FR-011).
+- Review writes a failing regression test for a defect it found. The test stays off the PR's branch: on a test-only branch the control plane created for Review, or inside the verdict where no such branch exists, as in Shadow mode. If PSE adopts it, PSE commits it again under its own account, never by merging Review's commits. The new head invalidates the manifest and approval, and Review reviews the new head (FR-008, FR-011).
 
 ## Requirements *(mandatory)*
 
@@ -123,7 +124,7 @@ When a defect is confirmed, it gets a regression test that first demonstrates th
 **Verification layers**
 
 - **FR-001**: The quality model MUST define these verification layers, each with Review's responsibility: specification, static quality, unit, property/fuzz, integration, end-to-end, data (migrations and rollback), reliability, security, performance, agent behavior and supply chain.
-- **FR-002**: Each repository MUST record, per layer, whether it applies and why, in a versioned applicability record. Where a repository holds several languages or components, such as its OCaml, Rust and Python parts (project intake Q10), the record MUST decide per language or component. The decision MUST be explicit; a blank never counts as "not applicable".
+- **FR-002**: Each repository MUST record, per layer, whether it applies and why, in a versioned applicability record. Where a repository holds several languages or components, such as its OCaml, Rust and Python parts (project intake Q10), the record MUST decide per language or component (inferred). The decision MUST be explicit; a blank never counts as "not applicable".
 
 **Agentic-framework verification**
 
@@ -137,13 +138,16 @@ When a defect is confirmed, it gets a regression test that first demonstrates th
   - that nested subagents cannot hold more authority than their parent;
   - that no role session runs more subagents than "At most 2 subagents per container, per role and per Gitea bot account." (project intake Q18);
   - that Jev's account can only comment and label (spec 002 FR-027).
-- **FR-025**: The agent-behavior suite MUST run against every model backend a role uses: Claude, and Ollama cloud and local ("Ollama (cloud and local) alongside Claude Code models.", project intake Q7). The permission-containment and prompt-injection cases MUST give identical authority outcomes on each backend (matches spec 003 SC-010).
+- **FR-025**: The agent-behavior suite MUST run against every model backend a role uses: Claude, and Ollama cloud and local ("Ollama (cloud and local) alongside Claude Code models.", project intake Q7). The permission-containment and prompt-injection cases MUST give identical authority outcomes on each backend (inferred: the person allowed the backends but did not ask for the suite to run on each; matches spec 003 SC-010).
 
 **Evidence and verdicts**
 
 - **FR-006**: PSE MUST attach to every PR the implementation evidence package whose field set spec 003 owns (spec 003 FR-014). This spec keeps no second copy. Each test category in the package MUST map to a verification layer (FR-001), so the manifest can read it (inferred).
 - **FR-007**: Review MUST return the machine-readable verdict whose field set spec 003 owns (spec 003 FR-019): APPROVE, CHANGES_REQUESTED or BLOCKED_BY_ENV, bound to the reviewed commit. An APPROVE MUST cite the passing merge evidence manifest for the same commit (FR-009).
-- **FR-008**: Review MUST NOT modify production code on a PR it reviews, and MUST NOT push commits to that PR's branch. It MAY author tests, fixtures, harnesses and evaluation data on test-only paths (spec 003 FR-033), in a separate test-only branch or its own test-only PR (spec 003 FR-020). If PSE adopts them into the PR, they arrive as a new head commit, which FR-011 treats like any other (inferred; Article II: Separated Authority).
+- **FR-008**: Review MUST NOT modify production code on a PR it reviews, and MUST NOT push commits to that PR's branch. It MAY author tests, fixtures, harnesses and evaluation data on test-only paths (spec 003 FR-033), kept off the PR's branch (spec 003 FR-020) (Article II: Separated Authority). The way they reach PSE is inferred:
+  - Where the control plane created a separate test-only branch when it dispatched Review, Review pushes them there and nowhere else (inferred). Specs 001 and 002 do not provide this yet: the gateway lets the control plane create branches only at dispatch, under the dispatched session's write lease, and lets only PSE open PRs (spec 002 FR-005). Review never opens a PR of its own.
+  - Otherwise, including in Shadow mode, Review hands them to PSE inside its verdict, as the evidence of the finding they support, with their failing run at the reviewed commit (inferred).
+  - If PSE adopts them into the PR, PSE commits them again under its own bot account as a new head commit. Review's commits are never merged, rebased or cherry-picked into the PR's branch, so the PR's head never carries a commit authored or pushed by Review's bot account. FR-011 treats the new head like any other (inferred).
 - **FR-009**: Before APPROVE, Review MUST produce a merge evidence manifest for the reviewed commit covering requirements traceability, each required check (the set FR-021 fixes for the PR's risk class), known regressions, blocking findings, unresolved questions, spec convergence and branch currency.
 - **FR-010**: A required category that was not run or whose evidence is missing MUST be recorded as "not run" or "unverified" and MUST block approval ("not run" never means passed; Article IV: Evidence Over Assertion).
 - **FR-011**: A manifest MUST be bound to one commit; any new head commit MUST invalidate it. An approval or check result for an older commit MUST never count for a newer head, however late it arrives ("Events have no time limit.", project intake Q16).
@@ -157,7 +161,9 @@ When a defect is confirmed, it gets a regression test that first demonstrates th
 
 **Merge policy (Gitea)**
 
-- **FR-013**: The `main` branch in Gitea MUST deny direct pushes, force pushes and administrator bypass. It MUST require at least one approval from the Review role's own Gitea bot account (FR-024), block merges with requested changes, dismiss stale approvals, require the PR to be current with base, and require the configured CI contexts, including the merge evidence gate. The control plane's merge-policy step (spec 001 TR-09, EVALUATE_MERGE_POLICY) MUST read the same manifest result.
+- **FR-013**: The `main` branch in Gitea MUST deny direct pushes, force pushes and administrator bypass. It MUST require "at least one Review approval" (constitution, Additional Constraints), block merges with requested changes, dismiss stale approvals, require the PR to be current with base, and require the configured CI contexts, including the merge evidence gate. The control plane's merge-policy step (spec 001 TR-09, EVALUATE_MERGE_POLICY) MUST read the same manifest result. Which approval satisfies the Review approval depends on the active mode (inferred; FR-024):
+  - In Agent implementation mode and above, where Review may submit reviews in Gitea (spec 007 FR-003; spec 002 FR-024), it counts only when it comes from the Review role's own Gitea bot account.
+  - In Shadow mode, where the gateway refuses every Review write (spec 002 FR-024) and a person approves and merges (spec 007 FR-002), it is a person's approving review on the current head. That approval is recorded next to the verdict and manifest Review recommended for the same head, so the scorecard can compare them (spec 007 US1 AS-2).
 - **FR-014**: Auto-merge MUST be requested only through the gateway's policy-respecting operation (spec 002); no force-merge capability MAY be exposed to agents.
 - **FR-015**: Every PR MUST receive a risk class (Low, Medium, High, Critical) computed for its current head commit from its changed paths and labels. The class is the highest over all changed paths. A label may raise the class but never lower it: the computed class MUST win over any lower label set by an agent. A head with no computed class MUST be treated as Critical (matches spec 002 FR-026; inferred) (Article III: Agents Propose, Policy Decides).
 - **FR-016**: High-risk PRs MUST require a human approval in addition to Review and CI; Critical PRs MUST always require a human approval. FR-024 defines what counts as a human approval.
@@ -171,29 +177,31 @@ When a defect is confirmed, it gets a regression test that first demonstrates th
   - Review's own gates, including this spec's path-to-risk rules, required-category rules and applicability records (inferred);
   - the autonomy-mode policy, promotion criteria, demotion limits and metric definitions (spec 007 FR-012);
   - the constitution;
-  - the list itself.
+  - the list itself (inferred).
 - **FR-021**: The risk table MUST be applied as a ceiling: the most autonomy a class can ever have. The active autonomy mode MAY require more approvals, never fewer; spec 002 FR-025 enforces the mode's extra approvals, and spec 007 defines the modes. Even at the most autonomy any mode allows, auto-merge needs at least:
 
   | Class | Review | CI | Human approval |
   |---|---|---|---|
   | Low | APPROVE from Review's bot account | "CI": every category that the versioned path-to-category rules select for the changed paths passes; every other category reads "not applicable to this change" with the rule that excluded it (inferred) | Not required by the class |
-  | Medium | APPROVE from Review's bot account | "Complete CI": every category the applicability record (FR-002) marks applicable passes at the reviewed commit | Not required by the class |
+  | Medium | APPROVE from Review's bot account | "Complete CI" (constitution risk table): every category the applicability record (FR-002) marks applicable passes at the reviewed commit (inferred) | Not required by the class |
   | High | APPROVE from Review's bot account | Complete CI (inferred: the report says "CI"; a higher class never gets less than Medium) | Required (FR-024) |
   | Critical | APPROVE from Review's bot account (FR-013) | Complete CI (inferred) | Mandatory (FR-024) |
 
 - **FR-024**: Approvals MUST be told apart by Gitea account ("Each role gets its own Gitea bot account.", project intake Q15; spec 002 FR-017):
-  - The Review approval that FR-013 requires counts only when it comes from the Review role's bot account, which is never the account that authored the PR.
-  - A human approval counts only when it is an approving review on the current head, recorded by a person's Gitea account that no agent, subagent, Jev or gateway credential can use. Smokey's account is a person's account (project intake Q13), so its approving review counts as human.
+  - In Agent implementation mode and above, the Review approval that FR-013 requires counts only when it comes from the Review role's bot account, which is never the account that authored the PR. In Shadow mode, a person's approving review satisfies FR-013 instead, because the gateway refuses Review's writes there (spec 002 FR-024) (inferred).
+  - A human approval counts only when it is an approving review on the current head, recorded by a person's Gitea account that no agent, subagent, Jev or gateway credential can use (inferred; matches spec 002 FR-009). Smokey's account is a person's account (project intake Q13), so its approving review counts as human.
   - An approval from any bot account (Lead, PSE, Review, Jev or the control plane) never counts as human, and neither does text in a comment that claims a person's approval (inferred; matches spec 002 FR-009).
 
 **Standards and learning**
 
-- **FR-018**: Each repository that serves web applications or services MUST keep a versioned security mapping that records its chosen OWASP ASVS 5.0.0 level and the ASVS requirements at that level. The manifest's security category MUST cite evidence for each mapped requirement at the reviewed commit; a mapped requirement without evidence reads "unverified". Every repository MUST map its development lifecycle to NIST SSDF 1.1 practices in the same record, and each mapped practice MUST name the artifact or check that shows it is followed (inferred).
+- **FR-018**: Every repository MUST keep a versioned security mapping (inferred):
+  - It MUST always map the repository's development lifecycle to NIST SSDF 1.1 practices, and each mapped practice MUST name the artifact or check that shows it is followed.
+  - Where the repository serves web applications or services, it MUST also record the chosen OWASP ASVS 5.0.0 level and the ASVS requirements at that level. The manifest's security category MUST cite evidence for each mapped ASVS requirement at the reviewed commit; a mapped requirement without evidence reads "unverified".
 - **FR-019**: Releasable artifacts MUST carry SLSA provenance recording the build platform and build definition, where the repository releases artifacts.
 - **FR-020**: Every recurring agent mistake MUST be turned into a regression fixture, then an evaluation, then either a mechanical constraint (a linter, structural test or policy rule) or a recorded "not mechanizable" decision with its reason (Article VIII: Mistakes Become Mechanisms).
   - A mistake is recurring once its finding class is recorded in review findings on 3 distinct PRs (proposed default; inferred).
   - Each step is proposed as an ordinary PR, or as a recommendation where the active mode allows no PR.
-  - A versioned mistake register records each recurring mistake, its count, its fixture, its evaluation, and its constraint or "not mechanizable" reason.
+  - A versioned mistake register records each recurring mistake, its count, its fixture, its evaluation, and its constraint or "not mechanizable" reason (inferred).
 
 ### Key Entities
 
@@ -204,8 +212,8 @@ When a defect is confirmed, it gets a regression test that first demonstrates th
 - **Merge evidence manifest**: the per-commit record the merge gate reads; every required category with pass, fail, not run, unverified or not applicable. Its pass or fail is computed in plain code (FR-023).
 - **Risk class**: Low, Medium, High or Critical, computed for a head commit from changed paths; the ceiling on that PR's autonomy (FR-021).
 - **Rule-defining scope**: the versioned list of paths and artifacts whose changes are Critical (FR-017).
-- **Approval**: a Review approval or a human approval, told apart by the Gitea account that recorded it (FR-024).
-- **Security mapping**: a repository's ASVS level and requirements, and its SSDF practices with the artifact or check for each (FR-018).
+- **Approval**: a Review approval or a human approval, told apart by the Gitea account that recorded it. In Shadow mode a person's approving review satisfies the Review approval (FR-013, FR-024).
+- **Security mapping**: every repository's SSDF practices with the artifact or check for each, and, where it serves web applications or services, its ASVS level and requirements (FR-018).
 - **Agent-behavior case**: one executable scenario in the agentic verification suite, with the failure it guards against, run on every model backend in use (FR-025).
 - **Regression fixture**: a test or evaluation born from a confirmed bug or a recurring agent mistake.
 - **Mistake register**: the versioned record of recurring agent mistakes, keyed by finding class, with each mistake's fixture, evaluation, and constraint or "not mechanizable" reason (FR-020).
@@ -222,9 +230,9 @@ When a defect is confirmed, it gets a regression test that first demonstrates th
 - **SC-006**: Escaped defects (found after merge) per 100 accepted issues stay at or below the baseline measured in Shadow mode, in every scorecard period after the gate is enforced (report §Core metrics: "without worsening escaped defects"; matches spec 007 SC-004). Any reduction target is the owner's to set and is not set here.
 - **SC-007**: Review produces a verdict for a PR under 400 changed lines within 30 minutes of CI completing, at the 90th percentile, measured on the MacBook host at the person's peak capacity ("3 agent sessions + 6 subagents + the Jev agent.", project intake Q20). All three numbers are proposed defaults the owner has not confirmed. Missing the target never stops a Review session that is still making progress (project intake Q17).
 - **SC-008**: In the classification suite, 100% of PRs that touch the rule-defining scope (FR-017) are classified Critical, and in production 0 such PRs merge without a person's approval.
-- **SC-009**: 0 Review pushes to the branch of a PR under review, and 0 APPROVE verdicts on a head that carries a commit pushed by Review's bot account (FR-008).
+- **SC-009**: 0 Review pushes to the branch of a PR under review, and 0 APPROVE verdicts on a head that carries a commit authored or pushed by Review's bot account (FR-008).
 - **SC-010**: 0 approvals from a bot account are counted as a human approval, across the containment suite and in production (FR-024).
-- **SC-011**: Before its first merge under the gate, every repository has a versioned applicability record covering all 12 layers (FR-002) and, where it serves web applications or services, a security mapping with its ASVS level (FR-018). 0 repositories are missing either.
+- **SC-011**: Before its first merge under the gate, every repository has a versioned applicability record covering all 12 layers (FR-002) and a security mapping whose SSDF practices each name an artifact or check (FR-018). Where the repository serves web applications or services, that mapping also records its ASVS level and requirements. 0 repositories are missing any of these.
 
 ## Assumptions
 
@@ -236,9 +244,10 @@ When a defect is confirmed, it gets a regression test that first demonstrates th
 - Stack: "Defaults + OCaml, Rust where applicable, and Python for all Data Science, Data Engineering, Data Operations, and full scale Data Management." (project intake Q10). This is read as OCaml for the typed policy and decision core, which includes the risk classifier and the manifest evaluation, and Python for data work (inferred from the question's recommended option). It replaces the earlier "Python 3.12+ (unconfirmed)" assumption (intake D1, overturned by Q6 and Q10).
 - Host: everything runs on one MacBook Pro M4 Pro with 24 GB RAM, about 18 GB usable after macOS (project intake Q22; data-model intake Q14, revised). The agent-behavior suite and CI run there too (inferred), so SC-007 is measured there.
 - Scale: "10 Agents and 1 User" (data-model intake Q8, revised), which matches 3 sessions, 6 subagents and Jev (inferred). With one person, every human approval this spec requires falls to that person; this spec never requires approvals from two different people (inferred).
-- Shadow mode comes first (project intake D9). Review still builds manifests and verdicts in Shadow mode, recorded as recommendations, so the Shadow-mode baseline for SC-006 exists (inferred).
+- Shadow mode comes first (project intake D9). Review still builds manifests and verdicts in Shadow mode, recorded as recommendations, so the Shadow-mode baseline for SC-006 exists (inferred). There the person's approving review on the current head satisfies FR-013's Review approval, and on a High or Critical PR the same review is also the human approval FR-016 requires (inferred; FR-013, FR-024).
 - Requirements traceability is built from the issue contract (spec 001) and the evidence package's spec, task and criterion fields (spec 003). The Spec Kit–Gitea bridge (spec 004) writes the same links for issues it creates, but 006 does not depend on it: the dependency map has no 004→006 edge (inferred).
 - Agent-behavior cases test behavior that specs 005, 008 and 009 define (recovery, retrieval, git-history.md and Jev) from outside, and consume none of their outputs. They are therefore not dependency edges. By the build order (009 → 001 → 002, 005 → 003, 004 → 006, 008 → 007), 005 and 009 exist before 006 is built. Jev's cases are recorded as "not applicable", with that reason, until spec 008 is built (inferred).
+- FR-026 lets Review cite a Jev verdict. That is an optional input: it never blocks a verdict, and it is simply absent until spec 008 is built. So it is not a build edge, which matches spec 008's own wording ("Review owns verdicts, and may cite Jev (spec 006 FR-026)") and the fixed dependency map, where 008 is built in parallel with 006 (inferred).
 - The ASVS level per repository, the exact paths in the rule-defining scope, and the path-to-risk and path-to-category rules are set in planning and versioned with the repository policy. Once set, changing any of them is Critical (FR-017).
 - Numeric targets in Success Criteria and FR-020 are proposed defaults, apart from the 0 and 100% invariants that the constitution fixes. This covers SC-003's 3 cases and 2 months, SC-007's 400 lines, 30 minutes and 90th percentile, and FR-020's threshold of 3 PRs. The owner has not confirmed a headline target (project intake row S9 and its open item).
 

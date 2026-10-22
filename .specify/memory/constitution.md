@@ -7,7 +7,8 @@ Ratified: 2026-10-22 | Last amended: 2026-10-22
 Modified sections:
   Additional Constraints — Runtime: Ollama (cloud and local) becomes an allowed model provider
     alongside Claude; Claude models are still called through the official Anthropic SDK. Health,
-    policy and authority decisions stay in plain code (Article III); model output may only explain them.
+    policy and authority decisions stay in plain code: a model may recommend an action, and plain
+    code decides (Article III; marked "(inferred)" in the Runtime line).
 
 Principles changed: none (Articles I–IX unchanged in wording and meaning)
 Sections added or removed: none
@@ -16,12 +17,14 @@ Rationale: the person answered "Ollama (cloud and local) alongside Claude Code m
 (project intake Q7) and, asked how to handle the conflict with the Claude-only runtime line,
 chose "A. Amend to v1.1.0" (project intake Q14). A person approved it, as Article VI and
 Governance require. MINOR under Governance: guidance is materially expanded; no article is
-removed or redefined. The plain-code clause restates Article III for the new provider
-(inferred wording; Q14's chosen option read "keeps decisions in code").
+removed or redefined. The plain-code clause repeats Article III's own limit for the new
+provider (a model may recommend; plain code decides) and adds no restriction to it. The person
+did not say it: it rests on the recommendation note of Q14's chosen option ("keeps decisions in
+code"), so the Runtime line marks it "(inferred)".
 
 Templates and guidance checked:
   ✅ .specify/templates/spec-template.md      — no change needed (names no model provider)
-  ✅ .specify/templates/plan-template.md      — no change needed (Constitution Check gates on Articles I–IX; Article III gate covers decisions under either provider)
+  ✅ .specify/templates/plan-template.md      — no change needed (its Constitution Check gates are derived from this file at plan time; names no model provider)
   ✅ .specify/templates/tasks-template.md     — no change needed (names no model provider)
   ✅ .specify/templates/checklist-template.md — no change needed (names no model provider)
   ✅ AGENTS.md                                — already cites v1.1.0
@@ -141,7 +144,7 @@ Continuity is built from what engineering can inspect.
 ## Additional Constraints
 
 - **Forge**: Gitea 28.x is the sole forge and control plane for work state (issues, dependencies, project board, pull requests, reviews, checks, merges). The deployment stays current with Gitea security releases (28.2.0 or later at ratification).
-- **Runtime**: the Lead, PSE and Review agents run in a LangGraph service. Allowed model providers are Claude, whose models are called through the official Anthropic SDK, and Ollama (cloud and local) alongside it (project intake Q7, Q14). Whichever provider serves a call, health, policy and authority decisions stay in plain code (Article III); model output may only explain them.
+- **Runtime**: the Lead, PSE and Review agents run in a LangGraph service. Allowed model providers are Claude, whose models are called through the official Anthropic SDK, and Ollama (cloud and local) alongside it (project intake Q7, Q14). Whichever provider serves a call, health, policy and authority decisions stay in plain code: a model may recommend an action, and plain code decides (Article III) (inferred).
 - **Gateway**: agents act on Gitea only through the narrow semantic Gitea MCP gateway (issue, project, pull-request, branch-protection-read and coordination-lease tools). No unrestricted request tool, no force-merge tool, no branch-protection write tool.
 - **Mutation envelope**: every mutation carries `actor_role`, `session_id`, `issue_id`, `expected_version`, `idempotency_key` and `reason`.
 - **Events**: Gitea webhooks are verified (HMAC-SHA256), deduplicated and normalized before any agent consumes them. Unstructured agent-to-agent chat never defines project state.
