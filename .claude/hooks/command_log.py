@@ -2,9 +2,11 @@
 """Command log for Jev (spec 008): one JSON line per tool call start and end.
 
 Registered for PreToolUse, PostToolUse and PostToolUseFailure. Writes
-.specify/sessions/commands/<session_id>.jsonl (gitignored) with
-{event, at, session_id, tool, command, tool_use_id, exit_code, ok, outcome, timed_out, timeout_s, duration_ms}.
-Outputs are stored as short hashes, never as text. The hook always exits 0 so it can never block a tool call.
+.specify/sessions/commands/<session_id>.jsonl (gitignored, mode 0600) with
+{event, at, session_id, tool, action, tool_use_id, exit_code, ok, outcome, timed_out, timeout_s, duration_ms}.
+Calls and their outputs are stored as short hashes, never as text: a command line can carry a token and an
+Edit carries file contents, and Jev only needs to tell equal calls apart. The hook always exits 0 so it can
+never block a tool call.
 """
 
 import hashlib
@@ -15,19 +17,17 @@ import sys
 from datetime import datetime, timezone
 from pathlib import Path
 
-MAX_COMMAND = 500
-
-
 def _sha(text: str) -> str:
     return hashlib.sha256(text.encode("utf-8", "replace")).hexdigest()[:16]
 
 
-def _command(tool: str, tool_input: dict) -> str:
+def _action(tool: str, tool_input: dict) -> str:
+    """A hash of the whole call, whitespace-normalized: equal calls fingerprint equally."""
     if tool == "Bash":
         cmd = str(tool_input.get("command", ""))
     else:
         cmd = json.dumps(tool_input, sort_keys=True, default=str)
-    return re.sub(r"\s+", " ", cmd).strip()[:MAX_COMMAND]
+    return "sha:" + _sha(re.sub(r"\s+", " ", cmd).strip())
 
 
 def main() -> int:
@@ -42,7 +42,7 @@ def main() -> int:
         "at": datetime.now(timezone.utc).isoformat(timespec="seconds"),
         "session_id": payload.get("session_id"),
         "tool": tool,
-        "command": _command(tool, tool_input),
+        "action": _action(tool, tool_input),
         "tool_use_id": payload.get("tool_use_id"),
     }
     if event == "PreToolUse":
@@ -67,8 +67,10 @@ def main() -> int:
     session = re.sub(r"[^A-Za-z0-9_.-]", "_", str(payload.get("session_id") or "unknown"))
     try:
         path = root / ".specify" / "sessions" / "commands" / f"{session}.jsonl"
-        path.parent.mkdir(parents=True, exist_ok=True)
-        with path.open("a", encoding="utf-8") as fh:
+        path.parent.mkdir(mode=0o700, parents=True, exist_ok=True)
+        fd = os.open(path, os.O_WRONLY | os.O_APPEND | os.O_CREAT, 0o600)
+        os.fchmod(fd, 0o600)  # also tightens a log created before this rule
+        with os.fdopen(fd, "a", encoding="utf-8") as fh:
             fh.write(json.dumps(row) + "\n")
     except OSError:
         pass

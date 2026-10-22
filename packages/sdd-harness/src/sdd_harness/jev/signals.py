@@ -35,7 +35,7 @@ class CommandEvent:
     event: str  # start | end
     at: datetime
     tool: str
-    command: str
+    action: str  # hash of the call (never its text), so equal calls compare equal
     tool_use_id: str | None = None
     exit_code: int | None = None
     ok: bool = True
@@ -45,7 +45,7 @@ class CommandEvent:
 
     @property
     def fingerprint(self) -> tuple[str, str, str]:
-        return (self.tool, self.command, self.outcome)
+        return (self.tool, self.action, self.outcome)
 
 
 def read_commands(path: Path) -> list[CommandEvent]:
@@ -64,7 +64,7 @@ def read_commands(path: Path) -> list[CommandEvent]:
                     event=row.get("event", "end"),
                     at=at,
                     tool=str(row.get("tool", "Bash")),
-                    command=str(row.get("command", "")),
+                    action=str(row.get("action", "")),
                     tool_use_id=row.get("tool_use_id"),
                     exit_code=row.get("exit_code"),
                     ok=bool(row.get("ok", row.get("exit_code") in (0, None))),

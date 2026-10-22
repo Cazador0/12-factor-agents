@@ -316,6 +316,33 @@ def test_hook_logs_start_end_and_failures(tmp_path):
     assert flying is not None and flying.tool_use_id == "t2"
 
 
+def test_hook_stores_hashes_never_command_or_file_text(tmp_path):
+    secret = "ghp_s3cretTOKENvalue"
+    run_hook(
+        tmp_path,
+        {
+            "session_id": "cc-2",
+            "hook_event_name": "PreToolUse",
+            "tool_name": "Bash",
+            "tool_input": {"command": f"GITEA_TOKEN={secret} curl -H 'Authorization: token {secret}' x"},
+        },
+    )
+    run_hook(
+        tmp_path,
+        {
+            "session_id": "cc-2",
+            "hook_event_name": "PreToolUse",
+            "tool_name": "Edit",
+            "tool_input": {"file_path": "a.py", "old_string": "x", "new_string": f"KEY = '{secret}'"},
+        },
+    )
+    path = tmp_path / ".specify/sessions/commands/cc-2.jsonl"
+    assert secret not in path.read_text()
+    assert path.stat().st_mode & 0o777 == 0o600
+    first, second = read_commands(path)
+    assert first.action.startswith("sha:") and first.action != second.action
+
+
 def test_alternation_detects_two_state_cycles(tmp_path):
     log = tmp_path / "c.jsonl"
     rows = [
@@ -323,7 +350,7 @@ def test_alternation_detects_two_state_cycles(tmp_path):
             "event": "end",
             "at": (T0 + timedelta(seconds=i)).isoformat(),
             "tool": "Bash",
-            "command": "a" if i % 2 else "b",
+            "action": "a" if i % 2 else "b",
             "exit_code": 1,
             "ok": False,
             "outcome": "err:x",
@@ -418,7 +445,7 @@ def failing_loop(at: datetime, n: int = 4) -> list[dict]:
             "event": "end",
             "at": (at - timedelta(seconds=n - i)).isoformat(),
             "tool": "Bash",
-            "command": "pytest -q",
+            "action": "pytest -q",
             "exit_code": 1,
             "ok": False,
             "outcome": "err:same",
@@ -439,7 +466,7 @@ def test_scan_posts_one_living_comment_per_episode(tmp_path):
                 "event": "end",
                 "at": quiet.isoformat(),
                 "tool": "Bash",
-                "command": "ls",
+                "action": "ls",
                 "exit_code": 0,
                 "ok": True,
                 "outcome": "ok:a",
@@ -479,7 +506,7 @@ def test_healthy_and_unknown_scans_stay_local(tmp_path):
                 "event": "end",
                 "at": (T0 - timedelta(minutes=1)).isoformat(),
                 "tool": "Bash",
-                "command": "pytest",
+                "action": "pytest",
                 "exit_code": 0,
                 "ok": True,
                 "outcome": "ok:1",
@@ -525,7 +552,7 @@ def test_episode_resolution_clears_labels(tmp_path):
                     "event": "end",
                     "at": (at - timedelta(minutes=1)).isoformat(),
                     "tool": "Bash",
-                    "command": f"step {i}",
+                    "action": f"step {i}",
                     "exit_code": 0,
                     "ok": True,
                     "outcome": f"ok:{i}",
@@ -549,7 +576,7 @@ def test_shared_runner_outage_is_one_note(tmp_path):
                 "event": "end",
                 "at": T0.isoformat(),
                 "tool": "Bash",
-                "command": "x",
+                "action": "x",
                 "exit_code": 0,
                 "ok": True,
                 "outcome": "ok:x",

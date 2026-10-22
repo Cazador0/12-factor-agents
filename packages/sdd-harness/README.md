@@ -96,7 +96,7 @@ taking evidence and scan history and returning a verdict.
 
 - Messages follow the strict, frozen `JevMessage` model, which is exported to `schemas/jev-message.v1.json`. CI fails when the export is stale.
 - Explanations written by a model (`--explain claude|ollama`) describe a verdict; they never decide it.
-- The command log comes from `.claude/hooks/command_log.py`, which writes one JSON line per tool call to `.specify/sessions/commands/`. It stores output hashes, never output text.
+- The command log comes from `.claude/hooks/command_log.py`, which writes one JSON line per tool call to `.specify/sessions/commands/` (mode 0600). It stores hashes of each call and its output, never their text, because a command line can carry a token.
 
 ```bash
 sdd-jev scan --sessions sessions.json --dry-run   # decide and record locally; write nothing to Gitea
