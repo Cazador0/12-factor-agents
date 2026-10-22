@@ -1,4 +1,8 @@
-"""Export the JevMessage JSON Schema to ``schemas/jev-message.v1.json`` (shared with OCaml via ppx_deriving_yojson)."""
+"""Export the JevMessage JSON Schema to ``schemas/jev-message.v1.json``, the cross-language contract.
+
+OCaml and Rust generate their bindings from this file (spec 009 FR-003). Enums are plain JSON strings, which
+``ppx_deriving_yojson``'s default variant encoding does not match (see ``models.py``).
+"""
 
 from __future__ import annotations
 

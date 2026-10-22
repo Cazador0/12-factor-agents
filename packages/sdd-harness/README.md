@@ -73,14 +73,15 @@ taking evidence and scan history and returning a verdict.
 | Hung | 20 minutes of loop silence. Paused while a tool call is still inside its own timeout, while the session waits on a person, and during start-up grace. |
 | Spinning | 60 minutes without durable progress. |
 | Loop fingerprints | From the command log: an action-error pair repeated 3 times warns and 4 times is stuck; an action-observation pair repeated 4 times; a 6-step alternation; 3 command timeouts in a row. |
-| CI not converging | 3 completed, non-cancelled failing runs. |
+| CI not converging | 3 consecutive head commits whose CI completed with a real (non-cancelled) failure. Each check is read as Gitea groups it, so a red workflow is never hidden by a green one with the same name. |
 
 **From bad scans to escalation**
 
 - One bad scan warns and nudges the session; two in a row mean the session is stuck.
-- A scan Jev could not observe (for example, Gitea is unreachable) changes nothing: baselines come from the last observed scan.
-- A loop counts once: loop rules re-apply only when new calls completed since the last observed scan.
-- Recovery means a healthy scan with durable progress. A restarted session starts a new history.
+- A scan Jev could not observe (for example, Gitea is unreachable) changes nothing. Baselines come from the last observed scan, an unknown retry never overwrites an observed scan in the same slot, and no run of unknown scans pushes an episode out of view.
+- Every call, push and checkpoint counts in exactly one scan. Loop rules re-apply only when new calls completed since the last observed scan, and a call logged after the scan's clock belongs to the next scan.
+- A branch head that was already there when Jev first looked keeps its commit date; only a head change counts as a fresh push.
+- Recovery means a healthy scan with durable progress. A push whose CI failed does not count as recovery while the CI rule holds, but a fix whose CI is still running does. A restarted session starts a new history.
 - A stuck session goes up a ladder:
   1. Jev asks the session to stop.
   2. After one scan of grace, the Lead stops it.
@@ -93,9 +94,10 @@ taking evidence and scan history and returning a verdict.
 - It refuses to run if its account has push, merge or admin rights, or if those rights cannot be read.
   The token needs the scopes `read:repository`, `write:issue` and `read:user`, plus `read:organization` for organisation labels.
 - Each episode gets one living comment per work item. Jev finds it by a hidden marker and edits it in place, and an intent record keeps this safe across crashes. A deleted comment is posted again.
-- Each episode gets one exclusive label, added by ID from the repository's or organisation's labels: `jev/warning`, `jev/stuck` or `jev/parked`.
-- Closing an episode clears its labels and marks its comment resolved. Jev retries this until it succeeds, and keeps the labels while another session's episode is still open on the same issue.
-- One scan runs at a time (a lock file next to the database). An error in one session's scan never stops the others: the CLI exits 1 and names the session.
+- Each episode gets one exclusive label, added by ID: `jev/warning`, `jev/stuck` or `jev/parked`. Jev reads the repository's labels, and the organisation's only when the repository lacks one, so a token without `read:organization` works with repository labels.
+- Closing an episode clears its labels and marks its comment resolved. Jev records the episode before any Gitea write, retries until closing succeeds, and keeps the labels while another supervised session's episode is still open on the same issue.
+- The sessions file lists every supervised session. When a session drops off it (stopped and reassigned, or removed), Jev ends its open episode: labels cleared and the comment marked ended, never "recovered".
+- One scan runs at a time (a lock file next to the database). An error in one session's scan, or an invalid entry in the sessions file, never stops the others: the CLI exits 1 and names the session.
 
 **Messages and explanations**
 

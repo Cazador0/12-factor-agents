@@ -4,9 +4,11 @@ Facts this client relies on (docs/research/reports/Jev watchdog for coding agent
 
 - List endpoints page with ``page``/``limit``, clamp ``limit`` silently to ``[api] MAX_RESPONSE_ITEMS`` and report the
   true size in ``X-Total-Count``; Jev reads until that count (or an empty page), never trusting a short page.
-- ``GET /commits/{sha}/statuses`` lists every status (default order ``created_unix DESC``; ``sort=highestindex`` is
-  oldest first). Jev keeps the status with the highest ``id`` per context, so server order never matters. A
-  ``CommitStatus`` carries its state under ``status``; ``CombinedStatus`` uses ``state``.
+- ``GET /commits/{sha}/status`` returns the latest status of every check under ``statuses``. Gitea groups by context
+  *hash*, and for Actions that hash mixes in the workflow file (``services/actions/commit_status.go``), so two
+  workflows that share ``name:`` and a job name are two checks with one context string. Jev reads those rows as they
+  are and never re-groups them by context string. The body's ``total_count`` is the page length; the true count is
+  ``X-Total-Count``. A ``CommitStatus`` carries its state under ``status``; ``CombinedStatus`` uses ``state``.
 - Gitea Actions maps a cancelled job to a ``failure`` status whose description reads "Canceled after …"
   (``services/actions/commit_status.go``), so cancellation is read per context from the status itself; failures
   from external CI still count.
@@ -18,7 +20,10 @@ Facts this client relies on (docs/research/reports/Jev watchdog for coding agent
   the issue does not carry succeeds, so clearing labels can be retried.
 - On a protected branch ``user_can_push``/``user_can_merge`` come from the protection rule, not the account's rights,
   so the self-check also reads the repository's ``permissions`` (push, admin).
-- ``GET /user`` needs the ``read:user`` token scope.
+- ``GET /user`` needs the ``read:user`` token scope. Every ``/orgs/{org}`` route checks the ``read:organization``
+  scope before it looks the owner up (``routers/api/v1/api.go``), so a token without it gets 403 even for a user-owned
+  repository. Jev reads organisation labels only when the repository lacks one of its labels, and reads 403 or 404
+  there as "no organisation labels".
 """
 
 from __future__ import annotations
@@ -52,7 +57,7 @@ class GiteaClient(Protocol):
     def repo_info(self, owner: str, repo: str) -> dict: ...
     def branch_rights(self, owner: str, repo: str, branch: str) -> tuple[bool, bool]: ...
     def branch_commits(self, owner: str, repo: str, branch: str, limit: int) -> list[dict]: ...
-    def commit_statuses(self, owner: str, repo: str, sha: str) -> list[dict]: ...
+    def latest_statuses(self, owner: str, repo: str, sha: str) -> list[dict]: ...
     def list_comments(self, owner: str, repo: str, issue: int) -> list[dict]: ...
     def create_comment(self, owner: str, repo: str, issue: int, body: str) -> int: ...
     def edit_comment(self, owner: str, repo: str, comment_id: int, body: str) -> None: ...
@@ -60,17 +65,6 @@ class GiteaClient(Protocol):
     def org_labels(self, owner: str) -> list[dict]: ...
     def add_labels(self, owner: str, repo: str, issue: int, label_ids: list[int]) -> list[int]: ...
     def remove_label(self, owner: str, repo: str, issue: int, label_id: int) -> None: ...
-
-
-def latest_per_context(statuses: list[dict]) -> dict[str, dict]:
-    """The newest status of each context: the highest ``id`` wins; without ids, the first one listed (newest first)."""
-    latest: dict[str, dict] = {}
-    for s in statuses:
-        ctx = str(s.get("context", ""))
-        have = latest.get(ctx)
-        if have is None or int(s.get("id") or 0) > int(have.get("id") or 0):
-            latest[ctx] = s
-    return latest
 
 
 def _state(s: dict) -> str:
@@ -82,12 +76,12 @@ def _cancelled(s: dict) -> bool:
 
 
 def combine(statuses: list[dict]) -> str:
-    """Gitea's combine rule over the latest status per context: any failure wins, then pending, else success.
+    """Gitea's combine rule over the latest status of each check: any failure wins, then pending, else success.
 
-    ``skipped`` counts as success; no statuses at all is reported as ``none`` (Gitea says ``pending`` with a zero
-    count, which means "no CI reported", not "running").
+    The rows are already one per check (``latest_statuses``). ``skipped`` counts as success; no statuses at all is
+    reported as ``none`` (Gitea says ``pending`` with a zero count, which means "no CI reported", not "running").
     """
-    states = {_state(s) for s in latest_per_context(statuses).values()}
+    states = {_state(s) for s in statuses}
     if not states:
         return "none"
     if states & FAILING:
@@ -98,28 +92,30 @@ def combine(statuses: list[dict]) -> str:
 
 
 def failing_contexts(statuses: list[dict]) -> frozenset[str]:
-    return frozenset(c for c, s in latest_per_context(statuses).items() if _state(s) in FAILING)
+    return frozenset(str(s.get("context", "")) for s in statuses if _state(s) in FAILING)
 
 
 def commit_outcome(client: GiteaClient, owner: str, repo: str, sha: str) -> CommitCI:
     """A commit's CI outcome. Cancelled Actions jobs are set aside; if nothing else failed, the commit is cancelled."""
-    latest = latest_per_context(client.commit_statuses(owner, repo, sha))
-    real = {c: s for c, s in latest.items() if not _cancelled(s)}
-    outcome = combine(list(real.values()))
-    if outcome == "none" and latest:
+    rows = client.latest_statuses(owner, repo, sha)
+    real = [s for s in rows if not _cancelled(s)]
+    outcome = combine(real)
+    if outcome == "none" and rows:
         return CommitCI(sha, "cancelled")
-    if outcome == "success" and len(real) < len(latest):
+    if outcome == "success" and len(real) < len(rows):
         outcome = "cancelled"  # every failure was a cancelled job: neither a pass nor a real failure
-    return CommitCI(sha, outcome, failing_contexts(list(real.values())))  # type: ignore[arg-type]
+    return CommitCI(sha, outcome, failing_contexts(real))  # type: ignore[arg-type]
 
 
 def label_ids(client: GiteaClient, owner: str, repo: str, names: list[str]) -> dict[str, int]:
-    """Resolve label names to IDs once, from organisation then repository labels (a repository label wins a clash).
+    """Resolve label names to IDs, from the repository's labels, then the organisation's for any it lacks.
 
-    Missing labels are reported, never created: people create labels.
+    A repository label wins a clash. Organisation labels are read only when needed, so a token without
+    ``read:organization`` works for repository labels. Missing labels are reported, never created: people create labels.
     """
-    have = {str(lbl["name"]): int(lbl["id"]) for lbl in client.org_labels(owner)}
-    have |= {str(lbl["name"]): int(lbl["id"]) for lbl in client.repo_labels(owner, repo)}
+    have = {str(lbl["name"]): int(lbl["id"]) for lbl in client.repo_labels(owner, repo)}
+    if any(n not in have for n in names):
+        have = {str(lbl["name"]): int(lbl["id"]) for lbl in client.org_labels(owner)} | have
     return {n: have[n] for n in names if n in have}
 
 
@@ -197,13 +193,16 @@ class HttpGiteaClient:
     def _get(self, path: str, query: dict | None = None) -> Any:
         return self._request("GET", path, query=query)[0]
 
-    def _paged(self, path: str, query: dict | None = None) -> list[dict]:
-        """Every item: read until ``X-Total-Count`` is reached or a page comes back empty (the limit may be clamped)."""
+    def _paged(self, path: str, query: dict | None = None, key: str | None = None) -> list[dict]:
+        """Every item: read until ``X-Total-Count`` is reached or a page comes back empty (the limit may be clamped).
+
+        ``key`` names the list inside an object body (``statuses`` for a combined status).
+        """
         out: list[dict] = []
         page = 1
         while True:
-            batch, headers = self._request("GET", path, query={**(query or {}), "limit": PAGE, "page": page})
-            batch = batch or []
+            body, headers = self._request("GET", path, query={**(query or {}), "limit": PAGE, "page": page})
+            batch = ((body or {}).get(key) if key else body) or []
             out += batch
             total = str(headers.get("x-total-count") or "")
             if not batch or (total.isdigit() and len(out) >= int(total)):
@@ -239,8 +238,8 @@ class HttpGiteaClient:
             for r in rows
         ]
 
-    def commit_statuses(self, owner: str, repo: str, sha: str) -> list[dict]:
-        return self._paged(f"/repos/{owner}/{repo}/commits/{sha}/statuses")
+    def latest_statuses(self, owner: str, repo: str, sha: str) -> list[dict]:
+        return self._paged(f"/repos/{owner}/{repo}/commits/{sha}/status", key="statuses")
 
     def list_comments(self, owner: str, repo: str, issue: int) -> list[dict]:
         return self._get(f"/repos/{owner}/{repo}/issues/{issue}/comments") or []
@@ -258,7 +257,7 @@ class HttpGiteaClient:
         try:
             return self._paged(f"/orgs/{owner}/labels")
         except GiteaError as exc:
-            if exc.status == 404:  # a user-owned repository: no organisation labels
+            if exc.status in (403, 404):  # 404: a user-owned repository; 403: the token lacks read:organization
                 return []
             raise
 

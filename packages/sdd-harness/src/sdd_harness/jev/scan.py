@@ -2,7 +2,8 @@
 
 Jev's write set is its own issue comments and its ``jev/*`` labels. It never edits code, pushes, approves or
 merges; a stop is a request the session and the Lead carry out (Art. III). Healthy and unknown scans are recorded
-locally only, except that a healthy scan finishes resolving episodes that have closed.
+locally only, except that a healthy scan finishes resolving episodes that have closed, and every run ends the open
+episodes of sessions that are no longer supervised.
 """
 
 from __future__ import annotations
@@ -78,6 +79,16 @@ def render_comment(msg: JevMessage, key: str, explanation: str | None = None, re
     return "\n".join(lines) + "\n"
 
 
+def render_ended(key: str, session_id: str, episode_id: str, scan_id: str) -> str:
+    """An episode whose session is no longer supervised ended; it did not recover (spec 008: never report a stopped
+    session as recovered)."""
+    return (
+        f"{marker(key)}\n**Jev** · ended · `{session_id}` · scan {scan_id}\n\n"
+        f"Stall episode `{episode_id}` ended without recovering: the session is no longer supervised (stopped, "
+        "reassigned or removed). The Lead's re-plan decides what happens to the work.\n"
+    )
+
+
 def _labels_for(gitea: GiteaClient, maps: LabelMaps, owner: str, repo: str) -> dict[str, int]:
     if (owner, repo) not in maps:
         maps[(owner, repo)] = label_ids(gitea, owner, repo, JEV_LABELS)
@@ -100,9 +111,10 @@ def _upsert_comment(
     episode = msg.episode_id or "-"
     known = store.intent(key)
     comment_id = known.comment_id if known else None
+    # Recorded before any Gitea call, so the episode is resolved (and its label cleared) even if every write fails.
+    store.mark_intent(key, s.session_id, where, episode, "intended", comment_id, now)
     if comment_id is None:
         comment_id = find_comment(gitea, s.owner, s.repo, issue, key, login)  # crashed after POST last time
-    store.mark_intent(key, s.session_id, where, episode, "intended", comment_id, now)
     action = ""
     if comment_id is not None:
         try:
@@ -131,11 +143,12 @@ def _resolve_closed(
     now: datetime,
     dry_run: bool,
     result: ScanResult,
+    live: frozenset[str] | None,
 ) -> None:
     """Finish every closed episode of this session: clear its labels and mark its comment resolved.
 
     Runs on every ok scan until each one succeeds, so a failed Gitea write is retried rather than forgotten. Labels
-    stay while another unresolved episode (any session) still shares the issue.
+    stay while another supervised session's unresolved episode still shares the issue.
     """
     for intent in store.unresolved(s.session_id):
         if intent.episode_id == still_open:
@@ -144,24 +157,27 @@ def _resolve_closed(
             result.actions.append(f"would resolve episode {intent.episode_id}")
             continue
         try:
-            _resolve(gitea, store, s, msg, intent, login, maps, now)
+            body = render_comment(msg, intent.key, resolved=True)
+            _close(gitea, store, s.session_id, intent, login, maps, now, body, live)
             result.actions.append(f"resolved episode {intent.episode_id}")
         except GiteaError as exc:
             result.problems.append(f"episode {intent.episode_id} not resolved yet, will retry next ok scan: {exc}")
 
 
-def _resolve(
+def _close(
     gitea: GiteaClient,
     store: ScanStore,
-    s: SessionInfo,
-    msg: JevMessage,
+    session_id: str,
     intent: Intent,
     login: str,
     maps: LabelMaps,
     now: datetime,
+    body: str,
+    live: frozenset[str] | None,
 ) -> None:
+    """Clear the episode's labels (unless another episode still shares the issue), rewrite its comment, mark it."""
     where = (intent.owner, intent.repo, intent.issue)
-    if not store.others_unresolved_on(where, intent.key):
+    if not store.others_unresolved_on(where, intent.key, live):
         labels = _labels_for(gitea, maps, intent.owner, intent.repo)
         for name in (LABEL_WARN, LABEL_STUCK):  # parked needs a person's reset
             if name in labels:
@@ -169,11 +185,37 @@ def _resolve(
     cid = intent.comment_id or find_comment(gitea, intent.owner, intent.repo, intent.issue, intent.key, login)
     if cid is not None:
         try:
-            gitea.edit_comment(intent.owner, intent.repo, cid, render_comment(msg, intent.key, resolved=True))
+            gitea.edit_comment(intent.owner, intent.repo, cid, body)
         except GiteaError as exc:
             if exc.status != 404:  # a deleted comment has nothing left to resolve
                 raise
-    store.mark_intent(intent.key, s.session_id, where, intent.episode_id, "resolved", cid, now)
+    store.mark_intent(intent.key, session_id, where, intent.episode_id, "resolved", cid, now)
+
+
+def _end_unsupervised(
+    gitea: GiteaClient,
+    store: ScanStore,
+    live: frozenset[str],
+    login: str,
+    maps: LabelMaps,
+    now: datetime,
+    scan_id: str,
+    dry_run: bool,
+) -> tuple[list[str], list[str]]:
+    """End the open episodes of sessions no longer scanned, so their labels never outlive them. (actions, problems)"""
+    actions: list[str] = []
+    problems: list[str] = []
+    for session_id, intent in store.unresolved_elsewhere(live):
+        if dry_run:
+            actions.append(f"would end episode {intent.episode_id} of {session_id}: no longer supervised")
+            continue
+        try:
+            body = render_ended(intent.key, session_id, intent.episode_id, scan_id)
+            _close(gitea, store, session_id, intent, login, maps, now, body, live)
+            actions.append(f"ended episode {intent.episode_id} of {session_id}: no longer supervised")
+        except GiteaError as exc:
+            problems.append(f"episode {intent.episode_id} of {session_id} not ended yet, will retry next run: {exc}")
+    return actions, problems
 
 
 def scan_session(
@@ -187,16 +229,20 @@ def scan_session(
     t: Thresholds,
     dry_run: bool = False,
     explain: Explainer | None = None,
+    live: frozenset[str] | None = None,
 ) -> tuple[ScanResult, Evidence]:
     scan_id = scan_slot(now, t.scan_interval_min)
-    history = store.history(s.session_id, before_scan=scan_id)
-    # Baselines come from this incarnation's last *observed* scan: an unknown scan saw nothing and moves nothing.
-    observed = [r for r in history if r.at >= s.started_at and r.kind is not JevKind.UNKNOWN]
+    # This incarnation's *observed* scans, uncapped: an unknown scan saw nothing and moves nothing, and no run of
+    # unknown scans can push the episode's own records out of view.
+    history = store.history(s.session_id, before_scan=scan_id, limit=None, observed_only=True, since=s.started_at)
     seen_heads: dict[str, datetime] = {}
-    for r in reversed(observed):  # oldest first: keep when each head was first seen
+    for r in reversed(history):  # oldest first: keep when each head was first seen
         if r.head_sha is not None:
             seen_heads.setdefault(r.head_sha, r.at)
-    ev = collect(root, s, gitea, now, observed[0].at if observed else None, t, seen_heads=seen_heads)
+    first = next((r for r in reversed(history) if r.head_sha is not None), None)
+    baseline = (first.head_sha, first.at) if first is not None and first.head_sha is not None else None
+    last_at = history[0].at if history else None
+    ev = collect(root, s, gitea, now, last_at, t, seen_heads=seen_heads, baseline=baseline)
     v = decide(ev, history, t)
     level = f"{v.kind.value}:{v.next_action.value}"
     msg = JevMessage(
@@ -210,16 +256,16 @@ def scan_session(
         evidence=v.facts,
         idempotency_key=idempotency_key(s.session_id, v.episode_id, level),
     )
-    store.record(msg, now, ev.durable_progress_since_last_scan, ev.head_sha)
+    ci_streak = ev.ci_failing_streak if ev.head_sha is not None else None
+    store.record(msg, now, ev.durable_progress_since_last_scan, ev.head_sha, ci_streak)
     result = ScanResult(msg)
 
     if v.kind is JevKind.OK:
         current = ScanRecord(
             s.session_id, scan_id, now, JevKind.OK, (), NextAction.NONE, None, ev.durable_progress_since_last_scan
         )
-        mine = [r for r in history if r.at >= s.started_at]
-        still_open = open_episode([current, *mine], t.recovery_hold_scans)
-        _resolve_closed(gitea, store, s, msg, still_open, login, maps, now, dry_run, result)
+        still_open = open_episode([current, *history], t.recovery_hold_scans)
+        _resolve_closed(gitea, store, s, msg, still_open, login, maps, now, dry_run, result, live)
         return result, ev
     if v.kind is JevKind.UNKNOWN:
         return result, ev
@@ -256,7 +302,7 @@ def scan_session(
         else:
             result.problems.append(
                 f"label {label} not found in {s.owner}/{s.repo} or its organisation: a person creates it once "
-                "(exclusive)"
+                "(exclusive); organisation labels also need the token scope read:organization"
             )
     except GiteaError as exc:
         result.problems.append(f"label write failed, will retry next scan: {exc}")
@@ -310,20 +356,22 @@ def run_scan(
     try:
         repos = {(s.owner, s.repo) for s in sessions}
         login = self_check(gitea, repos)  # raises PermissionError if Jev could push, merge or administer
-        maps: LabelMaps = {r: label_ids(gitea, r[0], r[1], JEV_LABELS) for r in sorted(repos)}
+        maps: LabelMaps = {}  # read on first use, inside each session's own error handling
+        live = frozenset(s.session_id for s in sessions)
         out: list[ScanResult] = []
         evidence: list[Evidence] = []
         failed: list[str] = []
         for s in sessions:
             try:
-                res, ev = scan_session(root, s, gitea, store, now, login, maps, t, dry_run, explain)
+                res, ev = scan_session(root, s, gitea, store, now, login, maps, t, dry_run, explain, live)
                 evidence.append(ev)
             except Exception as exc:  # one session's failure must not blind Jev to the others
                 res = _failed(s, now, t, exc)
                 failed.append(s.session_id)
             out.append(res)
-        notes = []
-        observed = [e for e in evidence if e.observable and e.session.branch is not None]
+        ended, end_problems = _end_unsupervised(gitea, store, live, login, maps, now, scan_id, dry_run)
+        notes = list(end_problems)
+        observed = [e for e in evidence if e.observable and e.session.role == "pse" and e.session.branch is not None]
         if len(observed) > 1 and all(e.ci_never_reported for e in observed):
             notes.append("no session's CI has reported: the runner pool is likely down (one dependency alert, not N)")
         pruned = store.prune_intents(now)
@@ -335,6 +383,7 @@ def run_scan(
                 for r in out
             ],
             "failed": failed,
+            "ended": ended,
             "notes": notes,
             "pruned_intents": pruned,
         }

@@ -2,9 +2,10 @@
 
 ``JevMessage`` is the only thing Jev publishes. It is strict (no coercion), frozen and closed
 (``extra="forbid"``); its JSON Schema is exported to ``schemas/jev-message.v1.json`` as the cross-language
-contract. Enums travel as plain JSON strings (``"health.ok"``), so an OCaml consumer writes its enum
-``of_yojson``/``to_yojson`` by hand (or uses atdgen ``<json name=...>``): ``ppx_deriving_yojson`` would encode
-variants as ``["health.ok"]``. All timestamps are UTC; a naive input is read as UTC.
+contract, from which OCaml and Rust consumers generate their bindings (spec 009 FR-003, no hand-written mapping).
+Enums travel as plain JSON strings (``"health.ok"``), so a generated binding must encode them that way:
+``ppx_deriving_yojson``'s default variant encoding (``["health.ok"]``) does not match. All timestamps are UTC; a
+naive input is read as UTC.
 """
 
 from __future__ import annotations
@@ -176,6 +177,7 @@ class Evidence:
     ci_never_reported: bool = False
     checkpoint_at: datetime | None = None
     head_sha: str | None = None  # branch head seen by this scan; "" = read, nothing pushed; None = not read
+    head_ci_red: bool = False  # the head commit's CI completed with a real failure
     facts: tuple[str, ...] = ()
 
 
@@ -190,6 +192,7 @@ class ScanRecord:
     episode_id: str | None
     durable_progress: bool
     head_sha: str | None = None
+    ci_streak: int | None = None  # the CI failing streak this scan saw; None = not read
 
 
 @dataclass(frozen=True)

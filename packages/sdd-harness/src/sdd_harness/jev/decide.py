@@ -11,7 +11,9 @@ scan records (newest first) and returns a verdict. Rules, from the Jev research 
 - **loops**: identical action+error 3 times warns, 4 is stuck; identical action+observation 4 is stuck;
   A/B alternation of 6 is stuck; 3 consecutive command timeouts are stuck. Evidence counts these only when new
   calls completed since the last observed scan, so one streak is never counted twice.
-- **CI**: 3 consecutive head commits with a completed, non-cancelled failure. A red push does not reset the chain.
+- **CI**: 3 consecutive head commits with a completed, non-cancelled failure. Durable progress resets the bad-scan
+  chain except while the CI evidence is new and red (the pushed head failed, or the failing streak grew since the last
+  observed scan): a red push is the CI rule's own evidence, but a fix whose CI is still running is progress.
 - **failing commands**: supporting only — counts toward a bad scan when the scan shows no durable progress.
 - **waiting on a person** pauses the stall clocks and the loop and CI rules.
 - **debounce**: one bad scan warns (and nudges); two consecutive bad scans mean stuck. Only a scan with durable
@@ -212,8 +214,12 @@ def decide(ev: Evidence, history: list[ScanRecord], t: Thresholds | None = None)
     if not all_reasons:
         return Verdict(JevKind.OK, (), NextAction.NONE, None, tuple(facts))
 
-    # Durable progress starts a new chain, except a push whose CI is red: that is the CI rule's own evidence.
-    resets = ev.durable_progress_since_last_scan and Reason.CI_NOT_CONVERGING not in reasons
+    # Durable progress starts a new chain, except while CI keeps producing new red evidence: a pushed head whose CI
+    # failed, or a failing streak that grew since the last observed scan. A fix whose CI is still running resets it.
+    last = next((r for r in history if r.kind is not JevKind.UNKNOWN), None)
+    grew = last is not None and last.ci_streak is not None and ev.ci_failing_streak > last.ci_streak
+    new_red = Reason.CI_NOT_CONVERGING in reasons and (ev.head_ci_red or grew)
+    resets = ev.durable_progress_since_last_scan and not new_red
     prior_bad = 0 if resets else consecutive_bad_scans(history, t.bad_scan_lookback)
     episode = current or _new_episode(ev, t)
     if immediate or prior_bad + 1 >= t.stuck_after_bad_scans:

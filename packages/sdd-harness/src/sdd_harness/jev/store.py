@@ -23,6 +23,7 @@ CREATE TABLE IF NOT EXISTS scans (
     durable_progress INTEGER NOT NULL,
     head_sha TEXT,                  -- branch head this scan saw; '' = nothing pushed; NULL = not read
     message TEXT NOT NULL,
+    ci_streak INTEGER,              -- CI failing streak this scan saw; NULL = not read
     PRIMARY KEY (session_id, scan_id)
 );
 CREATE INDEX IF NOT EXISTS scans_by_time ON scans (session_id, at DESC);
@@ -38,6 +39,10 @@ CREATE TABLE IF NOT EXISTS intents (
     updated_at TEXT NOT NULL
 );
 """
+SCAN_COLUMNS = (
+    "session_id, scan_id, at, kind, reasons, next_action, episode_id, durable_progress, head_sha, message, ci_streak"
+)
+ADDED_SCAN_COLUMNS = {"head_sha": "TEXT", "ci_streak": "INTEGER"}  # columns a database from an older Jev lacks
 
 
 def _iso(dt: datetime) -> str:
@@ -61,14 +66,40 @@ class ScanStore:
         self.path = path
         self.db = sqlite3.connect(path)
         self.db.executescript(SCHEMA)
+        self._migrate()
+
+    def _migrate(self) -> None:
+        """Bring a database written by an older Jev up to date; scan history is kept."""
+        have = {row[1] for row in self.db.execute("PRAGMA table_info(scans)")}
+        for column, sql_type in ADDED_SCAN_COLUMNS.items():
+            if column not in have:
+                self.db.execute(f"ALTER TABLE scans ADD COLUMN {column} {sql_type}")
+        if "owner" not in {row[1] for row in self.db.execute("PRAGMA table_info(intents)")}:
+            # intents are dedup records; a comment whose row is dropped is still found by its marker
+            self.db.execute("DROP TABLE intents")
+            self.db.executescript(SCHEMA)
+        self.db.commit()
 
     def close(self) -> None:
         self.db.close()
 
-    def record(self, msg: JevMessage, at: datetime, durable_progress: bool, head_sha: str | None = None) -> None:
-        """Insert or replace the scan; a retried scan in the same slot overwrites itself, never duplicates."""
+    def record(
+        self,
+        msg: JevMessage,
+        at: datetime,
+        durable_progress: bool,
+        head_sha: str | None = None,
+        ci_streak: int | None = None,
+    ) -> None:
+        """Insert the scan. A retried scan in the same slot replaces itself, never duplicates, except that an
+        ``unknown`` retry never replaces an observed record: a scan that saw nothing changes nothing."""
         self.db.execute(
-            "INSERT OR REPLACE INTO scans VALUES (?,?,?,?,?,?,?,?,?,?)",
+            f"INSERT INTO scans ({SCAN_COLUMNS}) VALUES (?,?,?,?,?,?,?,?,?,?,?) "
+            "ON CONFLICT(session_id, scan_id) DO UPDATE SET at = excluded.at, kind = excluded.kind, "
+            "reasons = excluded.reasons, next_action = excluded.next_action, episode_id = excluded.episode_id, "
+            "durable_progress = excluded.durable_progress, head_sha = excluded.head_sha, message = excluded.message, "
+            "ci_streak = excluded.ci_streak "
+            "WHERE excluded.kind != 'health.unknown' OR scans.kind = 'health.unknown'",
             (
                 msg.session_id,
                 msg.scan_id,
@@ -80,16 +111,37 @@ class ScanStore:
                 int(durable_progress),
                 head_sha,
                 msg.model_dump_json(),
+                ci_streak,
             ),
         )
         self.db.commit()
 
-    def history(self, session_id: str, before_scan: str | None = None, limit: int = 50) -> list[ScanRecord]:
-        """Earlier scans, newest first (excluding ``before_scan`` itself when re-running a slot)."""
+    def history(
+        self,
+        session_id: str,
+        before_scan: str | None = None,
+        limit: int | None = 50,
+        observed_only: bool = False,
+        since: datetime | None = None,
+    ) -> list[ScanRecord]:
+        """Earlier scans, newest first (excluding ``before_scan`` itself when re-running a slot).
+
+        A scan decides from ``observed_only`` history since the incarnation started, with no ``limit``: a long run of
+        unknown scans must never push the episode's own records out of view.
+        """
         rows = self.db.execute(
-            "SELECT session_id, scan_id, at, kind, reasons, next_action, episode_id, durable_progress, head_sha "
-            "FROM scans WHERE session_id = ? AND (? IS NULL OR scan_id < ?) ORDER BY scan_id DESC LIMIT ?",
-            (session_id, before_scan, before_scan, limit),
+            "SELECT session_id, scan_id, at, kind, reasons, next_action, episode_id, durable_progress, head_sha, "
+            "ci_streak FROM scans WHERE session_id = ? AND (? IS NULL OR scan_id < ?) "
+            "AND (? = 0 OR kind != 'health.unknown') AND (? IS NULL OR at >= ?) ORDER BY scan_id DESC LIMIT ?",
+            (
+                session_id,
+                before_scan,
+                before_scan,
+                int(observed_only),
+                _iso(since) if since else None,
+                _iso(since) if since else None,
+                -1 if limit is None else limit,
+            ),
         ).fetchall()
         return [
             ScanRecord(
@@ -102,6 +154,7 @@ class ScanStore:
                 episode_id=r[6],
                 durable_progress=bool(r[7]),
                 head_sha=r[8],
+                ci_streak=r[9],
             )
             for r in rows
         ]
@@ -146,15 +199,27 @@ class ScanStore:
         )
         self.db.commit()
 
-    def others_unresolved_on(self, where: tuple[str, str, int], key: str) -> bool:
-        """Whether another unresolved episode (any session) still shares this issue, so its labels must stay."""
+    def others_unresolved_on(self, where: tuple[str, str, int], key: str, live: frozenset[str] | None = None) -> bool:
+        """Whether another unresolved episode still shares this issue, so its labels must stay.
+
+        With ``live``, only supervised sessions count: an episode of a session no longer scanned is ended by
+        ``unresolved_elsewhere`` and must not pin a label on the issue.
+        """
         owner, repo, issue = where
-        row = self.db.execute(
-            "SELECT 1 FROM intents WHERE owner = ? AND repo = ? AND issue = ? AND key != ? "
-            "AND recovery_point != 'resolved' LIMIT 1",
+        rows = self.db.execute(
+            "SELECT session_id FROM intents WHERE owner = ? AND repo = ? AND issue = ? AND key != ? "
+            "AND recovery_point != 'resolved'",
             (owner, repo, issue, key),
-        ).fetchone()
-        return row is not None
+        ).fetchall()
+        return any(live is None or r[0] in live for r in rows)
+
+    def unresolved_elsewhere(self, live: frozenset[str]) -> list[tuple[str, Intent]]:
+        """Unresolved episodes of sessions no longer supervised (stopped and reassigned, or delisted), oldest first."""
+        rows = self.db.execute(
+            "SELECT session_id, key, owner, repo, issue, episode_id, recovery_point, comment_id FROM intents "
+            "WHERE recovery_point != 'resolved' ORDER BY updated_at"
+        ).fetchall()
+        return [(r[0], Intent(*r[1:])) for r in rows if r[0] not in live]
 
     def forget_comment(self, key: str) -> None:
         """The stored comment is gone (a person deleted it): the next write searches by marker or posts anew."""
@@ -162,12 +227,12 @@ class ScanStore:
         self.db.commit()
 
     def prune_intents(self, now: datetime, keep_hours: int = 72) -> int:
-        """Dedup records live at least 72 hours (research: survive a weekend before a person answers).
+        """Resolved dedup records live at least 72 hours (research: survive a weekend before a person answers).
 
-        An open episode refreshes its row on every scan, so only resolved rows and rows of sessions no longer
-        scanned go stale; a pruned row's comment is still found by its marker.
+        Unresolved rows are never pruned: an episode can stay open longer than that (a recovery hold, a session
+        waiting on a person), and its row is what resolves it. A pruned row's comment is still found by its marker.
         """
         cutoff = _iso(now - timedelta(hours=keep_hours))
-        cur = self.db.execute("DELETE FROM intents WHERE updated_at < ?", (cutoff,))
+        cur = self.db.execute("DELETE FROM intents WHERE recovery_point = 'resolved' AND updated_at < ?", (cutoff,))
         self.db.commit()
         return cur.rowcount

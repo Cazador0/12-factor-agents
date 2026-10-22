@@ -181,28 +181,36 @@ def collect(
     t: Thresholds | None = None,
     commits_limit: int = 10,
     seen_heads: dict[str, datetime] | None = None,
+    baseline: tuple[str, datetime] | None = None,
 ) -> Evidence:
     """One scan's evidence.
 
-    ``last_scan_at`` is the last *observed* scan (never an unknown one). ``seen_heads`` maps each branch head that
-    earlier observed scans saw to when it was first seen: commit dates are committer dates, not push times, so once
-    there is such history a push is dated by the scan that first saw it. Only evidence from this incarnation of the
-    session (since ``started_at``) counts: a restarted session does not inherit the old command log, traces,
-    checkpoint, commits or CI.
+    ``last_scan_at`` is the last *observed* scan (never an unknown one). Every timestamp is counted in exactly one
+    scan: this one takes ``started_at <= t <= now``, after ``last_scan_at`` for "since the last scan". A call logged
+    after ``now`` (while earlier sessions were being scanned) belongs to the next scan, so it is never counted twice.
+    A restarted session does not inherit the old command log, traces, checkpoint, commits or CI.
+
+    Commit dates are committer dates, not push times. ``seen_heads`` maps each branch head earlier observed scans saw
+    to when it was first seen, so a head change is dated by the scan that first saw it. ``baseline`` is the head the
+    first observed scan saw, and when: that head was there before Jev looked, so it keeps its committer date (capped
+    at that scan) rather than counting as a fresh push.
     """
     t = t or Thresholds()
     facts: list[str] = []
     started = session.started_at
     since = max(last_scan_at, started) if last_scan_at else started
 
+    def mine(ts: datetime) -> bool:
+        return started <= ts <= now
+
     log_path = root / session.commands_log if session.commands_log else None
-    events = [e for e in read_commands(log_path) if e.at >= started] if log_path else []
+    events = [e for e in read_commands(log_path) if mine(e.at)] if log_path else []
     ends = _tail([e for e in events if e.event == "end"], t.loop_window_events)
     trace_dir = root / ".specify" / "traces" / session.run_id if session.run_id else None
     rows = read_trace(trace_dir / "trace.jsonl") if trace_dir else []
-    trace = [(r, ts) for r in rows if (ts := parse_ts(r.get("timestamp"))) and ts >= started]
+    trace = [(r, ts) for r in rows if (ts := parse_ts(r.get("timestamp"))) is not None and mine(ts)]
     checkpoint_at = read_checkpoint_at(trace_dir / "checkpoint.yaml") if trace_dir else None
-    if checkpoint_at is not None and checkpoint_at < started:
+    if checkpoint_at is not None and not mine(checkpoint_at):
         checkpoint_at = None
 
     if log_path is None and trace_dir is None:
@@ -218,19 +226,25 @@ def collect(
     durable_since = any(ts > since for ts in durable_times)
 
     head: str | None = None
+    head_ci_red = False
     results: list[CommitCI] = []
-    if session.branch is not None:  # Lead and Review sessions own no branch: no push or CI signal
+    if session.role != "pse" and session.branch is not None:
+        facts.append(f"branch {session.branch} ignored: only a PSE session owns a branch")
+    if session.role == "pse" and session.branch is not None:  # Lead and Review own no branch: no push or CI signal
         try:
             commits = gitea.branch_commits(session.owner, session.repo, session.branch, commits_limit)
-            mine = [c for c in commits if (ts := parse_ts(c.get("created"))) is None or ts >= started]
-            results = [commit_outcome(gitea, session.owner, session.repo, c["sha"]) for c in mine]
+            pushes = [c for c in commits if (ts := parse_ts(c.get("created"))) is None or ts >= started]
+            results = [commit_outcome(gitea, session.owner, session.repo, c["sha"]) for c in pushes]
         except GiteaError as exc:
             return Evidence(session, now, observable=False, unobservable_reason=f"Gitea unavailable: {exc}")
         head = str(commits[0]["sha"]) if commits else ""
-        if seen_heads:  # a head not seen before was pushed since the last observed scan
+        head_ci_red = bool(pushes) and str(pushes[0]["sha"]) == head and results[0].outcome == "failure"
+        if baseline is not None and head == baseline[0]:  # there before Jev first looked: not a fresh push
+            pushed = [min(ts, baseline[1]) for c in pushes if (ts := parse_ts(c.get("created")))]
+        elif seen_heads:  # a head not seen before was pushed since the last observed scan
             pushed = [seen_heads.get(head, now)] if head else []
         else:  # no observed history yet: committer dates are the best evidence (never later than now)
-            pushed = [min(ts, now) for c in mine if (ts := parse_ts(c.get("created")))]
+            pushed = [min(ts, now) for c in pushes if (ts := parse_ts(c.get("created")))]
         durable_times += pushed
         durable_since = durable_since or any(ts > since for ts in pushed)
     last_durable = max(durable_times) if durable_times else None
@@ -267,5 +281,6 @@ def collect(
         ci_never_reported=never,
         checkpoint_at=checkpoint_at,
         head_sha=head,
+        head_ci_red=head_ci_red,
         facts=tuple(facts),
     )
