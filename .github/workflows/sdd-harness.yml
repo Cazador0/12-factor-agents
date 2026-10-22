@@ -6,6 +6,8 @@ on:
       - "packages/sdd-harness/**"
       - "extensions/intake/**"
       - "bin/**"
+      - "schemas/**"
+      - ".claude/hooks/**"
       - ".github/workflows/sdd-harness.yml"
   push:
     branches: [main]
@@ -13,6 +15,8 @@ on:
       - "packages/sdd-harness/**"
       - "extensions/intake/**"
       - "bin/**"
+      - "schemas/**"
+      - ".claude/hooks/**"
 
 permissions:
   contents: read

@@ -10,6 +10,39 @@
           }
         ]
       }
+    ],
+    "PreToolUse": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 \"$CLAUDE_PROJECT_DIR/.claude/hooks/command_log.py\"",
+            "timeout": 5
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 \"$CLAUDE_PROJECT_DIR/.claude/hooks/command_log.py\"",
+            "timeout": 5
+          }
+        ]
+      }
+    ],
+    "PostToolUseFailure": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 \"$CLAUDE_PROJECT_DIR/.claude/hooks/command_log.py\"",
+            "timeout": 5
+          }
+        ]
+      }
     ]
   },
   "extraKnownMarketplaces": {
@@ -49,7 +82,8 @@
       "Bash(specify preset resolve:*)",
       "Bash(.specify/scripts/bash/check-prerequisites.sh:*)",
       "Bash(uv run --project packages/sdd-harness pytest:*)",
-      "Bash(uv run --project packages/sdd-harness ruff:*)"
+      "Bash(uv run --project packages/sdd-harness ruff:*)",
+      "Bash(uv run --project packages/sdd-harness sdd-jev schema --check)"
     ]
   }
 }

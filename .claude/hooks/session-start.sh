@@ -30,6 +30,12 @@ fi
 log "syncing packages/sdd-harness"
 uv sync --quiet --project "$ROOT/packages/sdd-harness"
 
+# pyright: the language server behind the pyright-lsp plugin.
+if ! command -v pyright-langserver >/dev/null 2>&1; then
+  log "installing pyright"
+  npm install --global --silent --no-audit --no-fund pyright >/dev/null || log "pyright install skipped"
+fi
+
 # Existing TypeScript package (jest tests).
 if [ -f "$ROOT/packages/walkthroughgen/package.json" ]; then
   log "installing packages/walkthroughgen"
