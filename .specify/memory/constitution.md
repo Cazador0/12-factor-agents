@@ -1,31 +1,39 @@
 <!--
 Sync Impact Report
 ==================
-Version change: template (unversioned) → 1.0.0 (initial ratification)
-Ratified: 2026-10-22
+Version change: 1.0.0 → 1.1.0 (MINOR: materially expanded guidance — a second allowed model provider)
+Ratified: 2026-10-22 | Last amended: 2026-10-22
 
-Principles added (all new):
-  I.    The Repository Is the Memory
-  II.   Separated Authority
-  III.  Agents Propose, Policy Decides
-  IV.   Evidence Over Assertion
-  V.    Specification Before Build
-  VI.   Rules Are Not Self-Amendable
-  VII.  Retrieval Accelerates, Never Overrides
-  VIII. Mistakes Become Mechanisms
-  IX.   Traces, Not Hidden Thoughts
+Modified sections:
+  Additional Constraints — Runtime: Ollama (cloud and local) becomes an allowed model provider
+    alongside Claude; Claude models are still called through the official Anthropic SDK. Health,
+    policy and authority decisions stay in plain code (Article III); model output may only explain them.
 
-Sections added: Additional Constraints, Development Workflow, Governance
+Principles changed: none (Articles I–IX unchanged in wording and meaning)
+Sections added or removed: none
 
-Sources: project intake .specify/intakes/agent-engineering-team/intake.md (Q1 Gitea only,
-Q2 LangGraph service, Q3 Both, Q4 Constitution plus full spec set) and the attached report
-"Engineering Team of Coding Agent Sessions: Lead, PSE, and Review".
+Rationale: the person answered "Ollama (cloud and local) alongside Claude Code models."
+(project intake Q7) and, asked how to handle the conflict with the Claude-only runtime line,
+chose "A. Amend to v1.1.0" (project intake Q14). A person approved it, as Article VI and
+Governance require. MINOR under Governance: guidance is materially expanded; no article is
+removed or redefined. The plain-code clause restates Article III for the new provider
+(inferred wording; Q14's chosen option read "keeps decisions in code").
 
-Templates checked:
-  ✅ .specify/templates/spec-template.md   — no change needed (Assumptions and Clarifications sections carry article citations)
-  ✅ .specify/templates/plan-template.md   — Constitution Check gates map to Articles I–IX
-  ✅ .specify/templates/tasks-template.md  — evidence tasks satisfy Article IV
-  ✅ .specify/templates/checklist-template.md — reviewer-owned checklists satisfy Article II
+Templates and guidance checked:
+  ✅ .specify/templates/spec-template.md      — no change needed (names no model provider)
+  ✅ .specify/templates/plan-template.md      — no change needed (Constitution Check gates on Articles I–IX; Article III gate covers decisions under either provider)
+  ✅ .specify/templates/tasks-template.md     — no change needed (names no model provider)
+  ✅ .specify/templates/checklist-template.md — no change needed (names no model provider)
+  ✅ AGENTS.md                                — already cites v1.1.0
+  ⚠ specs/002-gitea-mcp-gateway, 004-speckit-gitea-bridge, 006-quality-evidence-gates
+     checklists/requirements.md — Notes say this file "still reads v1.0.0"; stale after this
+     amendment, to be updated with those specs (not edited by this amendment)
+
+History:
+  1.0.0 (2026-10-22) — initial ratification: Articles I–IX, Additional Constraints, Development
+    Workflow, Governance. Sources: project intake Q1 (Gitea only), Q2 (LangGraph service),
+    Q3 (Both), Q4 (Constitution plus full spec set) and the report "Engineering Team of Coding
+    Agent Sessions: Lead, PSE, and Review".
 
 Deferred (open in the project intake):
   TODO(GOVERNANCE_APPROVERS): who besides the owner may approve amendments (intake row C6)
@@ -133,7 +141,7 @@ Continuity is built from what engineering can inspect.
 ## Additional Constraints
 
 - **Forge**: Gitea 28.x is the sole forge and control plane for work state (issues, dependencies, project board, pull requests, reviews, checks, merges). The deployment stays current with Gitea security releases (28.2.0 or later at ratification).
-- **Runtime**: the Lead, PSE and Review agents run in a LangGraph service. Claude models are called through the official Anthropic SDK.
+- **Runtime**: the Lead, PSE and Review agents run in a LangGraph service. Allowed model providers are Claude, whose models are called through the official Anthropic SDK, and Ollama (cloud and local) alongside it (project intake Q7, Q14). Whichever provider serves a call, health, policy and authority decisions stay in plain code (Article III); model output may only explain them.
 - **Gateway**: agents act on Gitea only through the narrow semantic Gitea MCP gateway (issue, project, pull-request, branch-protection-read and coordination-lease tools). No unrestricted request tool, no force-merge tool, no branch-protection write tool.
 - **Mutation envelope**: every mutation carries `actor_role`, `session_id`, `issue_id`, `expected_version`, `idempotency_key` and `reason`.
 - **Events**: Gitea webhooks are verified (HMAC-SHA256), deduplicated and normalized before any agent consumes them. Unstructured agent-to-agent chat never defines project state.
@@ -179,4 +187,4 @@ Spec Kit drives specification-driven delivery: constitution → specify → clar
 - Every amendment updates the Sync Impact Report at the top of this file and bumps the version semantically: MAJOR for removing or redefining an article, MINOR for adding an article or materially expanding guidance, PATCH for wording and clarifications.
 - Compliance is reviewed at every Review verdict and at every progressive-autonomy promotion; a violation found in merged work is treated as a defect under Article VIII.
 
-**Version**: 1.0.0 | **Ratified**: 2026-10-22 | **Last Amended**: 2026-10-22
+**Version**: 1.1.0 | **Ratified**: 2026-10-22 | **Last Amended**: 2026-10-22

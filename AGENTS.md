@@ -11,7 +11,7 @@ coordinate through the repository and a Gitea 28.x control plane. The design sou
 
 ## Governing principles
 
-`.specify/memory/constitution.md` (v1.0.0), Articles I–IX. Short form: the repository is the memory;
+`.specify/memory/constitution.md` (v1.1.0), Articles I–IX. Short form: the repository is the memory;
 separated authority (nobody approves their own work); agents propose and policy decides; evidence over
 assertion ("not run" never means passed); spec before build; rules are not self-amendable; retrieval
 accelerates but never overrides; mistakes become mechanisms; traces, not hidden thoughts.
@@ -20,13 +20,17 @@ accelerates but never overrides; mistakes become mechanisms; traces, not hidden 
 
 | What | Where |
 |---|---|
-| Specifications (7, with a dependency map) | `specs/README.md`, `specs/###-name/spec.md` |
-| Project intake (answered decisions and open items) | `.specify/intakes/agent-engineering-team/intake.md` |
+| Specifications (9, with a dependency map and build order) | `specs/README.md`, `specs/###-name/spec.md` |
+| Intakes (answered decisions and open items) | `.specify/intakes/agent-engineering-team/`, `.specify/intakes/metadata-data-model/` |
 | Spec Kit templates, scripts, extensions | `.specify/` (`intake`, `assess`, `bug`, `agent-context` installed) |
 | Intake extension source | `extensions/intake/` |
 | Engines: RAG, LangGraph graphs, decision traces | `packages/sdd-harness/` |
+| Jev, the progress watchdog (spec 008): `sdd-jev scan` | `packages/sdd-harness/src/sdd_harness/jev/` |
+| Shared message schemas (exported, checked in CI) | `schemas/` (`sdd-jev schema --check`) |
+| Command log Jev reads (one JSON line per tool call) | `.claude/hooks/command_log.py` → `.specify/sessions/commands/` |
 | Skills (Spec Kit + `sdd-*` engines) | `.claude/skills/` |
 | Decision traces and visible reasoning | `.specify/traces/` |
+| Research reports behind the specs | `docs/research/`, `docs/research/reports/` |
 
 ## Build, test, lint
 
@@ -34,6 +38,8 @@ accelerates but never overrides; mistakes become mechanisms; traces, not hidden 
 uv sync --project packages/sdd-harness
 uv run --project packages/sdd-harness pytest -q
 uv run --project packages/sdd-harness ruff check src tests
+uv run --project packages/sdd-harness ruff format --check src tests
+uv run --project packages/sdd-harness sdd-jev schema --check
 (cd packages/walkthroughgen && npm install && npx jest)
 ```
 

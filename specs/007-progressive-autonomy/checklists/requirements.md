@@ -26,12 +26,29 @@
 
 - [x] All functional requirements have clear acceptance criteria
 - [x] User scenarios cover primary flows
-- [x] Feature meets measurable outcomes defined in Success Criteria
+- [ ] Feature meets measurable outcomes defined in Success Criteria
 - [x] No implementation details leak into specification
 
 ## Notes
 
-- 2 [NEEDS CLARIFICATION] markers remain (FR-009: who approves promotion to the two highest modes; FR-017: whether a cost ceiling per accepted issue blocks promotion). Both are the person's decisions; resolve with `/speckit-clarify` or `/speckit-intake-refine specify`.
-- Default windows (4 weeks, minimum 20 accepted issues) are recorded as Assumptions to be confirmed in planning.
-- The scorecard table lists the report's 17 metrics with target directions; numeric targets live in the versioned mode policy.
-- Items marked incomplete require spec updates before `/speckit-clarify` or `/speckit-plan`
+- **Unticked: "No [NEEDS CLARIFICATION] markers remain."** One marker remains, in SC-004. It asks for the headline target. The report and the project intake set no number or timeframe (row S9), and the intake's open item names spec 007 as the place to settle it. The proposed default (30% more accepted issues per week within 3 months of Guarded autonomous, measured against the Shadow-mode baseline) stays beside the marker. Resolve it with `/speckit-clarify` or `/speckit-intake-refine specify`.
+- **Unticked: "Feature meets measurable outcomes defined in Success Criteria."** The outcomes are measurable, but their numbers are not confirmed. The headline target is still open (SC-004 marker). The other numbers are labelled "proposed default" and await the owner: SC-002's 24 hours, SC-003's 4-week window and "at most 2 metrics", and SC-005's 40%. Until the owner confirms them, the spec cannot claim to meet confirmed outcomes.
+- **Markers resolved:**
+  - FR-009: Smokey, a person's account, is the sole approver of promotion to Long-horizon and Self-improving (project intake Q11–Q13). Art. VI is unchanged.
+  - FR-017: cost per accepted issue is shown to Smokey and never blocks promotion by itself (project intake Q23).
+- **Automatic demotion (FR-011) is a proposal.** The report and the constitution describe promotion only. FR-011, the active-mode record (FR-018) and the demotion edge cases are marked inferred and recorded in Assumptions. The owner should confirm them through `/speckit-intake-refine` before planning relies on them.
+- **"Requirements are testable" stays ticked for these reasons:**
+  - "Elevated risk" is now defined as High and Critical (FR-005, inferred, matching spec 002 FR-025).
+  - Security incidents and human recovery cost are defined metrics (FR-013).
+  - Human review time has a named source (FR-017).
+  - Jev's three metrics have working definitions until spec 008 publishes its own (FR-022). Spec 008 is not yet in `specs/`, so FR-022 must be re-checked against it when it lands.
+- **Dependencies now match the fixed map:**
+  - Upstream: 001, 003, 006 and 008. Downstream: none.
+  - Specs 002, 004 and 005 are no longer listed as "Related". Their records reach this spec through its upstreams and spec 009's shared schemas (Assumptions).
+  - `specs/README.md` still shows the old map: 007 depends on 001, 003 and 006, and there are no rows for 008 or 009. It must be updated separately.
+- **Numeric targets and the mode policy:** the old note said numeric targets live in the versioned mode policy. They do not all live there. Thresholds, windows, per-metric minimum samples and demotion limits do live in the mode policy (FR-008, FR-012, FR-015). The Success Criteria carry their own numbers, which are labelled as proposed defaults.
+- The scorecard now has 22 metrics:
+  - the report's 17;
+  - security incidents and human recovery cost, from the report's target sentence;
+  - stuck rate, false-stuck rate and recovery success, from spec 008.
+- **Remaining inconsistency:** spec 006 SC-006 proposes a 25% fall in escaped defects. This spec keeps the report's "without worsening". One target across both specs is for the owner to confirm (Assumptions).

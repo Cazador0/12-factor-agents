@@ -8,37 +8,65 @@
 
 **Input**: User description: "Gitea integration for Spec Kit, and the definition of a complete specification" (research report: *Spec Kit and specification-driven delivery* → *Definition of "complete specification"* and *Gitea integration for Spec Kit*)
 
-## Clarifications
-
-### Session 2026-10-22
-
-- Q: The report uses Gitea as the control plane, but this repo and Claude Code Cloud Sessions run on GitHub. Which should the specs target? → A: Gitea only
-- Q: Where should the Lead, PSE and Review agents run? → A: LangGraph service
-- Q: The report warns against storing hidden chain-of-thought as 'thought chaining'. How should the thought-chaining tools work? → A: Both
-- Q: How far should the dependent specs go in this first pass? → A: Constitution plus full spec set
-
 ## User Scenarios & Testing *(mandatory)*
 
 ### User Story 1 - Turn a feature's task list into a Gitea issue graph without duplicates (Priority: P1)
 
-The Lead has a feature whose `tasks.md` is clean under analysis. It runs the bridge's tasks-to-issues command (`/speckit-gitea-taskstoissues` in Claude Code, `speckit.gitea.taskstoissues` elsewhere). The bridge reads every task ID and dependency marker, looks up each task in Gitea before doing anything, creates only the issues that are missing, links each issue to the tasks it is blocked by, places it on the project board, and writes the mapping back to a committed `task-issue-map.yaml` in the feature folder. Running it a second time changes nothing.
+The Lead has a feature whose `tasks.md` is clean under analysis. From the LangGraph service it invokes the bridge's tasks-to-issues command (the report's `speckit-gitea-taskstoissues`). The bridge reads every task ID and dependency marker, validates them and looks up each task in Gitea before it acts. When the active autonomy mode lets the Lead populate Gitea, the bridge then:
 
-**Why this priority**: This is the deterministic bridge from specification to execution. Without it the Lead hand-copies tasks into Gitea, and every repeated agent run risks duplicate issues, which is the failure the report names first.
+- creates only the issues that are missing, as the Lead's own Gitea bot account through the gateway;
+- links each issue to the tasks that block it;
+- places each new issue on the project board;
+- writes the mapping to `task-issue-map.yaml` in the feature folder, which is then committed.
 
-**Independent Test**: Run the command against a sample feature with 6 tasks and 3 dependency markers on a scratch Gitea repository, then run it again. The first run creates 6 issues and 3 dependency links and writes the mapping; the second run creates nothing and reports "0 created, 6 matched".
+In every earlier mode the bridge prints the same plan and writes nothing, and a person applies it. A second run on an unchanged feature changes nothing.
+
+**Why this priority**: This is the deterministic bridge from specification to execution. Without it the Lead copies tasks into Gitea by hand, and every repeated agent run risks duplicate issues, which is the first failure the report names. The first release runs in Shadow mode, where "humans perform consequential mutations" (report §Progressive autonomy; project intake D9). The plan-only path is therefore what the bridge does on day one.
+
+**Independent Test**: Use a scratch Gitea repository whose fixture mode lets the Lead populate Gitea. Run the command against a sample feature with 6 tasks and 3 dependency markers, then run it again.
+
+- The first run creates 6 issues and 3 dependency links and writes the mapping.
+- The second run creates nothing and reports "0 created, 6 matched".
+- With the fixture mode set to Shadow, a run on a fresh feature prints the full plan, names the mode and makes no Gitea write.
 
 **Acceptance Scenarios**:
 
-1. **Given** a feature whose `tasks.md` holds tasks T031, T032 and T034, where T032 and T034 depend on T031, and no matching Gitea issues exist, **When** the Lead runs the tasks-to-issues command, **Then** three issues are created, T032's and T034's issues are recorded as blocked by T031's issue, all three sit in the board's Backlog column, and `task-issue-map.yaml` lists each task ID with its issue number and `blocked_by` list.
+1. **Given** a feature whose `tasks.md` holds tasks T031, T032 and T034, where T032 and T034 depend on T031, no matching Gitea issues, and a mode that lets the Lead populate Gitea, **When** the Lead runs the tasks-to-issues command, **Then**:
+   - three issues are created;
+   - T032's and T034's issues are recorded as blocked by T031's issue;
+   - all three sit in the board's entry column, Backlog (spec 001);
+   - `task-issue-map.yaml` lists each task ID with its issue number and `blocked_by` list.
 2. **Given** the same feature after a successful run, **When** the command runs again, **Then** no issue is created, no dependency link is duplicated, and the mapping file is byte-for-byte unchanged.
-3. **Given** a feature where T031 already has an issue that was created by hand and carries the task ID marker, **When** the command runs, **Then** the existing issue is adopted into the mapping instead of a second one being created.
+3. **Given** T031 already has an issue that carries T031's task identifier but was written by an account other than the Lead's bot account (for example, by hand), **When** the command runs, **Then**:
+   - it creates no second issue for T031;
+   - it reports the issue as an "unconfirmed issue";
+   - it adds the issue to the mapping only after the Lead confirms it;
+   - on adoption it reports every issue-contract section the body lacks (FR-025).
 4. **Given** a run that fails after creating two of five issues, **When** the command runs again, **Then** it creates only the three missing issues and the final mapping holds all five.
+5. **Given** Shadow mode, or no mode recorded, **When** the Lead runs the command, **Then** it performs no Gitea write. It prints the full plan of creations, links, labels and board placements, and names the mode that kept it from writing (FR-023).
+6. **Given** an issue that the Lead's bot account created in an earlier run, that carries T032's identifier, and whose mapping entry was lost before it was committed, **When** the command runs again, **Then** the issue is adopted into the mapping without a second issue being created (FR-008, FR-025).
+7. **Given** a run whose mapping is committed on a branch that has not yet merged into `main`, **When** tasks-to-issues or sync runs again for that feature, **Then** it reads the mapping from that branch's head, and its run report names the branch and commit (FR-027, FR-031).
 
 ---
 
 ### User Story 2 - Gate "Ready for Build" on a complete, traceable specification (Priority: P1)
 
-Before any issue of a feature may move to Ready for Build, the bridge checks the feature against the completeness contract: product intent, user stories, functional and non-functional requirements, acceptance criteria, explicit non-goals, contracts where relevant, error and failure semantics, authorization and security requirements, observability, performance targets where relevant, migration and compatibility where relevant, an architecture plan, a dependency map, the task DAG, a reviewer checklist, no unresolved critical clarification, a clean analysis report, and traceability from every requirement to at least one task and one expected verification. Each missing element is reported by name and location. A feature that fails stays out of Ready for Build.
+Before any issue of a feature may move to Ready for Build, the bridge checks the feature against the completeness contract (Constitution Art. V). The contract holds:
+
+- product intent and user stories;
+- functional and non-functional requirements, and acceptance criteria;
+- explicit non-goals;
+- contracts where relevant;
+- error and failure semantics, and authorization and security requirements;
+- observability requirements, and performance targets where relevant;
+- migration and compatibility requirements where relevant;
+- an architecture plan, a dependency map and an acyclic task DAG;
+- a reviewer checklist that Review owns;
+- no unresolved clarification;
+- a clean analysis report that Lead and Review both stand behind;
+- traceability from every requirement to at least one task and one expected verification.
+
+Each missing element is reported by name and location. A feature that fails stays out of Ready for Build. The result is tied to the commits it checked, and only a result produced by CI at the current commit counts.
 
 **Why this priority**: The report replaces "complete 100 percent of the documentation" with a verifiable contract. Without the gate, PSE sessions start from guesses, which Article V (Specification Before Build) forbids.
 
@@ -47,15 +75,27 @@ Before any issue of a feature may move to Ready for Build, the bridge checks the
 **Acceptance Scenarios**:
 
 1. **Given** a feature where FR-007 is referenced by no task, **When** the check runs, **Then** it fails and names FR-007 as untraced, citing the spec file and line.
-2. **Given** a feature whose spec still holds an open clarification marker tagged critical, **When** the check runs, **Then** it fails and names the marker, and no issue of that feature can be moved to Ready for Build.
-3. **Given** a feature that satisfies every element of the contract, **When** the check runs, **Then** it passes and records a machine-readable result that the control plane (spec 001) reads before allowing the Ready for Build transition.
+2. **Given** a feature whose spec, plan or tasks still hold an open clarification marker, **When** the check runs, **Then** it fails and names the marker, and no issue of that feature can be moved to Ready for Build. Every open marker blocks, because the marker syntax carries no criticality tag (FR-017).
+3. **Given** a feature that satisfies every element of the contract, **When** CI runs the check, **Then** it passes. It records a machine-readable result, tied to the commits it checked, that the control plane reads before it allows Lead's Ready for Build move (spec 001 FR-029, TR-03).
 4. **Given** a feature where an element is not applicable (for example, no data migration), **When** the spec states that explicitly, **Then** the check accepts it; **When** the element is simply absent, **Then** the check fails. An absent element is never treated as N/A.
+5. **Given** a passing result recorded at an earlier commit of the feature's spec, plan or tasks, **When** Lead asks to move an issue to Ready for Build, **Then** the result does not count and the move is refused (spec 001 FR-029; FR-019).
+6. **Given** a feature whose reviewer checklist was written and signed off only by the Lead, **When** the check runs, **Then** it fails and names the reviewer checklist as lacking Review's attribution (FR-029).
+7. **Given** a `tasks.md` with a dependency cycle or a dependency on a task that does not exist, **When** the check runs, **Then** it fails and names the cycle or the dangling reference (FR-028).
 
 ---
 
 ### User Story 3 - Detect drift between the spec and the issue board without rewriting either (Priority: P2)
 
-Work moves on. Tasks get renamed, split or removed in `tasks.md`; issues get closed, edited or created by hand in Gitea. The Lead runs the sync command (`/speckit-gitea-sync`). It compares every mapped task with its issue and every open issue carrying a task marker with the task list, then writes a drift report: issues with no task, tasks with no issue, dependency links that no longer match, closed issues whose task is still open in the spec, and mapping entries pointing at deleted issues. It changes nothing on its own.
+Work moves on. Tasks get renamed, split or removed in `tasks.md`; issues get closed, edited or created by hand in Gitea. The Lead runs the sync command (the report's `speckit-gitea-sync`). It compares every mapped task with its issue, and every issue that carries one of the feature's task identifiers with the task list. It then writes a drift report covering:
+
+- issues with no task;
+- tasks with no issue;
+- dependency links that no longer match;
+- closed issues whose task is still open in the spec;
+- mapping entries that point at deleted issues;
+- identifier-bearing issues that the Lead has not confirmed.
+
+It changes nothing on its own.
 
 **Why this priority**: Drift is inevitable over a long horizon. The report is explicit that drift must be reported rather than silently fixed, because silently rewriting the spec would let execution state overrule the source of truth (Article I).
 
@@ -71,29 +111,44 @@ Work moves on. Tasks get renamed, split or removed in `tasks.md`; issues get clo
 
 ### User Story 4 - Carry labels, milestone and assignee class onto each issue (Priority: P3)
 
-Each created issue carries labels derived from the task (user story, phase, parallelizable marker, risk class), the feature's milestone, and an assignee class (Lead, PSE or Review) rather than a named session. It also carries a body that lets any agent rebuild its contract without a transcript: intent, spec and story reference, task IDs, acceptance criteria, non-goals, dependencies, risk, required verification and ownership.
+Each created issue carries:
 
-**Why this priority**: These fields let the scheduler (spec 001) and the role agents (spec 003) act on issues mechanically. They are valuable but not blocking: issues without them can still be scheduled by hand.
+- labels derived from the task: user story, phase and parallelizable marker;
+- a risk-class label on the constitution's Low/Medium/High/Critical scale, taken from the Lead's declaration;
+- the feature's milestone;
+- an assignee class (Lead, PSE or Review) rather than a named session.
 
-**Independent Test**: Create issues for a fixture feature and read one back through the API. The labels, milestone, assignee class and every section of the issue body template are present.
+It also carries a body in the issue contract that spec 001 defines, so any agent can rebuild its contract without a transcript. The bridge fills the sections it can derive from the repository: intent, spec and story reference, task IDs, acceptance criteria, non-goals, dependencies, risk, required verification and ownership. Current PR is empty at creation and filled later. Any section the bridge cannot derive is marked as waiting for the Lead and never invented.
+
+**Why this priority**: These fields let the scheduler (spec 001) and the role agents act on issues mechanically. They are valuable but not blocking: issues without them can still be scheduled by hand.
+
+**Independent Test**: Create issues for a fixture feature and read one back through the gateway. The labels, milestone, assignee class and every section of the issue contract are present, either filled or marked as waiting for the Lead.
 
 **Acceptance Scenarios**:
 
-1. **Given** a task marked `[P]` under User Story 2 in a medium-risk feature, **When** its issue is created, **Then** it carries labels for the story, the parallelizable marker and `risk:medium`, plus the feature's milestone.
+1. **Given** a task marked `[P]` under User Story 2 in a feature whose Lead-declared risk class is Medium, **When** its issue is created, **Then** it carries labels for the story, the parallelizable marker and `risk:medium`, plus the feature's milestone.
 2. **Given** any created issue, **When** a fresh session reads only that issue, **Then** it finds the intent, the spec reference, the task IDs, the acceptance criteria, the dependencies and the required verification without opening a chat transcript.
+3. **Given** a feature with no declared risk class, **When** the command runs, **Then** it stops before any write and names the missing declaration. It never guesses a class (FR-004).
 
 ---
 
 ### Edge Cases
 
-- A task ID appears twice in `tasks.md`. The command stops before creating anything and reports both lines; it never guesses which one is real.
-- A dependency marker names a task ID that does not exist. The command reports the dangling reference and creates no dependency link for it; the other issues are still created.
-- The dependency markers form a cycle. The command reports the cycle with every task in it and creates no dependency links for the cycle members, because a cyclic DAG can never unblock.
-- Gitea returns a transient error midway through a run. Already-created issues are recorded in the mapping before the command exits with an error, so the next run resumes without duplicates.
+- A task ID appears twice in `tasks.md`. The command stops before any write and reports both lines. It never guesses which one is real.
+- A dependency marker names a task ID that does not exist. The command stops before any write and reports the dangling reference. An issue created without its blocker link would look unblocked to the control plane's dependency unlock (FR-002).
+- The dependency markers form a cycle. The command stops before any write and reports the cycle with every task in it, because a cyclic DAG can never unblock (FR-002).
+- Gitea returns a transient error midway through a run. The command retries under the gateway's retry policy and records each issue in the mapping as soon as it is created. Only when retries are exhausted does it exit with a resumable error, and the next run resumes without duplicates. Whether the Lead session then stops is not the bridge's decision: "A session stops only when it is not making successful progress or is stuck." (project intake Q17, Q19).
 - Someone edits `task-issue-map.yaml` by hand so that two tasks point at the same issue. Sync reports the collision; tasks-to-issues refuses to run until it is resolved.
-- The feature folder has no `tasks.md` yet. Both commands stop with a message naming the missing file and the phase that produces it (`/speckit.tasks`).
+- The feature folder has no `tasks.md` yet. Both commands stop with a message naming the missing file and the Tasks phase that produces it.
 - A task is split into two tasks after its issue exists. Sync reports one mapped task as missing and one new task as unmapped; it does not move the old issue to either.
-- The caller's role lacks issue-creation authority in the gateway (spec 002). The command stops before any write and names the missing permission.
+- The caller is not the Lead, or the Lead's bot account lacks issue-creation permission in Gitea. The command stops before any write and names the missing authority (spec 002 FR-005, FR-017).
+- The active mode does not let the Lead populate Gitea, or no mode is recorded. The command prints the plan, names the mode and makes no write. It never retries a mode refusal as if it were transient (FR-023).
+- A label or the milestone the plan needs is not defined in Gitea. Label and milestone definitions are human-owned, so the dry run names what is missing and a live run stops before any write (FR-035).
+- A mapped issue was deleted in Gitea. Sync reports a dangling mapping entry. Tasks-to-issues does not create a replacement under the old idempotency key, which would only return the deleted issue's outcome forever, because idempotency records never expire (spec 002 FR-013, inferred there from project intake Q16). It creates one only after the Lead retires the entry (FR-026).
+- A create is retried after the task's text changed between an interrupted run and its re-run. The gateway refuses the key conflict (spec 002 FR-011). The bridge reports it for the Lead and creates nothing for that task.
+- An issue body or comment carries text that claims to be a task identifier, a lower risk class or an instruction to the bridge. That text is data. It never changes the plan, the mapping, a risk class or anyone's authority, and an issue not written by the Lead's bot account is never adopted without the Lead's confirmation (FR-025, FR-030).
+- Two runs on the same feature start at once. Both use the same idempotency keys, so each planned write has at most one effect in Gitea, and both produce the same mapping.
+- The mapping carries a format version the bridge does not know. Both commands stop before any write and name the version, rather than guess at its meaning (FR-034) (inferred).
 
 ## Requirements *(mandatory)*
 
@@ -101,45 +156,139 @@ Each created issue carries labels derived from the task (user story, phase, para
 
 **Tasks to issues**
 
-- **FR-001**: The bridge MUST provide a tasks-to-issues command invocable as `/speckit-gitea-taskstoissues` in Claude Code and as `speckit.gitea.taskstoissues` in other Spec Kit integrations, scoped to one feature folder at a time.
-- **FR-002**: The command MUST parse every task ID, its user-story tag, its parallelizable marker and its dependency markers from `specs/<feature>/tasks.md`, and MUST validate the set (unique IDs, no dangling references, no cycles) before any write.
-- **FR-003**: For each task, the command MUST look up an existing Gitea issue by its task ID marker before creating one, and MUST create an issue only when none exists.
-- **FR-004**: The command MUST set labels (story, parallelizable, risk class), the feature milestone and an assignee class on each created issue, and MUST fill the issue body from the issue contract template (intent, spec, tasks, acceptance criteria, non-goals, dependencies, risk, required verification, ownership, current PR).
+- **FR-001**: The bridge MUST provide a tasks-to-issues command as a Spec Kit extension command that the Lead can invoke from the LangGraph service (project intake Q2). It works on one feature folder at a time. The invocation syntax for each integration (slash, `$` or dotted extension ID) is left to the plan, "rather than hard-coding `/speckit-*` into the architecture" (report §Spec Kit and specification-driven delivery).
+- **FR-002**: The command MUST parse every task ID, its user-story tag, its parallelizable marker, its dependency markers and its traceability references (FR-016) from `specs/<feature>/tasks.md`. It MUST validate the set before any write and MUST stop the whole run, writing nothing, when it finds a duplicate task ID, a dependency on a task that does not exist, or a dependency cycle. It reports every offending line. No partial graph is created, because an issue missing its blocker link would look unblocked to dispatch (inferred).
+- **FR-003**: For each task, the command MUST find any existing issue before creating one. It looks first in the mapping, then in the gateway's idempotency records (FR-008), then through the gateway's issue search by the task's identifier (FR-024). It MUST create an issue only when none exists, adopting found issues only as FR-025 allows. Each task maps to exactly one issue, following the report's mapping example, where each task ID has one `gitea_issue` (inferred).
+- **FR-004**: The command MUST set these on each created issue:
+  - labels for story, phase and parallelizable marker;
+  - a risk-class label on the constitution's Low/Medium/High/Critical scale;
+  - the feature milestone;
+  - an assignee class.
+
+  The risk class comes from the Lead's declaration for the feature, which a task may override (inferred from the report's issue template, where "Risk" is set per issue). A missing declaration stops the run before any write. The label does not set the merge risk class: spec 006's classifier computes that, and the gateway uses the higher of the computed class and the label and ignores a lower label (spec 002 FR-026).
+
+  The command MUST fill the issue body in the issue contract that spec 001 defines (Key Entities: Issue Contract), from these sources (inferred):
+  - spec and story reference, task IDs and dependencies come from `tasks.md` and the mapping;
+  - acceptance criteria come from the acceptance scenarios of the task's user story, and non-goals from the spec's non-goals;
+  - intent comes from the story's summary;
+  - required verification comes from the task's verification reference (FR-016);
+  - ownership comes from the assignee class.
+
+  Expected write domains are left for the Lead to declare (spec 001 FR-023), and current PR stays empty at creation. The bridge MUST NOT invent content for any section it cannot derive. It marks such a section as waiting for the Lead, who completes the contract before Ready for Build (Art. V; spec 003 FR-007).
 - **FR-005**: The command MUST create a Gitea dependency link for every dependency marker whose both ends are mapped, and MUST NOT create a link that already exists.
-- **FR-006**: The command MUST place every created issue in the project board's Backlog column. It MUST NOT move an issue to any later column; later transitions belong to the control plane (spec 001).
-- **FR-007**: The command MUST write the mapping to `specs/<feature>/task-issue-map.yaml` with, per task, the issue number and its `blocked_by` task IDs, in a stable sort order so that an unchanged run produces an identical file.
-- **FR-008**: The command MUST record each issue in the mapping as soon as it is created, so an interrupted run never loses track of an issue it made.
-- **FR-009**: Every Gitea write MUST go through the semantic gateway (spec 002) with an idempotency key derived from the feature, the task ID and the operation, so a retried write cannot create a second issue.
+- **FR-006**: The command MUST place every created issue in the board's entry column, which spec 001 sets as Backlog (spec 001 Dependencies). The report says only "Add to project board", so the column comes from spec 001, not from the report. The command MUST NOT move an issue to any later column. Later moves follow spec 001's transition table: Backlog → Ready for Spec → Specifying → Ready for Build (TR-01 to TR-03), each requested by the Lead.
+- **FR-007**: The command MUST write the mapping to `specs/<feature>/task-issue-map.yaml`. For each task, the mapping holds the issue number, its `blocked_by` task IDs and its generation (FR-026). Entries are kept in a stable sort order, so that an unchanged run produces an identical file.
+- **FR-008**: The command MUST record each issue in the mapping as soon as it is created, so an interrupted run never loses track of an issue it made. If the uncommitted mapping is lost, a re-run MUST recover every issue the earlier run created by replaying its idempotency keys, because a replayed key returns its first recorded outcome and those records never expire (spec 002 FR-011, FR-013; project intake Q16).
+- **FR-009**: Every Gitea read and write MUST go through the semantic gateway (spec 002). Writes are made as the Lead's own Gitea bot account: "Each role gets its own Gitea bot account." (project intake Q15). The bridge holds no Gitea credential (spec 002 FR-016). Each write carries the mutation envelope and an idempotency key built from these parts, so that a retried write has one effect and distinct writes never share a key (Art. III):
+  - the feature;
+  - the task ID;
+  - the operation;
+  - for a dependency link, the blocking task's ID;
+  - the task's generation (FR-026).
+
+  The key's exact encoding is left to the plan.
 - **FR-010**: Re-running the command on an unchanged feature MUST perform zero Gitea writes and leave the mapping unchanged.
 
 **Drift detection**
 
-- **FR-011**: The bridge MUST provide a sync command invocable as `/speckit-gitea-sync` (or `speckit.gitea.sync`) that compares the mapping, `tasks.md` and the issues carrying the feature's task markers.
-- **FR-012**: The sync command MUST report at least these drift kinds: orphaned issue, unmapped task, dangling mapping entry, dependency mismatch, state mismatch, and mapping collision.
+- **FR-011**: The bridge MUST provide a sync command, as a Spec Kit extension command invocable in the same way as FR-001. It compares the mapping, `tasks.md` and the issues that carry the feature's task identifiers, which it finds through the gateway's issue search (FR-024).
+- **FR-012**: The sync command MUST report at least these drift kinds:
+  - orphaned issue;
+  - unmapped task;
+  - dangling mapping entry;
+  - dependency mismatch;
+  - state mismatch;
+  - mapping collision;
+  - unconfirmed issue, meaning an identifier-bearing issue that the Lead's bot account did not write and the Lead has not confirmed.
 - **FR-013**: The sync command MUST be read-only toward the spec, `tasks.md`, the mapping and Gitea. It MUST NOT rewrite any of them to resolve drift (Article I: The Repository Is the Memory).
 - **FR-014**: The drift report MUST be machine-readable and human-readable, naming each drift with the task ID, issue number and file location involved.
 
 **Completeness and traceability gate**
 
-- **FR-015**: The bridge MUST provide a completeness check that evaluates a feature against every element of the completeness contract listed in User Story 2, and MUST report each missing element by name and file location.
-- **FR-016**: The check MUST verify traceability: every functional and non-functional requirement maps to at least one task, and every task maps to at least one expected verification (a named test, check or review step).
-- **FR-017**: The check MUST fail while the spec holds an unresolved critical clarification marker, or while the latest analysis report has a CRITICAL finding.
+- **FR-015**: The bridge MUST provide a completeness check that evaluates a feature against every element of the completeness contract in User Story 2 (Constitution Art. V), and MUST report each missing element by name and file location.
+- **FR-016**: The check MUST verify traceability: every functional and non-functional requirement maps to at least one task, and every task maps to at least one expected verification, such as a named test, check or review step. Spec Kit's task format carries neither link, so each task line names the requirement IDs it serves and its expected verification. The Lead adds them at the Tasks stage, which the Lead owns (Constitution, Development Workflow). This traceability convention is inferred from Art. V and from the report's CI linter that "validates required headings, IDs, cross-references, and traceability". Its exact syntax is left to the plan.
+- **FR-017**: The check MUST fail in either of these cases:
+  - any clarification marker is still open in the feature's spec, plan or tasks. The marker syntax has no criticality tag, so every open marker counts as an unresolved critical clarification (inferred, failing closed under Art. IV).
+  - the feature's analysis report is missing, older than the current commit of its spec, plan and tasks, or holds a CRITICAL finding.
+
+  Spec Kit's analyze step writes no file (report: "analyze step is explicitly read-only"), and chat-only output is unavailable (Art. I). The analysis report MUST therefore be committed at a fixed path in the feature folder. It records the commits it analyzed (inferred). The path is left to the plan.
 - **FR-018**: The check MUST accept an element marked explicitly not applicable with a reason, and MUST fail on an element that is merely absent ("not stated" is never "not applicable"; Article IV: Evidence Over Assertion).
-- **FR-019**: The check MUST write a machine-readable result per feature that the control plane (spec 001) reads before it allows any of the feature's issues into Ready for Build (Article V: Specification Before Build).
-- **FR-020**: The check MUST be runnable in CI as a linter with a non-zero exit on failure, so a pull request that breaks traceability is blocked mechanically (Article VIII: Mistakes Become Mechanisms).
+- **FR-019**: The check MUST write a machine-readable completeness result per feature, which records:
+  - the commits of the spec, plan, tasks and analysis report it evaluated;
+  - the producer that ran the check;
+  - each contract element's outcome;
+  - the traceability matrix.
 
-**Authority**
+  The control plane reads it before it allows Lead's move into Ready for Build (spec 001 FR-029, TR-03; Article V: Specification Before Build). Only a result produced by CI (FR-020) at the feature's current commit counts. A result produced locally by any session is advice only (inferred), and a result from an older commit never counts.
+- **FR-020**: The check MUST be runnable in CI as a linter with a non-zero exit on failure, so that a pull request that breaks traceability fails a check (Article VIII: Mistakes Become Mechanisms). Making that check a required status check changes CI policy and branch protection. That change is Critical risk and needs human approval, and the bridge never configures it (Art. VI).
+- **FR-028**: The check MUST fail when the task DAG has a dependency cycle or a dependency on a task that does not exist (Art. V: "a task DAG").
+- **FR-029**: The check MUST verify that the reviewer checklist is attributed to the Review role and that the analysis report is attributed to both Lead and Review. Attribution means written or signed off from that role's own account. The check MUST fail when either element was produced by the Lead alone (Art. II; Constitution, Development Workflow: "Checklist | Review", "Analyze | Lead + Review"). The attribution mechanism is left to the plan.
 
-- **FR-021**: Only the Lead role MAY run tasks-to-issues against a live Gitea repository; any role MAY run sync and the completeness check (Article II: Separated Authority).
-- **FR-022**: Both commands MUST support a dry-run mode that prints the planned writes without performing any.
+**Authority and autonomy**
+
+- **FR-021**: Only the Lead MAY run tasks-to-issues against a live Gitea repository, and it does so through its own bot account (FR-009). A subagent of the Lead session MAY run it only within the Lead session's authority, and is counted against "At most 2 subagents per container, per role and per Gitea bot account." (project intake Q18; spec 002 FR-008, FR-030). Any actor the gateway admits MAY run sync and the completeness check, because both are read-only toward Gitea (Article II: Separated Authority). Jev is included (inferred). Only the CI result of the check counts for Ready for Build (FR-019).
+- **FR-022**: Both commands MUST support a dry-run mode that prints the planned writes without performing any. The plan lists every issue to create, link to add, label and milestone to set, and board placement, each with its idempotency key.
+- **FR-023**: Tasks-to-issues MUST obey the active autonomy mode, which the gateway enforces (spec 002 FR-024; spec 001 FR-030). The bridge makes live writes only in a mode that lets the Lead populate Gitea. Spec 007 grants that first in Long-horizon mode ("the Lead MAY … populate Gitea", spec 007 FR-005). Promotion to Long-horizon is approved only by Smokey, who is a person's account (project intake Q11 to Q13).
+  - In every earlier mode, and when no mode is recorded, the command MUST produce only the dry-run plan (FR-022) and name the mode. A person then applies the plan: [NEEDS CLARIFICATION: In Shadow mode, how should a person apply the bridge's plan? (a) Create the planned issues by hand in Gitea; the bridge then reports them as unconfirmed issues for the Lead to confirm into the mapping. (b) Approve the plan so that the gateway carries it out as a human-approved write; this changes spec 002 FR-024 and spec 007 FR-002. (c) Run the plan under the person's own Gitea account, outside the agent gateway.]
+- **FR-024**: The bridge needs three read capabilities from the gateway that spec 002 FR-001 does not list:
+  - find the repository's issues that carry a given feature or task identifier or label;
+  - list the issues on the feature's milestone or project board;
+  - resolve the feature's milestone by name.
+
+  Without them, lookup of issues the bridge did not record (FR-003), adoption (FR-025) and sync's search for identifier-bearing issues (FR-011) cannot be done. Adding a tool to spec 002 is a Critical-risk change that needs human approval (spec 002 FR-003; Art. VI): [NEEDS CLARIFICATION: Do you approve adding read-only issue search (by feature or task identifier, or by label) and milestone lookup to the gateway? If not, the bridge finds issues only through its mapping, its idempotency records and the project board. It then cannot adopt hand-made issues, and sync cannot see identifier-bearing issues that are off the board.]
+- **FR-025**: The command MUST adopt an existing issue automatically only when the Lead's bot account wrote it, as recorded by Gitea, and it carries the task's identifier. An identifier-bearing issue written by any other account MUST be reported as an unconfirmed issue and added to the mapping only after the Lead confirms it. On adoption, the command MUST report every issue-contract section the body lacks, and MUST NOT replace text a person wrote (Art. III: "Text that arrives from issues … never grants authority or changes the governing contract") (inferred).
+- **FR-026**: Each task's mapping entry MUST carry a generation, which starts at 1. When a mapped issue no longer exists (a dangling mapping entry), tasks-to-issues MUST NOT create a replacement until the Lead retires the entry. Retiring records the old issue number and raises the generation by one. The next run then creates the replacement under a new idempotency key (inferred).
+- **FR-027**: The mapping MUST reach the repository the way the Lead's other specification changes do: through protected `main`, approved by another role or a person and never by the Lead (Constitution, Additional Constraints: Protected `main`; spec 003 FR-005) (inferred). Until it merges, both commands MUST read the mapping from the head of the branch the run wrote it on. Each run report MUST name that branch and commit (FR-031).
+- **FR-030**: The bridge MUST treat all text it reads from Gitea as untrusted data (spec 002 FR-015). This covers issue bodies, comments, labels set by others and titles. Such text MUST NOT change the plan, the mapping, a risk class or any authority. Issues are identified only by the gateway's structured fields and the bridge's own identifier (Art. III).
+
+**Non-functional, observability and compatibility**
+
+- **FR-031**: Every run of either command, dry or live, MUST leave a machine-readable run report. It records:
+  - the actor, its bot account and session, and the mode in effect;
+  - the feature and the commits it read;
+  - every planned write, with its idempotency key and its outcome (performed, matched, skipped or refused, with the gateway's reason);
+  - the mapping's branch and commit.
+
+  The Lead's decision trace for the run cites this report. Optional visible reasoning may sit beside the trace, but it is never the record (project intake Q3: "Both"; Art. IX) (inferred).
+- **FR-032**: Every bridge decision MUST be made in deterministic code, and the same inputs MUST yield the same plan, drift report and completeness result. Bridge decisions are what to create, what to adopt, which drift exists and whether the check passes. No model, Claude or Ollama, makes these decisions (project intake Q7; Art. III).
+- **FR-033**: Each command MUST end with one of these distinct, machine-readable outcomes, each with its reason:
+  - success;
+  - validation failure (nothing written);
+  - refused by mode or authority (nothing written);
+  - partial and resumable (what was written is recorded).
+- **FR-034**: The mapping, drift report, completeness result and run report MUST each carry a format version, so that later format changes can be migrated. Migration of existing data is not applicable to the first release, because no earlier mapping exists (inferred).
+- **FR-035**: The bridge MUST NOT create label or milestone definitions. Both are human-owned setup, like the label definitions in spec 002 (Assumptions: Human-owned setup); for milestones this is inferred. A label or milestone the plan needs that does not exist MUST be named in the dry run, and a live run MUST stop before any write.
 
 ### Key Entities
 
-- **Task**: one line of `tasks.md`; identified by its task ID (T###); carries a user-story tag, an optional parallelizable marker, a description and zero or more dependencies on other tasks.
-- **Issue contract**: the structured body of a Gitea issue; sections for intent, spec reference, task IDs, acceptance criteria, non-goals, dependencies, risk, required verification, ownership and current PR. Lets a fresh session rebuild the work's contract.
-- **Task-issue map**: the committed `task-issue-map.yaml` per feature; maps each task ID to one issue number and its `blocked_by` task IDs. The only link between the spec's IDs and Gitea's numbers.
-- **Drift finding**: one mismatch between the map, `tasks.md` and Gitea; has a kind, the task ID and issue number involved, the evidence and a suggested owner.
-- **Completeness result**: the per-feature outcome of the completeness check; lists each contract element with pass, fail or not-applicable-with-reason, plus the traceability matrix (requirement → tasks → verifications).
+- **Task**: one line of `tasks.md`. It is identified by its task ID (T###) and carries:
+  - a user-story tag and an optional parallelizable marker;
+  - a description;
+  - zero or more dependencies on other tasks;
+  - the requirement IDs it serves and its expected verification (FR-016).
+- **Issue contract**: the structured issue body defined in spec 001 (Key Entities: Issue Contract). This spec keeps no second copy of its section list. FR-004 states which sections the bridge fills and from where.
+- **Task-issue map**: the committed `task-issue-map.yaml` per feature, with a format version. It maps each task ID to one issue number, its `blocked_by` task IDs and its generation, and records retired issue numbers. It is the only link between the spec's IDs and Gitea's numbers.
+- **Plan**: the ordered list of writes a run would perform: issues, links, labels, milestone and board placement, each with its idempotency key. In a dry run the plan is printed and nothing is written.
+- **Drift finding**: one mismatch between the map, `tasks.md` and Gitea. It has a kind, the task ID and issue number involved, the evidence and a suggested owner.
+- **Completeness result**: the per-feature outcome of the completeness check. It records:
+  - each contract element with pass, fail or not-applicable-with-reason;
+  - the traceability matrix (requirement → tasks → verifications);
+  - the commits evaluated, the producer and the Review attributions found.
+- **Run report**: the per-run record of FR-031. It holds the actor, mode, commits read, every planned write with its key and outcome, and the mapping's branch and commit.
+
+### Non-goals
+
+The constitution's Art. V lists explicit non-goals as part of a complete specification, so this subsection is added to the template. The bridge deliberately does not:
+
+- Resolve drift automatically. Sync only reports it (FR-013).
+- Move issues past the board's entry column. Spec 001's transition table owns every later move.
+- Support GitHub. The forge is "Gitea only" (project intake Q1), so Spec Kit's core `taskstoissues` command and its GitHub issues extension stay unused.
+- Create label or milestone definitions, or configure branch protection or required checks (FR-020, FR-035; Art. VI).
+- Hold a Gitea credential or call Gitea except through spec 002.
+- Define the issue contract's sections (spec 001), the role contracts (spec 003) or the autonomy modes (spec 007).
+- Let a model decide what to create, adopt or report (FR-032).
+- Define Spec Kit's `tasks.md` conventions beyond the traceability references of FR-016.
+- Write or index `git-history.md`.
 
 ## Success Criteria *(mandatory)*
 
@@ -147,23 +296,63 @@ Each created issue carries labels derived from the task (user story, phase, para
 
 - **SC-001**: Across 50 consecutive re-runs of tasks-to-issues on unchanged features, zero duplicate issues and zero duplicate dependency links are created.
 - **SC-002**: A run interrupted at any point and then re-run ends with exactly one issue per task in 100% of fault-injection trials (at least 20 trials covering every write step).
-- **SC-003**: The Lead turns a 40-task feature into a fully linked issue graph in under 5 minutes of wall-clock time, against a baseline of manual entry.
-- **SC-004**: In the first 3 months of use, 100% of issues that reach Ready for Build belong to a feature whose completeness result passed at that commit.
-- **SC-005**: Seeded drift fixtures (at least one per drift kind) are detected by sync with 100% recall and no false positives on a drift-free fixture.
-- **SC-006**: The metric "requirements changed after implementation began" (spec 007 scorecard) falls by at least 30% within 3 months of the gate being enforced, compared with the first month of shadow mode.
+- **SC-003**: A live tasks-to-issues run turns a 40-task feature into a fully linked issue graph in under 5 minutes of wall-clock time. This is measured on the MacBook host with Gitea, the LangGraph service, SQLite and local Ollama all running on it (project intake Q22).
+- **SC-004**: In the first 3 months of use, 100% of issues that reach Ready for Build belong to a feature whose completeness result, produced by CI, passed at that commit.
+- **SC-005**: Seeded drift fixtures, with at least one per drift kind in FR-012, are detected by sync with 100% recall and no false positives on a drift-free fixture.
+- **SC-006**: (withdrawn: "requirements changed after implementation began" is a spec 007 scorecard metric that this gate alone can neither move nor be credited with, and 004 has no downstream edge to 007 in the dependency map)
+- **SC-007**: With Shadow mode active, or no mode recorded, tasks-to-issues performs 0 Gitea writes across the SC-001 fixture features. In 100% of those runs it prints a plan that lists every write a live run would make.
+- **SC-008**: On seeded fixtures, the completeness check fails in 100% of cases and names the cause. The fixtures include one per missing contract element, an untraced requirement, a task with no verification, a cyclic or dangling task DAG, a Lead-only reviewer checklist and a result from an older commit. It passes on a complete fixture.
+- **SC-009**: In seeded prompt-injection fixtures, 0 identifier-bearing issues written by an account other than the Lead's bot account enter the mapping without the Lead's confirmation.
+- **SC-010**: 100% of runs, dry or live, leave a run report that accounts for every planned write as performed, matched, skipped or refused.
 
 ## Assumptions
 
-- Gitea 28.x is the forge, and its API exposes issue dependencies, project columns and milestones as the report describes (user decision: Gitea only).
-- All Gitea writes travel through the semantic gateway of spec 002; the bridge never holds a raw administrator token.
-- Task IDs and dependency markers follow Spec Kit's current `tasks.md` conventions; the bridge reads them, it does not define them.
-- Each issue carries a hidden, machine-readable marker naming its feature and task ID, so lookup by task ID is exact rather than a title search.
-- The completeness check's applicability rules ("where relevant") are decided per feature in the spec itself and are not inferred by the tool.
-- Implementation language is assumed to be Python 3.12+ (unconfirmed; the language question went unanswered).
-- The core `taskstoissues` command and the GitHub issues extension stay unused in this repository; they are GitHub-specific and the forge is Gitea.
+- **Forge**: Gitea 28.x is the forge (project intake Q1). Its API exposes issue dependencies, project columns, milestones and labels as the report describes.
+- **Gitea instance**: Gitea runs on the MacBook with everything else (project intake Q22). The independent tests and SC-001, SC-002 and SC-007 need a scratch repository on that instance whose fixture mode can be set to Shadow or to a mode that lets the Lead populate Gitea (inferred). Two items are still open in the project intake: whether this GitHub-hosted repository is mirrored into that instance, and who operates it.
+- **Host and scale**: the host is a MacBook Pro M4 Pro: "Macbook Pro M4 Pro Chip 24 gigs of Ram (18 gigs of Ram operatinally after the MacOS memory consumption." (data-model intake Q14). The bridge shares it with Gitea, the LangGraph service, SQLite and local Ollama. First-year scale is "10 Agents and 1 User" (data-model intake Q8), which matches the peak capacity "3 agent sessions + 6 subagents + the Jev agent." (project intake Q20). One Lead runs the bridge for a feature at a time (inferred).
+- **Gateway**: every Gitea read and write travels through spec 002 as the calling role's own bot account (project intake Q15). Retries follow the gateway's and control plane's defaults: 5 attempts with exponential backoff capped at 2 minutes, which are proposed defaults in specs 001 and 002.
+- **Task conventions**: task IDs and dependency markers follow Spec Kit's current `tasks.md` conventions. The bridge reads them and does not define them, except for the traceability references of FR-016.
+- **Task identifier**: each issue carries a machine-readable identifier of its feature and task ID, so that lookup by task ID is exact rather than a title search. The report says only "Lookup existing Gitea issues by task ID". The identifier mechanism is left to the plan (inferred).
+- **Applicability**: the completeness check's applicability rules ("where relevant") are decided per feature in the spec itself and are not inferred by the tool.
+- **Stack**: "Defaults + OCaml, Rust where applicable, and Python for all Data Science, Data Engineering, Data Operations, and full scale Data Management." (project intake Q10; Q6: "OCaml and Python; Markdown; a vector DB; SQLite; knowledge graphs."). This replaces the earlier unconfirmed Python 3.12+ assumption. Read with the question's recommended option, the bridge is a Python engine like the repository's other Spec Kit engines, and any typed record it hands to the OCaml policy core uses the shared record formats that specs 001 and 002 consume. Planning decides the rest (inferred).
+- **Autonomy modes**: the bridge reads the active mode only through spec 002 and spec 001. Until spec 007 supplies the modes, Shadow applies, so the dry-run path is the bridge's default and this spec can be built and tested first (inferred, as in spec 002's Assumptions).
+- **Session stopping**: stopping a stuck Lead session is decided outside the bridge: "Checkpoint and stop, then escalate" (project intake Q21), using the stop rules of spec 008.
+- **git-history.md**: commits that carry the mapping are pushed like any other commit. `git-history.md` is written "At the start of every Coding Agent Session and after every git push." (data-model intake Q20), is generated and gitignored (data-model intake Q26) and belongs to spec 009. The bridge never writes it (inferred).
+- **Success-criteria numbers**: the numeric targets in Success Criteria are proposed defaults. The owner has not confirmed a headline target (project intake row S9 and its open item), as in specs 001 and 002.
 
 ## Dependencies
 
-- **Upstream**: 001-engineering-control-plane (board columns, Ready for Build transition, reading the completeness result); 002-gitea-mcp-gateway (every Gitea read and write, idempotency keys, role authority).
-- **Downstream**: 003-role-agent-contracts (Lead runs the bridge; PSE and Review read issue contracts); 006-quality-evidence-gates (requirements traceability is an input to the merge evidence gate); 007-progressive-autonomy (long-horizon mode depends on the Lead populating Gitea autonomously through this bridge).
-- **Constitution**: Article I (The Repository Is the Memory), Article II (Separated Authority), Article IV (Evidence Over Assertion), Article V (Specification Before Build), Article VIII (Mistakes Become Mechanisms).
+- **Upstream**:
+  - **001-engineering-control-plane**: 004 consumes the board's entry column (Backlog) and transition table (TR-01 to TR-03), the issue-contract definition (Key Entities: Issue Contract), the autonomy-mode gate (FR-030), and the Ready for Build entry condition (FR-029, TR-03) that reads the completeness result 004 produces.
+  - **002-gitea-mcp-gateway**: 004 consumes every Gitea read and write it makes: issue creation, labels resolved to IDs (FR-034), dependency links, board placement, the Lead's own bot account and authority (FR-005, FR-017), the mode check (FR-024), idempotency with never-expiring records (FR-011, FR-013), untrusted-text labelling (FR-015), and the read capabilities this spec's FR-024 asks it to add.
+- **Downstream**: none. In the dependency map no spec depends on 004.
+- **Related (not build edges)**: 003-role-agent-contracts (the Lead completes the issue contract on bridge-made issues, spec 003 FR-007); 006-quality-evidence-gates (requirements traceability feeds the merge evidence manifest); 007-progressive-autonomy (Long-horizon mode is where live Lead population begins).
+- **Build order**: 009 → 001 → 002, 005 → 003, 004 → 006, 008 → 007. 004 is built after 001 and 002, in parallel with 003.
+- **Constitution**: Article I (The Repository Is the Memory), Article II (Separated Authority), Article III (Agents Propose, Policy Decides), Article IV (Evidence Over Assertion), Article V (Specification Before Build), Article VI (Rules Are Not Self-Amendable), Article VIII (Mistakes Become Mechanisms), Article IX (Traces, Not Hidden Thoughts).
+
+## Clarifications
+
+### Session 2026-10-22
+
+- Q: The report uses Gitea as the control plane, but this repo and Claude Code Cloud Sessions run on GitHub. Which should the specs target? → A: Gitea only (project intake Q1)
+- Q: Where should the Lead, PSE and Review agents run? → A: LangGraph service (project intake Q2)
+- Q: The report warns against storing hidden chain-of-thought as 'thought chaining'. How should the thought-chaining tools work? → A: Both (project intake Q3)
+- Q: How far should the dependent specs go in this first pass? → A: Constitution plus full spec set (project intake Q4)
+- Q: Which language should the skills' source code (LangChain/LangGraph/RAG) be written in? → A: "OCaml and Python; Markdown; a vector DB; SQLite; knowledge graphs." (project intake Q6)
+- Q: Which models and embeddings should the RAG and reasoning chains use? → A: "Ollama (cloud and local) alongside Claude Code models." (project intake Q7)
+- Q: Which parts are OCaml and which stay Python? → A: "Defaults + OCaml, Rust where applicable, and Python for all Data Science, Data Engineering, Data Operations, and full scale Data Management." (project intake Q10)
+- Q: Who may approve promotion to the Long-horizon and Self-improving autonomy modes (spec 007 FR-009)? → A: "an agent called Smokey, and Smokey should be the only one" (project intake Q11)
+- Q: You said Smokey 'should be the only one'. The only one who may do what? (I read Jev and Smokey as two different agents: Jev watches sessions, Smokey approves.) → A: Sole top-mode approver (project intake Q12)
+- Q: Is Smokey an autonomous agent or an account a person controls? Art. VI says agents may not authorize changes to their own authority. → A: A person's account (project intake Q13)
+- Q: How should agents authenticate to Gitea (spec 002)? → A: "Each role gets its own Gitea bot account." (project intake Q15)
+- Q: How long are raw deliveries and normalized events kept (spec 001 FR-007)? → A: "Events have no time limit." (project intake Q16)
+- Q: When should a running session be stopped? → A: "A session stops only when it is not making successful progress or is stuck." (project intake Q17)
+- Q: How many subagents may run at once? → A: "At most 2 subagents per container, per role and per Gitea bot account." (project intake Q18)
+- Q: What does 'stuck' mean? → A: "A command, the terminal, thought-chaining or reasoning stops making progress, or bad code keeps failing." (project intake Q19)
+- Q: What is the peak capacity the system must sustain (spec 001 FR-021)? → A: "3 agent sessions + 6 subagents + the Jev agent." (project intake Q20)
+- Q: When a session is stuck: stop it automatically, or escalate to the user or Smokey first? → A: Checkpoint and stop, then escalate (project intake Q21)
+- Q: Where should Gitea, the LangGraph service and the local Ollama models run? → A: All on the MacBook (project intake Q22)
+- Q: How many people and agents should the data model support in its first year? → A: "10 Agents and 1 User" (data-model intake Q8, revised)
+- Q: Which technical limits must the data model respect? → A: "Macbook Pro M4 Pro Chip 24 gigs of Ram (18 gigs of Ram operatinally after the MacOS memory consumption." (data-model intake Q14, revised)
+- Q: When should git-history.md be written and fed to the vector store? → A: "At the start of every Coding Agent Session and after every git push." (data-model intake Q20, revised)
+- Q: A git-history.md entry written after a push can't be inside that push. How should the file be kept? → A: Generated and gitignored (data-model intake Q26)
