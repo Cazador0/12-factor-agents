@@ -328,6 +328,7 @@ Defaults pending the person's check (they do not count toward sufficiency until 
 | 7 | Q22–Q24 | 16 of 16 (+S5) | Monitor skill, reviewer self-report, degraded limits (delegated) settled |
 | specify-refine 1 | RQ1–RQ4 | — | Agent check, streak restart, price source, re-ask context settled; 1 conflict resolved |
 | specify-refine 2 | RQ5–RQ6 | — | Guardrail bar and four defaults confirmed; specify refinement done |
+| plan-refine 1 | PQ1–PQ2 | — | Seven plan defaults confirmed; plan refinement done |
 
 ## Open Items
 
@@ -383,5 +384,28 @@ levels"; "All four layers in R1"), and CONVENTIONS / ADRs as the interim constit
 - Q: Which of these defaults should stay as written? → A: All four: a persisting rate limit is an outage; ≥ 2 no-skill routing cases per skill; smoke run of ≥ 1 agentic and ≥ 2 routing cases from ≥ 2 skills; invalid JSON after 2 repairs is a failed case.
 
 Result: 28 decisions — 25 Backed (16 at the start, 9 settled in 2 rounds, including 1 conflict), 3 Delegated, 0 open.
+
+### Plan · 2026-10-22
+
+Artifacts: `plan.md`, `research.md`, `data-model.md`, `tasks.md` in `skill-lab/specs/105-jev-live-benchmarking/`.
+
+| # | Decision | Where | Group | Question | Answer |
+|---|---|---|---|---|---|
+| P1 | Re-ask only noul judgments; score/choice have no unsure band | research R-1 | Backed (Q5, RQ4: the re-ask is for unsure yes/no grades) | — | — |
+| P2 | 401/403/422 are configuration or case bugs, not outages | research R-3 | Unbacked → Backed | PQ1 assumption check | Kept as written — plan refinement round 1 |
+| P3 | A partly priced run reports usage only, never a partial cost sum | research R-8 | Unbacked → Backed | PQ1 assumption check | Kept as written — plan refinement round 1 |
+| P4 | Without /proc (macOS) CPU, memory and processes are null and cannot mark a run degraded | research R-9 | Unbacked → Backed | PQ1 assumption check | Kept as written — plan refinement round 1 |
+| P5 | The advisory call uses the run's own cloud model | research R-11 | Backed (RQ1 wording) | — | — |
+| P6 | The reviewer's health report is a separate marked PR comment, because the verdict comment allows one JSON block | research R-12 | Unbacked → Backed | PQ1 assumption check | Kept as written — plan refinement round 1 |
+| P7 | One model: the largest tool-capable general model on the plan's list | research R-14 | Delegated (Q11) | — | — |
+| P8 | Smoke cases come from lead-architect and review-verifier | research R-15 | Unbacked → Backed | PQ2 assumption check | Kept as written — plan refinement round 1 |
+| P9 | The run log never stores request or response bodies | research R-13 | Unbacked → Backed | PQ2 assumption check | Kept as written — plan refinement round 1 |
+| P10 | monitor-limits.json is a protected policy file: changing the limits needs the person's approval | data-model.md | Unbacked → Backed | PQ2 assumption check | Kept as written — plan refinement round 1 |
+| P11 | snapshot.py is built by SPEC-105 tasks; SKILL.md, SPEC-014 and evals by SPEC-201 tasks | plan.md | Agent's (internal ownership, no product effect) | — | — |
+
+- Q: Which of these plan defaults should stay as written (set 1)? → A: All four: 401/403/422 are not outages; a partly priced run reports usage only; missing /proc metrics never mark a run degraded; the reviewer's health report is a separate marked PR comment.
+- Q: Which of these plan defaults should stay as written (set 2)? → A: All three: smoke cases from lead-architect and review-verifier; no request or response bodies in the run log; monitor-limits.json changes need the person's approval.
+
+Result: 11 plan decisions — 2 Backed by earlier answers, 7 settled in 1 round (2 questions), 1 Delegated, 1 internal; 0 open.
 
 Plan-phase items, not refined here: `run-monitor`'s skill spec number and family; the exact contract field types.
