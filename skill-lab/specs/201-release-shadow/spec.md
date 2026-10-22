@@ -633,6 +633,37 @@ changes enforcement only. SPEC-203 adds exactly two restrict-only ids in `catalo
 existing level. The level counts are 3 / 19 / 7 / 5 (shadow / agent-implementation / guarded-autonomous /
 human-only) in 1.0.0 and 4 / 20 / 7 / 5 in 1.1.0.
 
+## Clarifications
+
+### Session 2026-10-22 (refinement of R1, recorded in the artifact because no intake is linked to SPEC-201)
+
+- Q: How should the Zed Agent reach Ollama Cloud models? → A: Local Ollama signed in: Zed talks to the Ollama app on the person's machine (localhost:11434), signed in to ollama.com; cloud models run remotely through it; one provider setting serves cloud now and local later.
+- Q: May GitHub Actions run CI on the private skill-factory repo? → A: Offline CI on every PR (validate, tests on Python 3.9 and current, deterministic benchmarks); live benchmarks only when started manually.
+- Q: May the reviewer cloud session's environment hold the Ollama and TypeSafe keys? → A: Recorded evidence only: the reviewer checks committed live-run results and recordings, does not re-run live cases, holds no keys, and says so in its verdict.
+- Q: Which family should the new run-monitor skill belong to? → A: "Control plane (Recommended) + Meta where the groups it with skill-forge, as tooling about the skill factory itself alongsid the engineering workflow of the control plane." Implemented as `metadata.family: control-plane` plus `metadata.secondary_family: meta`, listed under both groups in the catalog (inferred from the answer).
+- Q: Which of these R1 defaults should stay as written (set 1)? → A: All four: at most 3 automated review rounds, then the person decides; the engineering-team report is included in the private skill-factory repo; `set_by` is the person's GitHub username (Cazador0); after a webhook secret rotation the previous secret (`GITEA_WEBHOOK_SECRET_PREVIOUS`) is accepted for 7 days.
+- Q: Which of these R1 defaults should stay as written (set 2)? → A: All four: webhook body digests kept 90 days; live run results committed under `skill-lab/benchmarks/runs/<run_id>/`, with R1 evidence pointing at them by digest; creating a Gitea webhook stays human-only at every level; Zed and Claude Code settings block agent edits to `.skill-policy.json`.
+
+### Refinement ledger (R1, 2026-10-22)
+
+Conflicts with the person's earlier decisions were resolved by applying those decisions; no option contradicting them was offered.
+
+| # | Decision in this spec | Group | Resolution |
+|---|---|---|---|
+| 1 | Live gates as counts (≤ 1 failed agentic / trigger case per skill); per-skill criteria lowering defaults (schema-valid 0.66, uncertain 0.34); FR-033 minimums of 3 agentic and 6 trigger cases | Conflicting with the gates decision ("More cases, both levels") and intake Q3, Q16 | Applied: SPEC-105 FR-005..FR-008. Defaults are the floor (agentic ≥ 0.80, trigger ≥ 0.90, agentic schema-valid ≥ 0.95, uncertain after re-ask < 0.10) per skill and catalog-wide; ≥ 5 agentic and ≥ 10 trigger cases per skill (≥ 2 expecting no skill); guardrail cases 100 % |
+| 2 | FR-025 dedupes webhooks by `X-Gitea-Delivery` only | Conflicting with "All four layers in R1" | Applied: body-SHA-256 dedupe, freshness guard on signed `updated_at` and head SHA, events as hints (decisions re-read authoritative state), secret hygiene with a 7-day previous-secret window |
+| 3 | 13 skills; no `run-monitor` | Conflicting with intake Q22 | Applied: `run-monitor` is skill 14, SPEC-014, family control-plane with secondary meta, shipped in R1 |
+| 4 | An uncertain Jev judgment fails its case at once | Conflicting with intake Q5 | Applied: re-ask once with fixtures and SKILL.md, then fail and flag (SPEC-105 FR-002) |
+| 5 | R1 may merge "live-pending" with live gates `not_run` | Conflicting with intake Q1 and Q15 (the live run decides whether the R1 PR is ready; one fully passing run) | Applied: live gates move to the `merge` stage; R1 merges only after one fully passing counting live run |
+| 6 | Live evidence copied under `specs/201-release-shadow/evidence/bench/` | Unbacked | Settled (set 2): results under `skill-lab/benchmarks/runs/`, referenced by digest |
+| 7 | Zed endpoint shape left to T112 | Unbacked | Settled (round 1): local Ollama app signed in to ollama.com |
+| 8 | GitHub Actions on the private repo | Unbacked (synthesis Q5) | Settled (round 1): offline CI on every PR, live only manually |
+| 9 | Reviewer environment and keys | Unbacked (synthesis Q4) | Settled (round 1): recorded evidence only, no keys |
+| 10 | Review rounds, report inclusion, `set_by`, secret rotation, digest retention, webhook creation, policy-file protection | Unbacked | Settled (sets 1 and 2): kept as written |
+| 11 | SPEC-105 (live benchmarking harness) delivered inside R1 | Inferred from intake Q1 (the first live run is the R1 gate and must follow Q5, Q6, Q13, Q17–Q24) | Applied: R1 tasks include delivering SPEC-105 before the gate run |
+
+Result: 11 ledger rows; 5 conflicts resolved by prior decisions, 6 unbacked rows settled in 2 rounds (6 questions), 0 open.
+
 ## Assumptions
 
 - The foundation (SPEC-100..104) is complete when R1 step 5 starts. That includes envelope, cli, schemas, validator, sync, installer, bench with an `ollama-cloud` runtime that does not use `format`, the Jev client, and scoring. T001 verifies this and records interface names in `evidence/interface-notes.md`.
