@@ -1,0 +1,20 @@
+{
+  "action": "issue.move",
+  "actor_role": "pse",
+  "expected_version": 7,
+  "idempotency_key": "pse-184-move-review-001",
+  "lease_id": "lease-issue-184-pse",
+  "params": {
+    "pull_request": 211,
+    "to_state": "REVIEW"
+  },
+  "reason": "Implementation complete; PR 211 created",
+  "repository": "acme/factory",
+  "requested_at": "2026-10-22T08:00:00Z",
+  "schema_version": 1,
+  "session_id": "sess_pse_184_01",
+  "target": {
+    "id": 184,
+    "type": "issue"
+  }
+}

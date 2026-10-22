@@ -1,0 +1,29 @@
+{
+  "spec": "{{spec_id}}",
+  "requirements": [
+    {
+      "id": "FR-001",
+      "implemented_by": [
+        "skills/{{name}}/scripts/example.py"
+      ],
+      "verified_by": [
+        "skills/{{name}}/tests/test_example.py::TestExample::test_valid_input_is_echoed",
+        "skills/{{name}}/tests/test_example.py::TestExample::test_schema_invalid_input_exits_2",
+        "skills/{{name}}/evals/cases/example-valid-input.json",
+        "skills/{{name}}/evals/cases/example-schema-invalid.json"
+      ]
+    },
+    {
+      "id": "FR-002",
+      "implemented_by": [
+        "skills/{{name}}/evals/cases"
+      ],
+      "verified_by": [
+        "skills/{{name}}/evals/cases/example-missing-input.json",
+        "skills/{{name}}/evals/cases/agentic-todo-1.json",
+        "skills/{{name}}/evals/cases/trigger-positive-1.json",
+        "skills/{{name}}/evals/cases/trigger-negative-1.json"
+      ]
+    }
+  ]
+}

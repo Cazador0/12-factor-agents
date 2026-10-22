@@ -25,24 +25,44 @@ from __future__ import annotations
 import functools
 import math
 import re
-from typing import Any, Dict, List, NamedTuple, Optional
+from typing import Any, Dict, List, NamedTuple
 from urllib.parse import unquote
 
 from . import jsonpointer
 from .timeutil import is_rfc3339
 
-ANNOTATION_KEYWORDS = frozenset(
-    {"$schema", "$id", "title", "description", "examples", "default", "$comment"}
-)
+ANNOTATION_KEYWORDS = frozenset({"$schema", "$id", "title", "description", "examples", "default", "$comment"})
 SUPPORTED_KEYWORDS = frozenset(
     {
-        "type", "properties", "required", "additionalProperties", "items", "prefixItems",
-        "enum", "const", "pattern", "minLength", "maxLength", "minimum", "maximum",
-        "exclusiveMinimum", "exclusiveMaximum", "minItems", "maxItems", "uniqueItems",
-        "oneOf", "anyOf", "allOf", "not", "$ref", "format", "$defs",
+        "type",
+        "properties",
+        "required",
+        "additionalProperties",
+        "items",
+        "prefixItems",
+        "enum",
+        "const",
+        "pattern",
+        "minLength",
+        "maxLength",
+        "minimum",
+        "maximum",
+        "exclusiveMinimum",
+        "exclusiveMaximum",
+        "minItems",
+        "maxItems",
+        "uniqueItems",
+        "oneOf",
+        "anyOf",
+        "allOf",
+        "not",
+        "$ref",
+        "format",
+        "$defs",
     }
 )
 SUPPORTED_FORMATS = frozenset({"date-time"})
+MAX_RULE_LENGTH = 120
 JSON_TYPES = ("object", "array", "string", "number", "integer", "boolean", "null")
 
 
@@ -70,6 +90,7 @@ class SchemaError(ValueError):
 # ---------------------------------------------------------------------------
 # JSON data model helpers
 # ---------------------------------------------------------------------------
+
 
 def json_type_of(value: Any) -> str:
     """Return the JSON type name of a Python value (integral floats are "integer")."""
@@ -121,14 +142,19 @@ def json_equal(left: Any, right: Any) -> bool:
 # Validation
 # ---------------------------------------------------------------------------
 
+
 def validate(instance: Any, schema: Any, *, root: Any = None) -> List[Issue]:
     """Validate ``instance`` against ``schema`` and return every issue found.
 
     ``root`` is the document ``$ref`` pointers resolve against; it defaults to
-    ``schema``. Raises ``SchemaError`` when the schema is unusable.
+    ``schema``. Raises ``SchemaError`` when the schema is unusable. An instance
+    nested too deeply to walk yields a single ``depth`` issue.
     """
     validator = _Validator(schema if root is None else root)
-    return validator.check(instance, schema, "")
+    try:
+        return validator.check(instance, schema, "")
+    except RecursionError:
+        return [Issue("", "depth", "instance is nested too deeply to validate")]
 
 
 def is_valid(instance: Any, schema: Any, *, root: Any = None) -> bool:
@@ -175,24 +201,36 @@ class _Validator:
         return issues
 
     def _any_of(self, instance: Any, subschemas: Any, schema: dict, path: str) -> List[Issue]:
-        results = [self.check(instance, s, path) for s in _schema_list("anyOf", subschemas)]
+        branches = _schema_list("anyOf", subschemas)
+        results = [self.check(instance, branch, path) for branch in branches]
         if any(not result for result in results):
             return []
-        return [Issue(path, "anyOf", "is not valid under any of the %d anyOf schemas%s" % (len(results), _closest(results)))]
+        return [Issue(path, "anyOf", _no_branch_message("anyOf", schema, self.described(branches), results))]
 
     def _one_of(self, instance: Any, subschemas: Any, schema: dict, path: str) -> List[Issue]:
-        results = [self.check(instance, s, path) for s in _schema_list("oneOf", subschemas)]
+        branches = _schema_list("oneOf", subschemas)
+        results = [self.check(instance, branch, path) for branch in branches]
         matches = [index for index, result in enumerate(results) if not result]
         if len(matches) == 1:
             return []
         if not matches:
-            return [Issue(path, "oneOf", "is not valid under any of the %d oneOf schemas%s" % (len(results), _closest(results)))]
-        return [Issue(path, "oneOf", "is valid under more than one oneOf schema (indexes %s)" % ", ".join(map(str, matches)))]
+            return [Issue(path, "oneOf", _no_branch_message("oneOf", schema, self.described(branches), results))]
+        indexes = ", ".join(map(str, matches))
+        return [
+            Issue(path, "oneOf", "is valid under more than one oneOf schema (indexes %s)%s" % (indexes, _rule(schema)))
+        ]
 
     def _not(self, instance: Any, subschema: Any, schema: dict, path: str) -> List[Issue]:
         if self.check(instance, subschema, path):
             return []
-        return [Issue(path, "not", "must not be valid under the 'not' schema")]
+        return [Issue(path, "not", "must not be valid under the 'not' schema%s" % _rule(subschema))]
+
+    def described(self, branches: list) -> list:
+        """Branches with local ``$ref`` resolved, so their descriptions can be quoted."""
+        return [
+            self.resolve_ref(b["$ref"]) if isinstance(b, dict) and "$ref" in b and "description" not in b else b
+            for b in branches
+        ]
 
     # -- any type ---------------------------------------------------------
 
@@ -259,6 +297,8 @@ class _Validator:
         return []
 
     def _pattern(self, instance: Any, pattern: Any, schema: dict, path: str) -> List[Issue]:
+        if not isinstance(pattern, str):
+            raise SchemaError("'pattern' must be a string")
         if isinstance(instance, str) and not _compile(pattern).search(instance):
             return [Issue(path, "pattern", "%s does not match %r" % (_short(instance), pattern))]
         return []
@@ -380,18 +420,41 @@ def _count(keyword: str, value: Any) -> int:
 
 
 @functools.lru_cache(maxsize=512)
-def _compile(pattern: str) -> "re.Pattern[str]":
+def _compile(pattern: str) -> re.Pattern:
     try:
         return re.compile(pattern, re.ASCII)
-    except (re.error, TypeError) as exc:
+    except re.error as exc:
         raise SchemaError("invalid pattern %r: %s" % (pattern, exc)) from None
 
 
-def _closest(results: List[List[Issue]]) -> str:
-    """Describe the alternative with the fewest issues, to make failures actionable."""
+def _no_branch_message(keyword: str, schema: dict, branches: list, results: List[List[Issue]]) -> str:
+    """Explain a failed anyOf/oneOf: the rule it encodes and the nearest alternative.
+
+    The rule is the short ``description`` of the schema holding the keyword;
+    the nearest alternative is the branch with the fewest issues, named by its
+    own ``description`` when it has one. Contract invariants rely on this so a
+    small model can see why a document was rejected and how to fix it.
+    """
     best = min(range(len(results)), key=lambda index: len(results[index]))
     first = results[best][0]
-    return "; closest is #%d: %s at %s: %s" % (best, first.keyword, first.path or "/", first.message)
+    return "is not valid under any of the %d %s schemas%s; closest is #%d%s: %s at %s: %s" % (
+        len(results),
+        keyword,
+        _rule(schema),
+        best,
+        _rule(branches[best], brackets=("(", ")")),
+        first.keyword,
+        first.path or "/",
+        first.message,
+    )
+
+
+def _rule(schema: Any, brackets: tuple = ("[rule: ", "]")) -> str:
+    """A schema's short description as message context; long ones are omitted."""
+    text = schema.get("description") if isinstance(schema, dict) else None
+    if not isinstance(text, str) or not text or len(text) > MAX_RULE_LENGTH:
+        return ""
+    return " %s%s%s" % (brackets[0], text.rstrip("."), brackets[1])
 
 
 def _short(value: Any, limit: int = 60) -> str:
@@ -443,9 +506,23 @@ def _audit(schema: Any, found: set) -> None:
             _audit(value, found)
 
 
-def first_issue_messages(issues: List[Issue], limit: int = 5) -> List[str]:
-    """Render up to ``limit`` issues as ``path: keyword: message`` lines."""
-    return ["%s: %s: %s" % (i.path or "/", i.keyword, i.message) for i in issues[:limit]]
+def issues_to_errors(
+    issues: List[Issue], *, code: str = "SCHEMA_INVALID", prefix: str = "", limit: int = 20
+) -> List[Dict[str, str]]:
+    """Convert issues to envelope errors, keeping at most ``limit`` (Factor 9).
+
+    When issues are dropped, a final ``ISSUES_TRUNCATED`` error says how many.
+    """
+    errors = [issue.to_error(code, prefix) for issue in issues[:limit]]
+    if len(issues) > limit:
+        errors.append(
+            {
+                "code": "ISSUES_TRUNCATED",
+                "message": "%d more issues not shown" % (len(issues) - limit),
+                "path": prefix or "",
+            }
+        )
+    return errors
 
 
 __all__ = [
@@ -458,13 +535,9 @@ __all__ = [
     "is_type",
     "is_number",
     "json_equal",
-    "first_issue_messages",
+    "issues_to_errors",
     "ANNOTATION_KEYWORDS",
     "SUPPORTED_KEYWORDS",
     "SUPPORTED_FORMATS",
     "JSON_TYPES",
 ]
-
-
-def _unused_guard(_: Optional[Dict[str, Any]] = None) -> None:  # pragma: no cover
-    """Placeholder removed below."""

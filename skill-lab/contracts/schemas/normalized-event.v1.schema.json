@@ -1,0 +1,177 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:skill-lab:schema:normalized-event:v1",
+  "title": "Normalized event",
+  "description": "A Gitea webhook delivery after authenticity check, de-duplication and normalisation, in the compact form the state machine and agents consume. Consumers must ignore events with signature_verified false or duplicate true.",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "event_id",
+    "delivery_id",
+    "event_type",
+    "repository",
+    "actor",
+    "summary",
+    "blocking",
+    "next_action",
+    "received_at",
+    "signature_verified",
+    "duplicate"
+  ],
+  "properties": {
+    "schema_version": {
+      "description": "Contract major version.",
+      "type": "integer",
+      "const": 1
+    },
+    "event_id": {
+      "$ref": "#/$defs/token_id"
+    },
+    "delivery_id": {
+      "description": "X-Gitea-Delivery header value.",
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128
+    },
+    "event_type": {
+      "description": "Normalised type, e.g. pull_request.opened, review.changes_requested, check.failure.",
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9_]*(\\.[a-z][a-z0-9_]*)+$",
+      "maxLength": 100
+    },
+    "raw_event": {
+      "description": "X-Gitea-Event header value.",
+      "type": "string",
+      "maxLength": 100
+    },
+    "raw_action": {
+      "description": "The payload's action field, when present.",
+      "type": [
+        "string",
+        "null"
+      ],
+      "maxLength": 100
+    },
+    "repository": {
+      "$ref": "#/$defs/repository"
+    },
+    "issue": {
+      "type": [
+        "integer",
+        "null"
+      ],
+      "minimum": 1
+    },
+    "pull_request": {
+      "type": [
+        "integer",
+        "null"
+      ],
+      "minimum": 1
+    },
+    "actor": {
+      "type": "object",
+      "required": [
+        "login",
+        "role"
+      ],
+      "properties": {
+        "login": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "maxLength": 100
+        },
+        "role": {
+          "description": "Role resolved from the login; human for people, unknown when unmapped.",
+          "enum": [
+            "lead",
+            "pse",
+            "review",
+            "system",
+            "human",
+            "unknown"
+          ]
+        },
+        "session_id": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$"
+        }
+      },
+      "additionalProperties": false
+    },
+    "commit": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "pattern": "^[0-9a-f]{7,64}$"
+    },
+    "summary": {
+      "$ref": "#/$defs/line"
+    },
+    "evidence": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/line"
+      },
+      "maxItems": 20
+    },
+    "blocking": {
+      "type": "boolean"
+    },
+    "next_action": {
+      "description": "Suggested next step, e.g. pse.remediate or review.start; null when none.",
+      "type": [
+        "string",
+        "null"
+      ],
+      "pattern": "^[a-z][a-z0-9_]*(\\.[a-z][a-z0-9_]*)*$",
+      "maxLength": 100
+    },
+    "occurred_at": {
+      "$ref": "#/$defs/date_time"
+    },
+    "received_at": {
+      "$ref": "#/$defs/date_time"
+    },
+    "signature_verified": {
+      "description": "True only when X-Gitea-Signature matched the HMAC-SHA256 of the raw body.",
+      "type": "boolean"
+    },
+    "duplicate": {
+      "description": "True when this delivery_id was already processed.",
+      "type": "boolean"
+    }
+  },
+  "additionalProperties": false,
+  "$defs": {
+    "date_time": {
+      "description": "RFC 3339 timestamp; producers emit YYYY-MM-DDTHH:MM:SSZ.",
+      "type": "string",
+      "format": "date-time"
+    },
+    "line": {
+      "description": "One line of text (no line breaks), at most 500 characters.",
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 500,
+      "pattern": "^[^\\r\\n]+$"
+    },
+    "repository": {
+      "description": "Repository as owner/name.",
+      "type": "string",
+      "pattern": "^[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+$",
+      "maxLength": 200
+    },
+    "token_id": {
+      "description": "Opaque identifier (letters, digits, . _ : -).",
+      "type": "string",
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$"
+    }
+  }
+}

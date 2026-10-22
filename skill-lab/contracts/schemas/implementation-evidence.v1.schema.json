@@ -1,0 +1,230 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:skill-lab:schema:implementation-evidence:v1",
+  "title": "Implementation evidence",
+  "description": "The PSE's evidence package for one issue: commits, changed components, per-criterion status and every check with the command that ran, its exit code and a digest of its log. A status of passed is only credible with a command, exit code 0 and a log digest; producers enforce that.",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "issue",
+    "spec_id",
+    "task_ids",
+    "base_commit",
+    "head_commit",
+    "changed_components",
+    "acceptance_criteria",
+    "checks",
+    "migrations",
+    "known_risks",
+    "unresolved_questions"
+  ],
+  "properties": {
+    "schema_version": {
+      "description": "Contract major version.",
+      "type": "integer",
+      "const": 1
+    },
+    "issue": {
+      "$ref": "#/$defs/issue_number"
+    },
+    "pr": {
+      "type": [
+        "integer",
+        "null"
+      ],
+      "minimum": 1
+    },
+    "repository": {
+      "$ref": "#/$defs/repository"
+    },
+    "branch": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 250
+    },
+    "spec_id": {
+      "$ref": "#/$defs/spec_id"
+    },
+    "task_ids": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/task_id"
+      },
+      "minItems": 1,
+      "uniqueItems": true
+    },
+    "base_commit": {
+      "$ref": "#/$defs/git_sha"
+    },
+    "head_commit": {
+      "$ref": "#/$defs/git_sha"
+    },
+    "changed_components": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 200
+      },
+      "uniqueItems": true
+    },
+    "acceptance_criteria": {
+      "description": "Map from acceptance-criterion ID (AC-01) to status. Keys must match ^AC-[0-9]{2,}$.",
+      "type": "object",
+      "additionalProperties": {
+        "enum": [
+          "passed",
+          "failed",
+          "not_run"
+        ]
+      }
+    },
+    "checks": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "name",
+          "command",
+          "exit_code",
+          "status",
+          "log_digest"
+        ],
+        "properties": {
+          "name": {
+            "$ref": "#/$defs/identifier"
+          },
+          "command": {
+            "description": "Exact command that ran; null when it did not run.",
+            "type": [
+              "string",
+              "null"
+            ],
+            "minLength": 1,
+            "maxLength": 1000
+          },
+          "exit_code": {
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "status": {
+            "enum": [
+              "passed",
+              "failed",
+              "not_run"
+            ]
+          },
+          "log_digest": {
+            "description": "Digest of the captured log; null when it did not run.",
+            "type": [
+              "string",
+              "null"
+            ],
+            "pattern": "^sha256:[0-9a-f]{64}$"
+          },
+          "duration_ms": {
+            "type": "integer",
+            "minimum": 0
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    "migrations": {
+      "type": "object",
+      "required": [
+        "present"
+      ],
+      "properties": {
+        "present": {
+          "type": "boolean"
+        },
+        "paths": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/rel_path"
+          },
+          "uniqueItems": true
+        },
+        "reversible": {
+          "type": [
+            "boolean",
+            "null"
+          ]
+        }
+      },
+      "additionalProperties": false
+    },
+    "known_risks": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/line"
+      }
+    },
+    "unresolved_questions": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/line"
+      }
+    },
+    "generated_at": {
+      "$ref": "#/$defs/date_time"
+    }
+  },
+  "additionalProperties": false,
+  "$defs": {
+    "date_time": {
+      "description": "RFC 3339 timestamp; producers emit YYYY-MM-DDTHH:MM:SSZ.",
+      "type": "string",
+      "format": "date-time"
+    },
+    "git_sha": {
+      "description": "Git commit SHA, abbreviated (7+) or full, lowercase hex.",
+      "type": "string",
+      "pattern": "^[0-9a-f]{7,64}$"
+    },
+    "identifier": {
+      "description": "Short stable identifier, e.g. unit, B-01, has-acceptance-criteria.",
+      "type": "string",
+      "pattern": "^[A-Za-z0-9]+([._:-][A-Za-z0-9]+)*$",
+      "maxLength": 100
+    },
+    "issue_number": {
+      "description": "Gitea issue number.",
+      "type": "integer",
+      "minimum": 1
+    },
+    "line": {
+      "description": "One line of text (no line breaks), at most 500 characters.",
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 500,
+      "pattern": "^[^\\r\\n]+$"
+    },
+    "rel_path": {
+      "description": "Relative path with '/' separators; no leading '/', drive letter, '..' segment or backslash.",
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 500,
+      "pattern": "^(?!/)(?![A-Za-z]:)(?!.*(?:^|/)\\.\\.(?:/|$))[^\\\\\\x00]+$"
+    },
+    "repository": {
+      "description": "Repository as owner/name.",
+      "type": "string",
+      "pattern": "^[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+$",
+      "maxLength": 200
+    },
+    "spec_id": {
+      "description": "Specification ID, e.g. SPEC-042.",
+      "type": "string",
+      "pattern": "^SPEC-[0-9]{3}$"
+    },
+    "task_id": {
+      "description": "Spec Kit task ID, e.g. T001.",
+      "type": "string",
+      "pattern": "^T[0-9]{3,}$"
+    }
+  }
+}

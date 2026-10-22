@@ -1,0 +1,127 @@
+# Skill Lab gates. The offline job runs on every push and pull request that touches the skills, the
+# lab, the installed skill links, AGENTS.md or this file. The live-bench job runs only by hand
+# (Actions -> skill-lab -> Run workflow) and needs the repository secrets TYPESAFE_API_KEY and
+# OLLAMA_API_KEY. Runbook: skill-lab/docs/runbooks/live-benchmarks.md
+name: skill-lab
+
+on:
+  push:
+    paths:
+      - "skills/**"
+      - "skill-lab/**"
+      - ".agents/**"
+      - ".claude/**"
+      - "AGENTS.md"
+      - ".github/workflows/skill-lab.yml"
+  pull_request:
+    paths:
+      - "skills/**"
+      - "skill-lab/**"
+      - ".agents/**"
+      - ".claude/**"
+      - "AGENTS.md"
+      - ".github/workflows/skill-lab.yml"
+  workflow_dispatch:
+    inputs:
+      model:
+        description: "Ollama Cloud model for live-bench, exactly as https://ollama.com/api/tags lists it (for example gemma4:31b)"
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: skill-lab-${{ github.workflow }}-${{ github.event_name }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  offline:
+    name: offline gates (Python ${{ matrix.python-version }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        # The oldest supported Python (CONVENTIONS §3) and the current one.
+        python-version: ["3.9", "3.13"]
+    env:
+      PYTHONDONTWRITEBYTECODE: "1"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Vendored _skillkit and schemas match the canonical copies
+        run: python3 skill-lab/bin/skill-lab sync --check
+      - name: Validate every skill for zed, claude and codex
+        run: python3 skill-lab/bin/skill-lab validate --runtime all
+      - name: Unit tests (lab and skills)
+        run: python3 skill-lab/bin/skill-lab test
+      - name: Deterministic benchmarks
+        run: python3 skill-lab/bin/skill-lab bench --tier deterministic
+      - name: skills/CATALOG.json is current
+        run: python3 skill-lab/bin/skill-lab catalog --check
+      - name: Upload benchmark runs
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: benchmark-runs-py${{ matrix.python-version }}
+          path: skill-lab/benchmarks/runs/
+          if-no-files-found: ignore
+          retention-days: 14
+
+  live-bench:
+    name: live benchmarks (Ollama Cloud + Jev)
+    if: github.event_name == 'workflow_dispatch'
+    needs: offline
+    runs-on: ubuntu-latest
+    env:
+      PYTHONDONTWRITEBYTECODE: "1"
+      TYPESAFE_API_KEY: ${{ secrets.TYPESAFE_API_KEY }}
+      OLLAMA_API_KEY: ${{ secrets.OLLAMA_API_KEY }}
+      # Passed through the environment, never pasted into a script, so the input cannot inject shell.
+      MODEL: ${{ inputs.model }}
+    steps:
+      - name: Check that the live secrets are set
+        id: keys
+        run: |
+          missing=""
+          if [ -z "$TYPESAFE_API_KEY" ]; then missing="$missing TYPESAFE_API_KEY"; fi
+          if [ -z "$OLLAMA_API_KEY" ]; then missing="$missing OLLAMA_API_KEY"; fi
+          if [ -n "$missing" ]; then
+            echo "::notice title=live-bench skipped::missing repository secrets:$missing. See skill-lab/docs/runbooks/live-benchmarks.md"
+            echo "run=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "run=true" >> "$GITHUB_OUTPUT"
+          fi
+      - uses: actions/checkout@v4
+        if: steps.keys.outputs.run == 'true'
+      - uses: actions/setup-python@v5
+        if: steps.keys.outputs.run == 'true'
+        with:
+          python-version: "3.13"
+      - name: Doctor (keys present, endpoints reachable)
+        if: steps.keys.outputs.run == 'true'
+        run: python3 skill-lab/bin/skill-lab doctor
+      - name: Live benchmarks, recording cassettes
+        if: steps.keys.outputs.run == 'true'
+        run: python3 skill-lab/bin/skill-lab bench --tier all --runtime ollama-cloud --model "$MODEL" --jev live --record skill-lab/benchmarks/cassettes
+      - name: Score every skill
+        if: ${{ !cancelled() && steps.keys.outputs.run == 'true' }}
+        run: |
+          status=0
+          for dir in skills/*/; do
+            [ -d "$dir" ] || continue
+            python3 skill-lab/bin/skill-lab score --skill "$(basename "$dir")" || status=1
+          done
+          exit "$status"
+      - name: Upload runs and cassettes
+        if: ${{ !cancelled() && steps.keys.outputs.run == 'true' }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: live-bench
+          path: |
+            skill-lab/benchmarks/runs/
+            skill-lab/benchmarks/cassettes/
+          if-no-files-found: ignore
+          retention-days: 30

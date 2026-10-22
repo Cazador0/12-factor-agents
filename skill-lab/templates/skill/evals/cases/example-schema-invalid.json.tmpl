@@ -1,0 +1,31 @@
+{
+  "description": "TODO(scaffold): replace with a real case. A schema-invalid document exits 2 with INPUT_SCHEMA_INVALID.",
+  "expect": {
+    "assertions": [
+      {
+        "op": "eq",
+        "path": "/errors/0/code",
+        "value": "INPUT_SCHEMA_INVALID"
+      }
+    ],
+    "exit_code": 2,
+    "schema_valid": true
+  },
+  "id": "example-schema-invalid",
+  "judgments": [],
+  "run": {
+    "args": [
+      "--input",
+      "evals/fixtures/invalid-envelope.json",
+      "--contract",
+      "envelope"
+    ],
+    "script": "scripts/example.py"
+  },
+  "schema": "urn:skill-lab:schema:benchmark-case:v1",
+  "skill": "{{name}}",
+  "tags": [
+    "scaffold-todo"
+  ],
+  "tier": "deterministic"
+}

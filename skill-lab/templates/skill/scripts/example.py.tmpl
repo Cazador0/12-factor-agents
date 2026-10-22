@@ -1,0 +1,48 @@
+#!/usr/bin/env python3
+"""Check a JSON document against a vendored contract and echo it as the payload.
+
+TODO(scaffold): replace this example with the skill's real deterministic step.
+
+It shows the script contract (CONVENTIONS §3): argparse with ``--help``,
+``--input FILE`` (``-`` for stdin), exactly one envelope.v1 on stdout, compact
+errors, and exit codes 0 (valid) and 2 (missing, not JSON, or schema-invalid).
+"""
+
+from __future__ import annotations
+
+import os
+import sys
+
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+
+from _skillkit import EXIT_OK, EXIT_USAGE, cli, envelope, jsonschema_mini, schemas  # noqa: E402
+
+SKILL = "{{name}}"
+SCRIPT = "example.py"
+VERSION = "0.1.0"
+
+
+def build_parser():
+    parser = cli.base_parser("Check a JSON document against a vendored contract and echo it as the payload.")
+    cli.add_input_argument(parser)
+    parser.add_argument(
+        "--contract",
+        required=True,
+        metavar="NAME",
+        help="contract name, e.g. envelope; its schema must be vendored in assets/schemas/",
+    )
+    return parser
+
+
+def main():
+    args = build_parser().parse_args()
+    document = cli.read_json(args.input)
+    issues = schemas.validate_payload(args.contract, document)
+    if issues:
+        errors = jsonschema_mini.issues_to_errors(issues, code="INPUT_SCHEMA_INVALID")
+        return envelope.ScriptResult(EXIT_USAGE, None, errors, kind=args.contract)
+    return envelope.ScriptResult(EXIT_OK, document, kind=args.contract)
+
+
+if __name__ == "__main__":
+    sys.exit(envelope.run_script(main, skill=SKILL, script=SCRIPT, version=VERSION, kind="envelope"))

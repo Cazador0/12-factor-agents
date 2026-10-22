@@ -1,0 +1,193 @@
+{
+  "commit": "4f2c9a1e7b3d5f60a8c2e1d9b7f4a3c2e1d0b9a8",
+  "factors": [
+    {
+      "evidence": [
+        {
+          "line": 41,
+          "note": "Verdict is a typed JSON contract, not prose.",
+          "path": "scripts/review_verdict.py"
+        }
+      ],
+      "gaps": [],
+      "id": 1,
+      "name": "Natural Language to Tool Calls",
+      "recommendation": "No change needed.",
+      "score": 3
+    },
+    {
+      "evidence": [
+        {
+          "line": 12,
+          "note": "Procedure is versioned in the skill body.",
+          "path": "SKILL.md"
+        }
+      ],
+      "gaps": [
+        "Judge instructions live only in eval cases."
+      ],
+      "id": 2,
+      "name": "Own your prompts",
+      "recommendation": "Move judge instructions into references/judging.md.",
+      "score": 2
+    },
+    {
+      "evidence": [
+        {
+          "line": 1,
+          "note": "Body is 180 lines; references load on demand.",
+          "path": "SKILL.md"
+        }
+      ],
+      "gaps": [],
+      "id": 3,
+      "name": "Own your context window",
+      "recommendation": "No change needed.",
+      "score": 3
+    },
+    {
+      "evidence": [
+        {
+          "line": null,
+          "note": "Output validated against a vendored schema.",
+          "path": "assets/schemas/review-verdict.v1.schema.json"
+        }
+      ],
+      "gaps": [],
+      "id": 4,
+      "name": "Tools are just structured outputs",
+      "recommendation": "No change needed.",
+      "score": 3
+    },
+    {
+      "evidence": [
+        {
+          "line": 77,
+          "note": "State comes from the PR and evidence files.",
+          "path": "scripts/review_verdict.py"
+        }
+      ],
+      "gaps": [
+        "Review session state is not checkpointed."
+      ],
+      "id": 5,
+      "name": "Unify execution state and business state",
+      "recommendation": "Write a session-checkpoint on stop.",
+      "score": 2
+    },
+    {
+      "evidence": [
+        {
+          "line": 140,
+          "note": "Each step is one script call that can be re-run.",
+          "path": "SKILL.md"
+        }
+      ],
+      "gaps": [
+        "No explicit resume step."
+      ],
+      "id": 6,
+      "name": "Launch/Pause/Resume with simple APIs",
+      "recommendation": "Add a resume-from-checkpoint step.",
+      "score": 2
+    },
+    {
+      "evidence": [
+        {
+          "line": 160,
+          "note": "BLOCKED_BY_ENV escalates in prose only.",
+          "path": "SKILL.md"
+        }
+      ],
+      "gaps": [
+        "No structured human-escalation output."
+      ],
+      "id": 7,
+      "name": "Contact humans with tool calls",
+      "recommendation": "Emit a mutation-request asking for human review.",
+      "score": 1
+    },
+    {
+      "evidence": [
+        {
+          "line": 12,
+          "note": "Deterministic script decides the verdict shape.",
+          "path": "scripts/review_verdict.py"
+        }
+      ],
+      "gaps": [],
+      "id": 8,
+      "name": "Own your control flow",
+      "recommendation": "No change needed.",
+      "score": 3
+    },
+    {
+      "evidence": [
+        {
+          "line": 1,
+          "note": "Errors are one-line codes with JSON Pointer paths.",
+          "path": "scripts/_skillkit/envelope.py"
+        }
+      ],
+      "gaps": [],
+      "id": 9,
+      "name": "Compact Errors into Context Window",
+      "recommendation": "No change needed.",
+      "score": 3
+    },
+    {
+      "evidence": [
+        {
+          "line": 3,
+          "note": "One job: verify a PR against its spec.",
+          "path": "SKILL.md"
+        }
+      ],
+      "gaps": [],
+      "id": 10,
+      "name": "Small, Focused Agents",
+      "recommendation": "No change needed.",
+      "score": 3
+    },
+    {
+      "evidence": [
+        {
+          "line": 3,
+          "note": "Works in Zed, Claude Code and Codex.",
+          "path": "SKILL.md"
+        }
+      ],
+      "gaps": [
+        "No webhook-triggered entry point."
+      ],
+      "id": 11,
+      "name": "Trigger from anywhere, meet users where they are",
+      "recommendation": "Accept a normalized-event as input.",
+      "score": 2
+    },
+    {
+      "evidence": [
+        {
+          "line": 30,
+          "note": "Verdict is a pure function of its inputs.",
+          "path": "scripts/review_verdict.py"
+        }
+      ],
+      "gaps": [
+        "Reads the clock when --now is absent."
+      ],
+      "id": 12,
+      "name": "Make your agent a stateless reducer",
+      "recommendation": "Always pass --now from the caller.",
+      "score": 2
+    }
+  ],
+  "generated_at": "2026-10-22T08:00:00Z",
+  "grade": "B",
+  "max_total": 36,
+  "schema_version": 1,
+  "signals_version": "1.0.0",
+  "summary": "Strong typed outputs and compact errors; human escalation is still prose.",
+  "target": "skills/review-verifier",
+  "total": 29
+}

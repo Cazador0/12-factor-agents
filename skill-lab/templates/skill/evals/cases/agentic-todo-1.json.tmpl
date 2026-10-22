@@ -1,0 +1,43 @@
+{
+  "description": "TODO(scaffold): replace with a real task the model must complete with this skill loaded.",
+  "expect": {
+    "assertions": [
+      {
+        "op": "eq",
+        "path": "/payload/kind",
+        "value": "lease"
+      }
+    ],
+    "schema_valid": true
+  },
+  "fixtures": [
+    "evals/fixtures/valid-envelope.json"
+  ],
+  "id": "agentic-todo-1",
+  "judgments": [
+    {
+      "criteria": {
+        "false": "TODO(scaffold): what a no looks like.",
+        "true": "TODO(scaffold): what a yes looks like."
+      },
+      "id": "reports-the-checked-document",
+      "instructions": "TODO(scaffold): one narrow yes/no question about the model's output. Jev never sees this id, so state the full context here.",
+      "pass_if": {
+        "gte": 0.8
+      },
+      "state_from": [
+        "output",
+        "prompt"
+      ],
+      "type": "noul"
+    }
+  ],
+  "output_schema": "urn:skill-lab:schema:envelope:v1",
+  "prompt": "TODO(scaffold): a realistic user request. Example: check evals/fixtures/valid-envelope.json against the envelope contract and return the JSON envelope the script prints.",
+  "schema": "urn:skill-lab:schema:benchmark-case:v1",
+  "skill": "{{name}}",
+  "tags": [
+    "scaffold-todo"
+  ],
+  "tier": "agentic"
+}

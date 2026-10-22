@@ -1,0 +1,327 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:skill-lab:schema:twelve-factor-scorecard:v1",
+  "title": "Twelve-factor scorecard",
+  "description": "A 12-factor-agents audit of one target: exactly twelve factors in order 1..12, each scored 0-3 with file evidence, gaps and a recommendation.",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "target",
+    "factors",
+    "total",
+    "max_total",
+    "grade",
+    "signals_version"
+  ],
+  "properties": {
+    "schema_version": {
+      "description": "Contract major version.",
+      "type": "integer",
+      "const": 1
+    },
+    "target": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 500
+    },
+    "commit": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "pattern": "^[0-9a-f]{7,64}$"
+    },
+    "factors": {
+      "description": "Factors 1..12 in order.",
+      "type": "array",
+      "prefixItems": [
+        {
+          "allOf": [
+            {
+              "$ref": "#/$defs/factor"
+            },
+            {
+              "properties": {
+                "id": {
+                  "const": 1
+                }
+              }
+            }
+          ]
+        },
+        {
+          "allOf": [
+            {
+              "$ref": "#/$defs/factor"
+            },
+            {
+              "properties": {
+                "id": {
+                  "const": 2
+                }
+              }
+            }
+          ]
+        },
+        {
+          "allOf": [
+            {
+              "$ref": "#/$defs/factor"
+            },
+            {
+              "properties": {
+                "id": {
+                  "const": 3
+                }
+              }
+            }
+          ]
+        },
+        {
+          "allOf": [
+            {
+              "$ref": "#/$defs/factor"
+            },
+            {
+              "properties": {
+                "id": {
+                  "const": 4
+                }
+              }
+            }
+          ]
+        },
+        {
+          "allOf": [
+            {
+              "$ref": "#/$defs/factor"
+            },
+            {
+              "properties": {
+                "id": {
+                  "const": 5
+                }
+              }
+            }
+          ]
+        },
+        {
+          "allOf": [
+            {
+              "$ref": "#/$defs/factor"
+            },
+            {
+              "properties": {
+                "id": {
+                  "const": 6
+                }
+              }
+            }
+          ]
+        },
+        {
+          "allOf": [
+            {
+              "$ref": "#/$defs/factor"
+            },
+            {
+              "properties": {
+                "id": {
+                  "const": 7
+                }
+              }
+            }
+          ]
+        },
+        {
+          "allOf": [
+            {
+              "$ref": "#/$defs/factor"
+            },
+            {
+              "properties": {
+                "id": {
+                  "const": 8
+                }
+              }
+            }
+          ]
+        },
+        {
+          "allOf": [
+            {
+              "$ref": "#/$defs/factor"
+            },
+            {
+              "properties": {
+                "id": {
+                  "const": 9
+                }
+              }
+            }
+          ]
+        },
+        {
+          "allOf": [
+            {
+              "$ref": "#/$defs/factor"
+            },
+            {
+              "properties": {
+                "id": {
+                  "const": 10
+                }
+              }
+            }
+          ]
+        },
+        {
+          "allOf": [
+            {
+              "$ref": "#/$defs/factor"
+            },
+            {
+              "properties": {
+                "id": {
+                  "const": 11
+                }
+              }
+            }
+          ]
+        },
+        {
+          "allOf": [
+            {
+              "$ref": "#/$defs/factor"
+            },
+            {
+              "properties": {
+                "id": {
+                  "const": 12
+                }
+              }
+            }
+          ]
+        }
+      ],
+      "items": false,
+      "minItems": 12
+    },
+    "total": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 36
+    },
+    "max_total": {
+      "const": 36
+    },
+    "grade": {
+      "enum": [
+        "A",
+        "B",
+        "C",
+        "D",
+        "F"
+      ]
+    },
+    "signals_version": {
+      "$ref": "#/$defs/semver"
+    },
+    "summary": {
+      "$ref": "#/$defs/line"
+    },
+    "generated_at": {
+      "$ref": "#/$defs/date_time"
+    }
+  },
+  "additionalProperties": false,
+  "$defs": {
+    "date_time": {
+      "description": "RFC 3339 timestamp; producers emit YYYY-MM-DDTHH:MM:SSZ.",
+      "type": "string",
+      "format": "date-time"
+    },
+    "factor": {
+      "type": "object",
+      "required": [
+        "id",
+        "name",
+        "score",
+        "evidence",
+        "gaps",
+        "recommendation"
+      ],
+      "properties": {
+        "id": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 12
+        },
+        "name": {
+          "$ref": "#/$defs/line"
+        },
+        "score": {
+          "description": "0 absent, 1 partial, 2 mostly, 3 fully.",
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 3
+        },
+        "evidence": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": [
+              "path",
+              "note"
+            ],
+            "properties": {
+              "path": {
+                "$ref": "#/$defs/rel_path"
+              },
+              "line": {
+                "type": [
+                  "integer",
+                  "null"
+                ],
+                "minimum": 1
+              },
+              "note": {
+                "$ref": "#/$defs/line"
+              }
+            },
+            "additionalProperties": false
+          }
+        },
+        "gaps": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/line"
+          }
+        },
+        "recommendation": {
+          "$ref": "#/$defs/line"
+        }
+      },
+      "additionalProperties": false
+    },
+    "line": {
+      "description": "One line of text (no line breaks), at most 500 characters.",
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 500,
+      "pattern": "^[^\\r\\n]+$"
+    },
+    "rel_path": {
+      "description": "Relative path with '/' separators; no leading '/', drive letter, '..' segment or backslash.",
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 500,
+      "pattern": "^(?!/)(?![A-Za-z]:)(?!.*(?:^|/)\\.\\.(?:/|$))[^\\\\\\x00]+$"
+    },
+    "semver": {
+      "description": "Semantic version, e.g. 0.1.0.",
+      "type": "string",
+      "pattern": "^(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)(-[0-9A-Za-z.-]+)?(\\+[0-9A-Za-z.-]+)?$"
+    }
+  }
+}

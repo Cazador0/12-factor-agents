@@ -1,0 +1,76 @@
+{
+  "description": "Release gates every skill must meet (SPEC-104). A skill's success-criteria file replaces a gate here by id, or else by metric, keeping its optionality; other gates in that file are added as mandatory. A gate that did not run never passes; optional_when_unavailable gates are skipped, with their reason, only when their metric could not be measured in this environment.",
+  "gates": [
+    {
+      "id": "static-score",
+      "metric": "static.score",
+      "op": "gte",
+      "threshold": 90,
+      "rationale": "No validator error and at most two warnings or description weaknesses (SPEC-104 rubric)."
+    },
+    {
+      "id": "unit-tests",
+      "metric": "tests.pass_rate",
+      "op": "eq",
+      "threshold": 1.0,
+      "rationale": "Every unit test of the skill passes (CONVENTIONS section 9.3); a skill without tests cannot pass."
+    },
+    {
+      "id": "deterministic-all-pass",
+      "metric": "bench.deterministic.pass_rate",
+      "op": "eq",
+      "threshold": 1.0,
+      "tier": "deterministic",
+      "rationale": "Scripts are deterministic, so any failing deterministic case is a bug (CONVENTIONS section 9.4)."
+    },
+    {
+      "id": "deterministic-schema-valid",
+      "metric": "bench.deterministic.schema_valid_rate",
+      "op": "eq",
+      "threshold": 1.0,
+      "tier": "deterministic",
+      "rationale": "Every script envelope and payload validates against its contract."
+    },
+    {
+      "id": "agentic-schema-valid",
+      "metric": "bench.agentic.schema_valid_rate",
+      "op": "gte",
+      "threshold": 0.95,
+      "tier": "agentic",
+      "rationale": "The model, guided by the skill, returns contract-valid JSON (Ollama Cloud has no structured outputs).",
+      "optional_when_unavailable": true,
+      "optional_reason": "agentic cases need a reachable model runtime (Ollama local or cloud, Claude Code or Codex)"
+    },
+    {
+      "id": "agentic-quality",
+      "metric": "bench.agentic.pass_rate",
+      "op": "gte",
+      "threshold": 0.8,
+      "tier": "agentic",
+      "rationale": "Small local models follow the procedure in most runs; failures count, skips never do.",
+      "optional_when_unavailable": true,
+      "optional_reason": "agentic cases need a reachable model runtime and, when they have judgments, Jev"
+    },
+    {
+      "id": "trigger-routing",
+      "metric": "bench.trigger.accuracy",
+      "op": "gte",
+      "threshold": 0.9,
+      "tier": "trigger",
+      "rationale": "Requests for this skill route to it, and neighbouring requests do not.",
+      "optional_when_unavailable": true,
+      "optional_reason": "routing needs Jev or a reachable model runtime"
+    },
+    {
+      "id": "jev-uncertain",
+      "metric": "bench.jev.uncertain_rate",
+      "op": "lte",
+      "threshold": 0.1,
+      "tier": "agentic",
+      "rationale": "At most one judgment in ten lands in the uncertain band that needs a human.",
+      "optional_when_unavailable": true,
+      "optional_reason": "judgments need Jev (TYPESAFE_API_KEY or JEV_API_KEY and network access)"
+    }
+  ],
+  "schema_version": 1
+}

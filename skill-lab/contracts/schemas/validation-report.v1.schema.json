@@ -1,0 +1,220 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:skill-lab:schema:validation-report:v1",
+  "title": "Validation report",
+  "description": "Result of skill-lab validate: per-skill findings against the CONVENTIONS rules for each runtime profile, plus the catalog size budget. ok is true only when no skill has an error finding.",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "target",
+    "runtime_profiles",
+    "ok",
+    "skills",
+    "catalog"
+  ],
+  "properties": {
+    "schema_version": {
+      "description": "Contract major version.",
+      "type": "integer",
+      "const": 1
+    },
+    "target": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 500
+    },
+    "runtime_profiles": {
+      "type": "array",
+      "items": {
+        "enum": [
+          "zed",
+          "claude",
+          "codex"
+        ]
+      },
+      "minItems": 1,
+      "uniqueItems": true
+    },
+    "ok": {
+      "type": "boolean"
+    },
+    "skills": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/skill_result"
+      }
+    },
+    "catalog": {
+      "type": "object",
+      "required": [
+        "bytes",
+        "limit"
+      ],
+      "properties": {
+        "bytes": {
+          "description": "Bytes of all names + descriptions.",
+          "type": "integer",
+          "minimum": 0
+        },
+        "limit": {
+          "type": "integer",
+          "minimum": 1
+        }
+      },
+      "additionalProperties": false
+    },
+    "summary": {
+      "type": "object",
+      "required": [
+        "errors",
+        "warnings"
+      ],
+      "properties": {
+        "errors": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "warnings": {
+          "type": "integer",
+          "minimum": 0
+        }
+      },
+      "additionalProperties": false
+    },
+    "lab_version": {
+      "$ref": "#/$defs/semver"
+    },
+    "generated_at": {
+      "$ref": "#/$defs/date_time"
+    }
+  },
+  "additionalProperties": false,
+  "allOf": [
+    {
+      "description": "An ok report has only ok skills.",
+      "anyOf": [
+        {
+          "properties": {
+            "ok": {
+              "const": false
+            }
+          }
+        },
+        {
+          "description": "Every skill is ok.",
+          "properties": {
+            "skills": {
+              "items": {
+                "properties": {
+                  "ok": {
+                    "const": true
+                  }
+                }
+              }
+            }
+          }
+        }
+      ]
+    }
+  ],
+  "$defs": {
+    "date_time": {
+      "description": "RFC 3339 timestamp; producers emit YYYY-MM-DDTHH:MM:SSZ.",
+      "type": "string",
+      "format": "date-time"
+    },
+    "line": {
+      "description": "One line of text (no line breaks), at most 500 characters.",
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 500,
+      "pattern": "^[^\\r\\n]+$"
+    },
+    "semver": {
+      "description": "Semantic version, e.g. 0.1.0.",
+      "type": "string",
+      "pattern": "^(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)(-[0-9A-Za-z.-]+)?(\\+[0-9A-Za-z.-]+)?$"
+    },
+    "skill_result": {
+      "description": "One skill's findings; an ok skill has no error findings.",
+      "type": "object",
+      "required": [
+        "name",
+        "ok",
+        "findings"
+      ],
+      "properties": {
+        "name": {
+          "description": "Skill name, or the folder name when the name is invalid.",
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 200
+        },
+        "ok": {
+          "type": "boolean"
+        },
+        "findings": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": [
+              "rule",
+              "severity",
+              "message",
+              "path"
+            ],
+            "properties": {
+              "rule": {
+                "description": "Rule ID, e.g. frontmatter.name-pattern.",
+                "type": "string",
+                "pattern": "^[a-z0-9]+([._-][a-z0-9]+)*$",
+                "maxLength": 100
+              },
+              "severity": {
+                "enum": [
+                  "error",
+                  "warning"
+                ]
+              },
+              "message": {
+                "$ref": "#/$defs/line"
+              },
+              "path": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "maxLength": 500
+              }
+            },
+            "additionalProperties": false
+          }
+        }
+      },
+      "additionalProperties": false,
+      "anyOf": [
+        {
+          "properties": {
+            "ok": {
+              "const": false
+            }
+          }
+        },
+        {
+          "description": "An ok skill has warnings only.",
+          "properties": {
+            "findings": {
+              "items": {
+                "properties": {
+                  "severity": {
+                    "const": "warning"
+                  }
+                }
+              }
+            }
+          }
+        }
+      ]
+    }
+  }
+}

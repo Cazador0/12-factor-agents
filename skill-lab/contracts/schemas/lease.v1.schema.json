@@ -1,0 +1,165 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:skill-lab:schema:lease:v1",
+  "title": "Work lease",
+  "description": "An exclusive, expiring claim on a unit of work. A lease has a TTL and a heartbeat; version increases on every change (optimistic concurrency). Expiry does not by itself let another session continue on the same branch.",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "lease_id",
+    "resource",
+    "role",
+    "session_id",
+    "write_domains",
+    "acquired_at",
+    "expires_at",
+    "heartbeat_at",
+    "status",
+    "version"
+  ],
+  "properties": {
+    "schema_version": {
+      "description": "Contract major version.",
+      "type": "integer",
+      "const": 1
+    },
+    "lease_id": {
+      "$ref": "#/$defs/token_id"
+    },
+    "resource": {
+      "type": "object",
+      "required": [
+        "type",
+        "id"
+      ],
+      "properties": {
+        "type": {
+          "enum": [
+            "issue",
+            "pull_request",
+            "branch",
+            "orchestration"
+          ]
+        },
+        "id": {
+          "type": [
+            "integer",
+            "string"
+          ],
+          "minimum": 1,
+          "minLength": 1,
+          "maxLength": 200
+        },
+        "repository": {
+          "$ref": "#/$defs/repository"
+        }
+      },
+      "additionalProperties": false
+    },
+    "role": {
+      "$ref": "#/$defs/actor_role"
+    },
+    "session_id": {
+      "$ref": "#/$defs/session_id"
+    },
+    "write_domains": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/write_domain"
+      },
+      "uniqueItems": true
+    },
+    "branch": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "maxLength": 250
+    },
+    "base_commit": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "pattern": "^[0-9a-f]{7,64}$"
+    },
+    "acquired_at": {
+      "$ref": "#/$defs/date_time"
+    },
+    "expires_at": {
+      "$ref": "#/$defs/date_time"
+    },
+    "heartbeat_at": {
+      "$ref": "#/$defs/date_time"
+    },
+    "ttl_seconds": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "status": {
+      "enum": [
+        "active",
+        "released",
+        "expired"
+      ]
+    },
+    "released_at": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "format": "date-time"
+    },
+    "release_reason": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "maxLength": 500
+    },
+    "version": {
+      "type": "integer",
+      "minimum": 1
+    }
+  },
+  "additionalProperties": false,
+  "$defs": {
+    "actor_role": {
+      "description": "Role that acts or owns the work.",
+      "enum": [
+        "lead",
+        "pse",
+        "review",
+        "system"
+      ]
+    },
+    "date_time": {
+      "description": "RFC 3339 timestamp; producers emit YYYY-MM-DDTHH:MM:SSZ.",
+      "type": "string",
+      "format": "date-time"
+    },
+    "repository": {
+      "description": "Repository as owner/name.",
+      "type": "string",
+      "pattern": "^[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+$",
+      "maxLength": 200
+    },
+    "session_id": {
+      "description": "Agent session identifier.",
+      "type": "string",
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$"
+    },
+    "token_id": {
+      "description": "Opaque identifier (letters, digits, . _ : -).",
+      "type": "string",
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$"
+    },
+    "write_domain": {
+      "description": "Repository-relative glob a task may write, e.g. packages/auth/**.",
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 300,
+      "pattern": "^(?!/)(?![A-Za-z]:)(?!.*(?:^|/)\\.\\.(?:/|$))[^\\\\\\x00]+$"
+    }
+  }
+}

@@ -1,0 +1,26 @@
+{
+  "checked_at": "2026-10-22T08:00:00Z",
+  "drift": [
+    {
+      "detail": "T035 is in tasks.md but has no mapped Gitea issue",
+      "issue": null,
+      "kind": "missing_issue",
+      "task_id": "T035"
+    },
+    {
+      "detail": "Issue title says 'Revoke tokens', tasks.md says 'Revoke the token family on reuse'",
+      "issue": 185,
+      "kind": "title_mismatch",
+      "task_id": "T032"
+    }
+  ],
+  "feature": "042-session-refresh",
+  "in_sync": false,
+  "map_path": "specs/042-session-refresh/task-issue-map.json",
+  "repository": "acme/factory",
+  "schema_version": 1,
+  "summary": {
+    "missing_issue": 1,
+    "title_mismatch": 1
+  }
+}

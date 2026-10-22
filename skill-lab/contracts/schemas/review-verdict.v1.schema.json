@@ -1,0 +1,260 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:skill-lab:schema:review-verdict:v1",
+  "title": "Review verdict",
+  "description": "Review's machine-readable verdict on one pull-request commit. APPROVE requires no blockers and no failed or unverified requirements; CHANGES_REQUESTED requires a blocker or a failed requirement; BLOCKED_BY_ENV means the evidence could not be produced here.",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "pr",
+    "reviewed_commit",
+    "result",
+    "requirements",
+    "blockers",
+    "non_blocking_findings",
+    "evidence"
+  ],
+  "properties": {
+    "schema_version": {
+      "description": "Contract major version.",
+      "type": "integer",
+      "const": 1
+    },
+    "pr": {
+      "$ref": "#/$defs/pr_number"
+    },
+    "issue": {
+      "$ref": "#/$defs/issue_number"
+    },
+    "spec_id": {
+      "$ref": "#/$defs/spec_id"
+    },
+    "reviewed_commit": {
+      "$ref": "#/$defs/git_sha"
+    },
+    "result": {
+      "enum": [
+        "APPROVE",
+        "CHANGES_REQUESTED",
+        "BLOCKED_BY_ENV"
+      ]
+    },
+    "requirements": {
+      "type": "object",
+      "required": [
+        "covered",
+        "failed",
+        "unverified"
+      ],
+      "properties": {
+        "covered": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "failed": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "unverified": {
+          "type": "integer",
+          "minimum": 0
+        }
+      },
+      "additionalProperties": false
+    },
+    "blockers": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "id",
+          "severity",
+          "summary",
+          "evidence"
+        ],
+        "properties": {
+          "id": {
+            "$ref": "#/$defs/identifier"
+          },
+          "severity": {
+            "$ref": "#/$defs/risk"
+          },
+          "summary": {
+            "$ref": "#/$defs/line"
+          },
+          "evidence": {
+            "type": "array",
+            "items": {
+              "$ref": "#/$defs/line"
+            },
+            "minItems": 1,
+            "description": "Test IDs, file:line references or artifact paths that demonstrate the problem."
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    "non_blocking_findings": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/line"
+      }
+    },
+    "evidence": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "artifact"
+        ],
+        "properties": {
+          "artifact": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 500
+          },
+          "digest": {
+            "$ref": "#/$defs/digest"
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    "reviewer_session": {
+      "$ref": "#/$defs/session_id"
+    },
+    "reviewed_at": {
+      "$ref": "#/$defs/date_time"
+    },
+    "summary": {
+      "$ref": "#/$defs/line"
+    }
+  },
+  "additionalProperties": false,
+  "allOf": [
+    {
+      "description": "APPROVE requires no blockers and no failed or unverified requirements.",
+      "anyOf": [
+        {
+          "properties": {
+            "result": {
+              "enum": [
+                "CHANGES_REQUESTED",
+                "BLOCKED_BY_ENV"
+              ]
+            }
+          }
+        },
+        {
+          "properties": {
+            "blockers": {
+              "maxItems": 0
+            },
+            "requirements": {
+              "properties": {
+                "failed": {
+                  "const": 0
+                },
+                "unverified": {
+                  "const": 0
+                }
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "description": "CHANGES_REQUESTED requires a blocker or a failed requirement.",
+      "anyOf": [
+        {
+          "properties": {
+            "result": {
+              "enum": [
+                "APPROVE",
+                "BLOCKED_BY_ENV"
+              ]
+            }
+          }
+        },
+        {
+          "properties": {
+            "blockers": {
+              "minItems": 1
+            }
+          }
+        },
+        {
+          "properties": {
+            "requirements": {
+              "properties": {
+                "failed": {
+                  "minimum": 1
+                }
+              }
+            }
+          }
+        }
+      ]
+    }
+  ],
+  "$defs": {
+    "date_time": {
+      "description": "RFC 3339 timestamp; producers emit YYYY-MM-DDTHH:MM:SSZ.",
+      "type": "string",
+      "format": "date-time"
+    },
+    "digest": {
+      "description": "Content digest, sha256:<64 hex>.",
+      "type": "string",
+      "pattern": "^sha256:[0-9a-f]{64}$"
+    },
+    "git_sha": {
+      "description": "Git commit SHA, abbreviated (7+) or full, lowercase hex.",
+      "type": "string",
+      "pattern": "^[0-9a-f]{7,64}$"
+    },
+    "identifier": {
+      "description": "Short stable identifier, e.g. unit, B-01, has-acceptance-criteria.",
+      "type": "string",
+      "pattern": "^[A-Za-z0-9]+([._:-][A-Za-z0-9]+)*$",
+      "maxLength": 100
+    },
+    "issue_number": {
+      "description": "Gitea issue number.",
+      "type": "integer",
+      "minimum": 1
+    },
+    "line": {
+      "description": "One line of text (no line breaks), at most 500 characters.",
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 500,
+      "pattern": "^[^\\r\\n]+$"
+    },
+    "pr_number": {
+      "description": "Gitea pull-request number.",
+      "type": "integer",
+      "minimum": 1
+    },
+    "risk": {
+      "description": "Risk class (engineering report, risk-based escalation).",
+      "enum": [
+        "low",
+        "medium",
+        "high",
+        "critical"
+      ]
+    },
+    "session_id": {
+      "description": "Agent session identifier.",
+      "type": "string",
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$"
+    },
+    "spec_id": {
+      "description": "Specification ID, e.g. SPEC-042.",
+      "type": "string",
+      "pattern": "^SPEC-[0-9]{3}$"
+    }
+  }
+}

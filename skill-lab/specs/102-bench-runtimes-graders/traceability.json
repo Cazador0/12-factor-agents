@@ -1,0 +1,237 @@
+{
+  "spec": "SPEC-102",
+  "requirements": [
+    {
+      "id": "FR-001",
+      "implemented_by": [
+        "skill-lab/lab/bench.py"
+      ],
+      "verified_by": [
+        "skill-lab/tests/test_bench_runner.py::TestDeterministicTier::test_invalid_case_file_is_reported"
+      ]
+    },
+    {
+      "id": "FR-002",
+      "implemented_by": [
+        "skill-lab/lab/bench.py"
+      ],
+      "verified_by": [
+        "skill-lab/tests/test_bench_runner.py::TestDeterministicTier::test_tag_filter_and_filters_record",
+        "skill-lab/tests/test_bench_runner.py::TestDeterministicTier::test_unknown_skill_and_tier"
+      ]
+    },
+    {
+      "id": "FR-003",
+      "implemented_by": [
+        "skill-lab/lab/bench.py"
+      ],
+      "verified_by": [
+        "skill-lab/tests/test_bench_runner.py::TestDeterministicTier::test_offline_run_grades_writes_and_validates"
+      ]
+    },
+    {
+      "id": "FR-004",
+      "implemented_by": [
+        "skill-lab/lab/graders.py"
+      ],
+      "verified_by": [
+        "skill-lab/tests/test_bench_graders.py::TestDeterministic::test_pass",
+        "skill-lab/tests/test_bench_graders.py::TestDeterministic::test_exit_code_mismatch_fails",
+        "skill-lab/tests/test_bench_graders.py::TestDeterministic::test_invalid_payload_fails_schema",
+        "skill-lab/tests/test_bench_graders.py::TestDeterministic::test_ok_must_match_exit_code",
+        "skill-lab/tests/test_bench_graders.py::TestDeterministic::test_non_json_and_empty_stdout",
+        "skill-lab/tests/test_bench_graders.py::TestDeterministic::test_unknown_kind_schema_is_invalid_not_a_crash",
+        "skill-lab/tests/test_bench_graders.py::TestDeterministic::test_schema_validity_not_required_is_recorded_as_null",
+        "skill-lab/tests/test_bench_graders.py::TestDeterministic::test_malformed_assertion_is_an_error"
+      ]
+    },
+    {
+      "id": "FR-005",
+      "implemented_by": [
+        "skill-lab/lab/bench.py",
+        "skill-lab/lab/graders.py"
+      ],
+      "verified_by": [
+        "skill-lab/tests/test_bench_runner.py::TestModelTiers::test_agentic_and_trigger_with_live_fakes",
+        "skill-lab/tests/test_bench_graders.py::TestModelOutput::test_valid_output_with_assertions",
+        "skill-lab/tests/test_bench_graders.py::TestModelOutput::test_invalid_or_missing_output"
+      ]
+    },
+    {
+      "id": "FR-006",
+      "implemented_by": [
+        "skill-lab/lab/bench.py",
+        "skill-lab/lab/graders.py",
+        "skill-lab/lab/jev.py"
+      ],
+      "verified_by": [
+        "skill-lab/tests/test_bench_graders.py::TestJudgments::test_noul_bands",
+        "skill-lab/tests/test_bench_graders.py::TestJudgments::test_uncertain_noul_fails_and_needs_a_human",
+        "skill-lab/tests/test_bench_graders.py::TestJudgments::test_score_and_choice_rules",
+        "skill-lab/tests/test_bench_runner.py::TestModelTiers::test_uncertain_judgment_fails_and_flags_a_human"
+      ]
+    },
+    {
+      "id": "FR-007",
+      "implemented_by": [
+        "skill-lab/lab/bench.py",
+        "skill-lab/lab/jev.py"
+      ],
+      "verified_by": [
+        "skill-lab/tests/test_bench_runner.py::TestModelTiers::test_agentic_and_trigger_with_live_fakes",
+        "skill-lab/tests/test_bench_runner.py::TestModelTiers::test_runtime_router",
+        "skill-lab/tests/test_bench_graders.py::TestJudgments::test_routing_helpers"
+      ]
+    },
+    {
+      "id": "FR-008",
+      "implemented_by": [
+        "skill-lab/lab/bench.py",
+        "skill-lab/lab/graders.py"
+      ],
+      "verified_by": [
+        "skill-lab/tests/test_bench_runner.py::TestModelTiers::test_unavailable_services_are_skipped_never_passed",
+        "skill-lab/tests/test_bench_runner.py::TestModelTiers::test_jev_off_leaves_judged_cases_ungraded",
+        "skill-lab/tests/test_bench_runner.py::TestModelTiers::test_missing_jev_key_means_off_without_network",
+        "skill-lab/tests/test_bench_runner.py::TestModelTiers::test_unreachable_runtime_is_skipped_with_reason",
+        "skill-lab/tests/test_bench_graders.py::TestSummaries::test_skipped_never_counts_as_passed"
+      ]
+    },
+    {
+      "id": "FR-009",
+      "implemented_by": [
+        "skill-lab/lab/runtimes/__init__.py"
+      ],
+      "verified_by": [
+        "skill-lab/tests/test_runtimes_cli.py::TestClaudeCli::test_argv_stdin_and_parse",
+        "skill-lab/tests/test_runtimes_replay.py::TestRecordAndReplay::test_empty_cassette_is_unavailable",
+        "skill-lab/tests/test_runtimes_ollama.py::TestHostAndJsonExtraction::test_extract_json_modes"
+      ]
+    },
+    {
+      "id": "FR-010",
+      "implemented_by": [
+        "skill-lab/lab/runtimes/ollama_local.py"
+      ],
+      "verified_by": [
+        "skill-lab/tests/test_runtimes_ollama.py::TestOllamaLocal::test_request_shape_with_schema",
+        "skill-lab/tests/test_runtimes_ollama.py::TestOllamaLocal::test_custom_num_ctx_and_free_text",
+        "skill-lab/tests/test_runtimes_ollama.py::TestOllamaLocal::test_ollama_host_env_is_honoured",
+        "skill-lab/tests/test_runtimes_ollama.py::TestOllamaLocal::test_available_reasons",
+        "skill-lab/tests/test_runtimes_ollama.py::TestOllamaLocal::test_http_errors_become_runtime_call_errors",
+        "skill-lab/tests/test_runtimes_ollama.py::TestOllamaLocal::test_server_errors_are_retried",
+        "skill-lab/tests/test_runtimes_ollama.py::TestHostAndJsonExtraction::test_normalize_host"
+      ]
+    },
+    {
+      "id": "FR-011",
+      "implemented_by": [
+        "skill-lab/lab/runtimes/ollama_cloud.py"
+      ],
+      "verified_by": [
+        "skill-lab/tests/test_runtimes_ollama.py::TestOllamaCloud::test_no_format_no_num_ctx_and_bearer_auth",
+        "skill-lab/tests/test_runtimes_ollama.py::TestOllamaCloud::test_repair_loop_feeds_back_compact_errors",
+        "skill-lab/tests/test_runtimes_ollama.py::TestOllamaCloud::test_first_reply_invalid_second_valid",
+        "skill-lab/tests/test_runtimes_ollama.py::TestOllamaCloud::test_repairs_are_bounded",
+        "skill-lab/tests/test_runtimes_ollama.py::TestOllamaCloud::test_zero_repairs_makes_one_call",
+        "skill-lab/tests/test_runtimes_ollama.py::TestOllamaCloud::test_available_needs_key_model_and_listing"
+      ]
+    },
+    {
+      "id": "FR-012",
+      "implemented_by": [
+        "skill-lab/lab/runtimes/cli_base.py",
+        "skill-lab/lab/runtimes/claude_cli.py",
+        "skill-lab/lab/runtimes/codex_cli.py"
+      ],
+      "verified_by": [
+        "skill-lab/tests/test_runtimes_cli.py::TestClaudeCli::test_unavailable_when_not_on_path",
+        "skill-lab/tests/test_runtimes_cli.py::TestClaudeCli::test_argv_stdin_and_parse",
+        "skill-lab/tests/test_runtimes_cli.py::TestClaudeCli::test_reported_error_and_bad_exit",
+        "skill-lab/tests/test_runtimes_cli.py::TestClaudeCli::test_non_json_output_is_a_protocol_error",
+        "skill-lab/tests/test_runtimes_cli.py::TestCodexCli::test_argv_stdin_and_current_event_shape",
+        "skill-lab/tests/test_runtimes_cli.py::TestCodexCli::test_legacy_event_shape",
+        "skill-lab/tests/test_runtimes_cli.py::TestCodexCli::test_failures",
+        "skill-lab/tests/test_runtimes_cli.py::TestCodexCli::test_runs_in_an_empty_temporary_directory"
+      ]
+    },
+    {
+      "id": "FR-013",
+      "implemented_by": [
+        "skill-lab/lab/runtimes/zed_emulation.py"
+      ],
+      "verified_by": [
+        "skill-lab/tests/test_runtimes_zed_emulation.py::TestCatalog::test_exact_catalog_section",
+        "skill-lab/tests/test_runtimes_zed_emulation.py::TestCatalog::test_handlebars_escaping_and_unescaped_location",
+        "skill-lab/tests/test_runtimes_zed_emulation.py::TestCatalog::test_hidden_skills_are_left_out",
+        "skill-lab/tests/test_runtimes_zed_emulation.py::TestCatalog::test_system_prompt_starts_with_zeds_opening_paragraph",
+        "skill-lab/tests/test_runtimes_zed_emulation.py::TestEnvelope::test_exact_envelope",
+        "skill-lab/tests/test_runtimes_zed_emulation.py::TestEnvelope::test_forged_tags_are_neutralised_other_markup_kept",
+        "skill-lab/tests/test_runtimes_zed_emulation.py::TestEnvelope::test_name_and_directory_are_xml_escaped",
+        "skill-lab/tests/test_runtimes_zed_emulation.py::TestEnvelope::test_user_prompt_order_and_fixture_neutralising",
+        "skill-lab/tests/test_runtimes_zed_emulation.py::TestEnvelope::test_runtime_label",
+        "skill-lab/tests/test_runtimes_zed_emulation.py::TestDiscover::test_flat_scan_skips_invalid_and_private_folders"
+      ]
+    },
+    {
+      "id": "FR-014",
+      "implemented_by": [
+        "skill-lab/lab/cassette.py",
+        "skill-lab/lab/runtimes/replay.py",
+        "skill-lab/lab/bench.py"
+      ],
+      "verified_by": [
+        "skill-lab/tests/test_jev_cassette.py::TestCassette::test_key_ignores_headers_and_host",
+        "skill-lab/tests/test_jev_cassette.py::TestCassette::test_aliases_hide_local_paths",
+        "skill-lab/tests/test_jev_cassette.py::TestCassette::test_corrupt_entry_is_an_error_not_a_miss",
+        "skill-lab/tests/test_jev_cassette.py::TestCassette::test_secret_values_and_credential_keys_are_redacted",
+        "skill-lab/tests/test_runtimes_replay.py::TestRecordAndReplay::test_recorded_turn_replays_identically",
+        "skill-lab/tests/test_runtimes_replay.py::TestRecordAndReplay::test_unrecorded_turn_is_a_miss",
+        "skill-lab/tests/test_bench_runner.py::TestModelTiers::test_record_then_replay_without_services",
+        "skill-lab/tests/test_bench_runner.py::TestModelTiers::test_replay_miss_is_skipped",
+        "skill-lab/tests/test_bench_runner.py::TestModelTiers::test_replay_needs_a_cassette"
+      ]
+    },
+    {
+      "id": "FR-015",
+      "implemented_by": [
+        "skill-lab/lab/bench.py"
+      ],
+      "verified_by": [
+        "skill-lab/tests/test_bench_runner.py::TestDeterministicTier::test_offline_run_grades_writes_and_validates",
+        "skill-lab/tests/test_bench_runner.py::TestDeterministicTier::test_main_prints_one_valid_envelope",
+        "skill-lab/tests/test_bench_runner.py::TestDeterministicTier::test_output_inside_skills_is_refused"
+      ]
+    },
+    {
+      "id": "FR-016",
+      "implemented_by": [
+        "skill-lab/lab/bench.py"
+      ],
+      "verified_by": [
+        "skill-lab/tests/test_bench_runner.py::TestDeterministicTier::test_run_id_is_deterministic_with_now",
+        "skill-lab/tests/test_bench_runner.py::TestDeterministicTier::test_offline_run_grades_writes_and_validates"
+      ]
+    },
+    {
+      "id": "FR-017",
+      "implemented_by": [
+        "skill-lab/lab/runtimes/transport.py"
+      ],
+      "verified_by": [
+        "skill-lab/tests/test_runtimes_transport.py::TestRetryHints::test_retry_after_ms_wins_over_seconds",
+        "skill-lab/tests/test_runtimes_transport.py::TestRetryHints::test_retry_after_seconds_and_http_date",
+        "skill-lab/tests/test_runtimes_transport.py::TestRetryHints::test_unusable_hints_are_ignored",
+        "skill-lab/tests/test_runtimes_transport.py::TestRetryHints::test_backoff_doubles_and_caps_without_jitter",
+        "skill-lab/tests/test_runtimes_transport.py::TestSendWithRetries::test_429_is_retried_after_the_hinted_delay_with_a_retry_header",
+        "skill-lab/tests/test_runtimes_transport.py::TestSendWithRetries::test_exhausted_retries_return_the_last_response",
+        "skill-lab/tests/test_runtimes_transport.py::TestSendWithRetries::test_non_retryable_status_returns_immediately",
+        "skill-lab/tests/test_runtimes_transport.py::TestSendWithRetries::test_hint_longer_than_the_budget_stops_retrying",
+        "skill-lab/tests/test_runtimes_transport.py::TestSendWithRetries::test_connection_errors_are_retried_then_raised",
+        "skill-lab/tests/test_runtimes_transport.py::TestUrllibTransport::test_statuses_come_back_as_responses_with_lowercase_headers",
+        "skill-lab/tests/test_runtimes_transport.py::TestUrllibTransport::test_refused_connection_raises_transport_error",
+        "skill-lab/tests/test_runtimes_transport.py::TestUrllibTransport::test_loopback_detection"
+      ]
+    }
+  ]
+}

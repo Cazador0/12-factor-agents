@@ -1,0 +1,120 @@
+{
+  "spec": "SPEC-104",
+  "requirements": [
+    {
+      "id": "FR-001",
+      "implemented_by": [
+        "skill-lab/lab/score.py"
+      ],
+      "verified_by": [
+        "skill-lab/tests/test_score_gates.py::TestScoreEndToEnd::test_offline_release_ready_lists_skipped_gates",
+        "skill-lab/tests/test_score_gates.py::TestScoreEndToEnd::test_explicit_run_and_unknown_metric",
+        "skill-lab/tests/test_score_gates.py::TestScoreEndToEnd::test_skill_must_be_a_name"
+      ]
+    },
+    {
+      "id": "FR-002",
+      "implemented_by": [
+        "skill-lab/lab/score.py"
+      ],
+      "verified_by": [
+        "skill-lab/tests/test_score_static.py::TestValidatorPlumbing::test_capture_and_parse_an_in_process_validator",
+        "skill-lab/tests/test_score_static.py::TestValidatorPlumbing::test_unusable_validator_output",
+        "skill-lab/tests/test_score_static.py::TestValidatorPlumbing::test_report_from_envelope_or_payload"
+      ]
+    },
+    {
+      "id": "FR-003",
+      "implemented_by": [
+        "skill-lab/lab/score.py"
+      ],
+      "verified_by": [
+        "skill-lab/tests/test_score_static.py::TestDescriptionHeuristics::test_good_description_passes_every_heuristic",
+        "skill-lab/tests/test_score_static.py::TestDescriptionHeuristics::test_each_heuristic",
+        "skill-lab/tests/test_score_static.py::TestDescriptionHeuristics::test_trigger_phrase_counting",
+        "skill-lab/tests/test_score_static.py::TestStaticRubric::test_validator_findings_drive_the_score",
+        "skill-lab/tests/test_score_static.py::TestStaticRubric::test_heuristics_and_clamping",
+        "skill-lab/tests/test_score_static.py::TestStaticRubric::test_without_a_validator_the_frontmatter_lint_stands_in"
+      ]
+    },
+    {
+      "id": "FR-004",
+      "implemented_by": [
+        "skill-lab/lab/score.py"
+      ],
+      "verified_by": [
+        "skill-lab/tests/test_score_static.py::TestUnittestCounting::test_parse_summaries",
+        "skill-lab/tests/test_score_static.py::TestUnittestCounting::test_runs_a_skill_suite",
+        "skill-lab/tests/test_score_gates.py::TestScoreEndToEnd::test_failing_unit_tests_block_release"
+      ]
+    },
+    {
+      "id": "FR-005",
+      "implemented_by": [
+        "skill-lab/lab/score.py"
+      ],
+      "verified_by": [
+        "skill-lab/tests/test_score_gates.py::TestScoreEndToEnd::test_explicit_run_and_unknown_metric",
+        "skill-lab/tests/test_score_gates.py::TestScoreEndToEnd::test_no_run_found"
+      ]
+    },
+    {
+      "id": "FR-006",
+      "implemented_by": [
+        "skill-lab/lab/score.py"
+      ],
+      "verified_by": [
+        "skill-lab/tests/test_score_gates.py::TestMetrics::test_rates_from_results",
+        "skill-lab/tests/test_score_gates.py::TestMetrics::test_skipped_tiers_and_missing_inputs_are_unmeasured_with_reasons",
+        "skill-lab/tests/test_score_gates.py::TestDefaults::test_every_default_metric_is_known"
+      ]
+    },
+    {
+      "id": "FR-007",
+      "implemented_by": [
+        "skill-lab/lab/score.py",
+        "skill-lab/benchmarks/criteria/_defaults.json"
+      ],
+      "verified_by": [
+        "skill-lab/tests/test_score_gates.py::TestMergeGates::test_replace_by_id_then_metric_and_append_new",
+        "skill-lab/tests/test_score_gates.py::TestMergeGates::test_duplicate_ids_are_refused",
+        "skill-lab/tests/test_score_gates.py::TestDefaults::test_optional_gate_needs_a_reason",
+        "skill-lab/tests/test_score_gates.py::TestScoreEndToEnd::test_skill_criteria_add_mandatory_gates",
+        "skill-lab/tests/test_score_gates.py::TestScoreEndToEnd::test_explicit_run_and_unknown_metric"
+      ]
+    },
+    {
+      "id": "FR-008",
+      "implemented_by": [
+        "skill-lab/lab/score.py"
+      ],
+      "verified_by": [
+        "skill-lab/tests/test_score_gates.py::TestEvaluateGate::test_pass_and_fail",
+        "skill-lab/tests/test_score_gates.py::TestEvaluateGate::test_unmeasured_mandatory_gate_is_not_run",
+        "skill-lab/tests/test_score_gates.py::TestEvaluateGate::test_unmeasured_optional_gate_is_skipped_unless_strict",
+        "skill-lab/tests/test_score_gates.py::TestEvaluateGate::test_eq_tolerates_float_noise"
+      ]
+    },
+    {
+      "id": "FR-009",
+      "implemented_by": [
+        "skill-lab/lab/score.py"
+      ],
+      "verified_by": [
+        "skill-lab/tests/test_score_gates.py::TestScoreEndToEnd::test_offline_release_ready_lists_skipped_gates",
+        "skill-lab/tests/test_score_gates.py::TestScoreEndToEnd::test_strict_mode_turns_skips_into_not_run",
+        "skill-lab/tests/test_score_gates.py::TestScoreEndToEnd::test_failing_unit_tests_block_release",
+        "skill-lab/tests/test_score_gates.py::TestScoreEndToEnd::test_no_tests_flag_means_not_run"
+      ]
+    },
+    {
+      "id": "FR-010",
+      "implemented_by": [
+        "skill-lab/benchmarks/criteria/_defaults.json"
+      ],
+      "verified_by": [
+        "skill-lab/tests/test_score_gates.py::TestDefaults::test_defaults_file_is_valid_and_matches_spec"
+      ]
+    }
+  ]
+}

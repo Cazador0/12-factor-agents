@@ -1,0 +1,210 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:skill-lab:schema:merge-decision:v1",
+  "title": "Merge decision",
+  "description": "The merge gate's policy decision for one pull request. AUTO_MERGE is only possible for low or medium risk, with every gate passed and no policy paths touched (agents may not autonomously weaken the rules that define their authority). Any failed gate blocks.",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "pr",
+    "risk_class",
+    "decision",
+    "reasons",
+    "gates",
+    "policy_paths_touched"
+  ],
+  "properties": {
+    "schema_version": {
+      "description": "Contract major version.",
+      "type": "integer",
+      "const": 1
+    },
+    "pr": {
+      "$ref": "#/$defs/pr_number"
+    },
+    "issue": {
+      "$ref": "#/$defs/issue_number"
+    },
+    "head_commit": {
+      "$ref": "#/$defs/git_sha"
+    },
+    "risk_class": {
+      "$ref": "#/$defs/risk"
+    },
+    "decision": {
+      "enum": [
+        "AUTO_MERGE",
+        "HUMAN_APPROVAL_REQUIRED",
+        "BLOCKED"
+      ]
+    },
+    "reasons": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/line"
+      },
+      "minItems": 1
+    },
+    "gates": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "id",
+          "status"
+        ],
+        "properties": {
+          "id": {
+            "$ref": "#/$defs/identifier"
+          },
+          "status": {
+            "enum": [
+              "pass",
+              "fail",
+              "not_run"
+            ]
+          },
+          "detail": {
+            "$ref": "#/$defs/line"
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    "policy_paths_touched": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/rel_path"
+      },
+      "uniqueItems": true,
+      "description": "Changed files matching protected policy patterns (CI, agent permissions, branch protection, merge policy, secrets handling)."
+    },
+    "required_approvals": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "decided_at": {
+      "$ref": "#/$defs/date_time"
+    }
+  },
+  "additionalProperties": false,
+  "allOf": [
+    {
+      "description": "AUTO_MERGE requires low or medium risk, at least one gate, every gate passed and no policy paths.",
+      "anyOf": [
+        {
+          "properties": {
+            "decision": {
+              "enum": [
+                "HUMAN_APPROVAL_REQUIRED",
+                "BLOCKED"
+              ]
+            }
+          }
+        },
+        {
+          "properties": {
+            "risk_class": {
+              "enum": [
+                "low",
+                "medium"
+              ]
+            },
+            "gates": {
+              "minItems": 1,
+              "items": {
+                "properties": {
+                  "status": {
+                    "const": "pass"
+                  }
+                }
+              }
+            },
+            "policy_paths_touched": {
+              "maxItems": 0
+            }
+          }
+        }
+      ]
+    },
+    {
+      "description": "Any failed gate means the decision is BLOCKED.",
+      "anyOf": [
+        {
+          "properties": {
+            "decision": {
+              "const": "BLOCKED"
+            }
+          }
+        },
+        {
+          "properties": {
+            "gates": {
+              "items": {
+                "properties": {
+                  "status": {
+                    "enum": [
+                      "pass",
+                      "not_run"
+                    ]
+                  }
+                }
+              }
+            }
+          }
+        }
+      ]
+    }
+  ],
+  "$defs": {
+    "date_time": {
+      "description": "RFC 3339 timestamp; producers emit YYYY-MM-DDTHH:MM:SSZ.",
+      "type": "string",
+      "format": "date-time"
+    },
+    "git_sha": {
+      "description": "Git commit SHA, abbreviated (7+) or full, lowercase hex.",
+      "type": "string",
+      "pattern": "^[0-9a-f]{7,64}$"
+    },
+    "identifier": {
+      "description": "Short stable identifier, e.g. unit, B-01, has-acceptance-criteria.",
+      "type": "string",
+      "pattern": "^[A-Za-z0-9]+([._:-][A-Za-z0-9]+)*$",
+      "maxLength": 100
+    },
+    "issue_number": {
+      "description": "Gitea issue number.",
+      "type": "integer",
+      "minimum": 1
+    },
+    "line": {
+      "description": "One line of text (no line breaks), at most 500 characters.",
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 500,
+      "pattern": "^[^\\r\\n]+$"
+    },
+    "pr_number": {
+      "description": "Gitea pull-request number.",
+      "type": "integer",
+      "minimum": 1
+    },
+    "rel_path": {
+      "description": "Relative path with '/' separators; no leading '/', drive letter, '..' segment or backslash.",
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 500,
+      "pattern": "^(?!/)(?![A-Za-z]:)(?!.*(?:^|/)\\.\\.(?:/|$))[^\\\\\\x00]+$"
+    },
+    "risk": {
+      "description": "Risk class (engineering report, risk-based escalation).",
+      "enum": [
+        "low",
+        "medium",
+        "high",
+        "critical"
+      ]
+    }
+  }
+}

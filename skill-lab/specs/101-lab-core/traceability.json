@@ -1,0 +1,419 @@
+{
+  "spec": "SPEC-101",
+  "requirements": [
+    {
+      "id": "FR-001",
+      "implemented_by": [
+        "skill-lab/bin/skill-lab",
+        "skill-lab/lab/cli.py",
+        "skill-lab/lab/__init__.py",
+        "skill-lab/lab/paths.py"
+      ],
+      "verified_by": [
+        "skill-lab/tests/test_lab_core_cli.py::TestCommandTable::test_every_command_is_registered",
+        "skill-lab/tests/test_lab_core_cli.py::TestCommandTable::test_each_own_command_help_exits_0_without_an_envelope",
+        "skill-lab/tests/test_lab_core_cli.py::TestDispatch::test_missing_and_unknown_commands",
+        "skill-lab/tests/test_lab_core_cli.py::TestDispatch::test_missing_module_is_command_unavailable",
+        "skill-lab/tests/test_lab_core_cli.py::TestDispatch::test_broken_module_is_internal_not_a_traceback",
+        "skill-lab/tests/test_lab_core_cli.py::TestExecutable::test_prints_exactly_one_envelope_from_any_directory",
+        "skill-lab/tests/test_lab_core_cli.py::TestExecutable::test_pretty_output"
+      ]
+    },
+    {
+      "id": "FR-002",
+      "implemented_by": [
+        "skill-lab/lab/validate.py"
+      ],
+      "verified_by": [
+        "skill-lab/tests/test_lab_core_validate.py::TestBaseline::test_clean_skill_has_only_install_warnings",
+        "skill-lab/tests/test_lab_core_validate.py::TestRepositoryLevel::test_empty_skills_folder_succeeds_with_a_warning",
+        "skill-lab/tests/test_lab_core_validate.py::TestRepositoryLevel::test_missing_skills_folder_succeeds_with_a_warning",
+        "skill-lab/tests/test_lab_core_validate.py::TestRepositoryLevel::test_ignored_folders",
+        "skill-lab/tests/test_lab_core_validate.py::TestRepositoryLevel::test_skill_filter",
+        "skill-lab/tests/test_lab_core_validate.py::TestRepositoryLevel::test_failure_report_is_a_valid_payload",
+        "skill-lab/tests/test_lab_core_validate.py::TestReferenceRules::test_long_reference_without_toc_warns",
+        "skill-lab/tests/test_lab_core_validate.py::TestReferenceRules::test_unreadable_reference"
+      ]
+    },
+    {
+      "id": "FR-003",
+      "implemented_by": [
+        "skill-lab/lab/validate.py"
+      ],
+      "verified_by": [
+        "skill-lab/tests/test_lab_core_validate.py::TestFrontmatterRules::test_block_scalar_is_rejected_with_its_line",
+        "skill-lab/tests/test_lab_core_validate.py::TestFrontmatterRules::test_unknown_key",
+        "skill-lab/tests/test_lab_core_validate.py::TestFrontmatterRules::test_name_must_equal_folder",
+        "skill-lab/tests/test_lab_core_validate.py::TestFrontmatterRules::test_reserved_name",
+        "skill-lab/tests/test_lab_core_validate.py::TestFrontmatterRules::test_name_pattern",
+        "skill-lab/tests/test_lab_core_validate.py::TestFrontmatterRules::test_description_must_be_double_quoted",
+        "skill-lab/tests/test_lab_core_validate.py::TestFrontmatterRules::test_description_over_1024_chars",
+        "skill-lab/tests/test_lab_core_validate.py::TestFrontmatterRules::test_description_length_and_use_when_are_warnings",
+        "skill-lab/tests/test_lab_core_validate.py::TestFrontmatterRules::test_metadata_rules",
+        "skill-lab/tests/test_lab_core_validate.py::TestFrontmatterRules::test_disable_model_invocation_warns"
+      ]
+    },
+    {
+      "id": "FR-004",
+      "implemented_by": [
+        "skill-lab/lab/validate.py"
+      ],
+      "verified_by": [
+        "skill-lab/tests/test_lab_core_validate.py::TestBodyRules::test_line_limit",
+        "skill-lab/tests/test_lab_core_validate.py::TestBodyRules::test_byte_limit",
+        "skill-lab/tests/test_lab_core_validate.py::TestBodyRules::test_required_heading_missing",
+        "skill-lab/tests/test_lab_core_validate.py::TestBodyRules::test_heading_order",
+        "skill-lab/tests/test_lab_core_validate.py::TestBodyRules::test_runtime_notes_must_be_last",
+        "skill-lab/tests/test_lab_core_validate.py::TestBodyRules::test_duplicate_heading",
+        "skill-lab/tests/test_lab_core_validate.py::TestBodyRules::test_title_required",
+        "skill-lab/tests/test_lab_core_validate.py::TestBodyRules::test_procedure_must_be_numbered"
+      ]
+    },
+    {
+      "id": "FR-005",
+      "implemented_by": [
+        "skill-lab/lab/validate.py"
+      ],
+      "verified_by": [
+        "skill-lab/tests/test_lab_core_validate.py::TestBodyRules::test_broken_relative_link",
+        "skill-lab/tests/test_lab_core_validate.py::TestBodyRules::test_link_leaving_the_skill",
+        "skill-lab/tests/test_lab_core_validate.py::TestBodyRules::test_absolute_link",
+        "skill-lab/tests/test_lab_core_validate.py::TestBodyRules::test_skill_path_in_inline_code_must_exist",
+        "skill-lab/tests/test_lab_core_validate.py::TestBodyRules::test_urls_anchors_code_fences_and_placeholders_are_ignored"
+      ]
+    },
+    {
+      "id": "FR-006",
+      "implemented_by": [
+        "skill-lab/lab/validate.py",
+        "skill-lab/shared/_skillkit/stdlib_modules.py"
+      ],
+      "verified_by": [
+        "skill-lab/tests/test_lab_core_validate.py::TestScriptRules::test_shebang",
+        "skill-lab/tests/test_lab_core_validate.py::TestScriptRules::test_docstring",
+        "skill-lab/tests/test_lab_core_validate.py::TestScriptRules::test_future_import",
+        "skill-lab/tests/test_lab_core_validate.py::TestScriptRules::test_executable_bit",
+        "skill-lab/tests/test_lab_core_validate.py::TestScriptRules::test_third_party_import",
+        "skill-lab/tests/test_lab_core_validate.py::TestScriptRules::test_module_missing_from_python_39",
+        "skill-lab/tests/test_lab_core_validate.py::TestScriptRules::test_local_modules_and_relative_imports_are_allowed",
+        "skill-lab/tests/test_lab_core_validate.py::TestScriptRules::test_helper_modules_need_future_import_but_no_shebang",
+        "skill-lab/tests/test_lab_core_validate.py::TestScriptRules::test_python_310_syntax",
+        "skill-lab/tests/test_lab_core_validate.py::TestScriptRules::test_shell_true_and_eval",
+        "skill-lab/tests/test_lab_core_validate.py::TestScriptRules::test_unreadable_source"
+      ]
+    },
+    {
+      "id": "FR-007",
+      "implemented_by": [
+        "skill-lab/lab/validate.py"
+      ],
+      "verified_by": [
+        "skill-lab/tests/test_lab_core_validate.py::TestScriptRules::test_help_must_exit_zero",
+        "skill-lab/tests/test_lab_core_validate.py::TestScriptRules::test_help_timeout",
+        "skill-lab/tests/test_lab_core_validate.py::TestScriptRules::test_help_runs_without_secrets",
+        "skill-lab/tests/test_lab_core_validate.py::TestBaseline::test_help_check_runs_and_passes"
+      ]
+    },
+    {
+      "id": "FR-008",
+      "implemented_by": [
+        "skill-lab/lab/validate.py"
+      ],
+      "verified_by": [
+        "skill-lab/tests/test_lab_core_validate.py::TestVendorRules::test_modified_vendored_skillkit",
+        "skill-lab/tests/test_lab_core_validate.py::TestVendorRules::test_extra_file_in_vendored_skillkit",
+        "skill-lab/tests/test_lab_core_validate.py::TestVendorRules::test_pycache_is_ignored",
+        "skill-lab/tests/test_lab_core_validate.py::TestVendorRules::test_missing_vendored_skillkit",
+        "skill-lab/tests/test_lab_core_validate.py::TestVendorRules::test_unknown_schema",
+        "skill-lab/tests/test_lab_core_validate.py::TestVendorRules::test_schema_drift",
+        "skill-lab/tests/test_lab_core_validate.py::TestVendorRules::test_envelope_schema_required"
+      ]
+    },
+    {
+      "id": "FR-009",
+      "implemented_by": [
+        "skill-lab/lab/validate.py"
+      ],
+      "verified_by": [
+        "skill-lab/tests/test_lab_core_validate.py::TestEvalRules::test_unreadable_case",
+        "skill-lab/tests/test_lab_core_validate.py::TestEvalRules::test_schema_invalid_case",
+        "skill-lab/tests/test_lab_core_validate.py::TestEvalRules::test_id_must_equal_file_name",
+        "skill-lab/tests/test_lab_core_validate.py::TestEvalRules::test_duplicate_ids",
+        "skill-lab/tests/test_lab_core_validate.py::TestEvalRules::test_case_skill_must_be_this_skill",
+        "skill-lab/tests/test_lab_core_validate.py::TestEvalRules::test_case_script_must_exist",
+        "skill-lab/tests/test_lab_core_validate.py::TestEvalRules::test_agentic_fixture_must_exist",
+        "skill-lab/tests/test_lab_core_validate.py::TestEvalRules::test_output_schema_must_be_canonical",
+        "skill-lab/tests/test_lab_core_validate.py::TestEvalRules::test_tier_minimums"
+      ]
+    },
+    {
+      "id": "FR-010",
+      "implemented_by": [
+        "skill-lab/lab/validate.py"
+      ],
+      "verified_by": [
+        "skill-lab/tests/test_lab_core_validate.py::TestTestsAndSpecRules::test_tests_required",
+        "skill-lab/tests/test_lab_core_validate.py::TestTestsAndSpecRules::test_spec_folder_required",
+        "skill-lab/tests/test_lab_core_validate.py::TestTestsAndSpecRules::test_spec_folder_must_be_unique",
+        "skill-lab/tests/test_lab_core_validate.py::TestTestsAndSpecRules::test_traceability_required_and_strict",
+        "skill-lab/tests/test_lab_core_validate.py::TestTestsAndSpecRules::test_traceability_spec_id",
+        "skill-lab/tests/test_lab_core_validate.py::TestTestsAndSpecRules::test_paths_must_exist",
+        "skill-lab/tests/test_lab_core_validate.py::TestTestsAndSpecRules::test_test_ids_must_name_real_methods",
+        "skill-lab/tests/test_lab_core_validate.py::TestTestsAndSpecRules::test_every_fr_needs_verified_by",
+        "skill-lab/tests/test_lab_core_validate.py::TestTestsAndSpecRules::test_every_fr_in_spec_md_is_traced",
+        "skill-lab/tests/test_lab_core_validate.py::TestTestsAndSpecRules::test_planned_requirements_only_warn_about_missing_paths"
+      ]
+    },
+    {
+      "id": "FR-011",
+      "implemented_by": [
+        "skill-lab/lab/validate.py",
+        "skill-lab/lab/install.py"
+      ],
+      "verified_by": [
+        "skill-lab/tests/test_lab_core_validate.py::TestInstallParity::test_symlinked_install_is_clean",
+        "skill-lab/tests/test_lab_core_validate.py::TestInstallParity::test_symlink_elsewhere_is_an_error",
+        "skill-lab/tests/test_lab_core_validate.py::TestInstallParity::test_stale_managed_copy_is_an_error"
+      ]
+    },
+    {
+      "id": "FR-012",
+      "implemented_by": [
+        "skill-lab/lab/validate.py"
+      ],
+      "verified_by": [
+        "skill-lab/tests/test_lab_core_validate.py::TestRuntimeProfiles::test_zed_file_size_limit",
+        "skill-lab/tests/test_lab_core_validate.py::TestRuntimeProfiles::test_zed_flat_layout",
+        "skill-lab/tests/test_lab_core_validate.py::TestRuntimeProfiles::test_profile_parsing",
+        "skill-lab/tests/test_lab_core_validate.py::TestFrontmatterRules::test_bom_is_an_error_for_zed_and_a_warning_otherwise",
+        "skill-lab/tests/test_lab_core_validate.py::TestInstallParity::test_runtime_profile_selects_the_discovery_folder"
+      ]
+    },
+    {
+      "id": "FR-013",
+      "implemented_by": [
+        "skill-lab/lab/validate.py",
+        "skill-lab/lab/catalog.py"
+      ],
+      "verified_by": [
+        "skill-lab/tests/test_lab_core_validate.py::TestCatalogBudget::test_over_budget_is_an_error",
+        "skill-lab/tests/test_lab_core_validate.py::TestCatalogBudget::test_near_budget_is_a_warning",
+        "skill-lab/tests/test_lab_core_validate.py::TestCatalogBudget::test_budget_counts_utf8_bytes_of_name_and_description",
+        "skill-lab/tests/test_lab_core_validate.py::TestCatalogBudget::test_stale_catalog_warns"
+      ]
+    },
+    {
+      "id": "FR-014",
+      "implemented_by": [
+        "skill-lab/lab/sync.py"
+      ],
+      "verified_by": [
+        "skill-lab/tests/test_lab_core_sync.py::TestSync::test_check_reports_every_kind_of_drift_without_writing",
+        "skill-lab/tests/test_lab_core_sync.py::TestSync::test_pycache_is_ignored_and_kept",
+        "skill-lab/tests/test_lab_core_sync.py::TestSync::test_vendors_into_a_skill_with_bare_scripts",
+        "skill-lab/tests/test_lab_core_sync.py::TestSync::test_replaces_a_symlinked_skillkit_with_a_real_copy",
+        "skill-lab/tests/test_lab_core_sync.py::TestSync::test_skills_without_scripts_are_never_touched",
+        "skill-lab/tests/test_lab_core_sync.py::TestSync::test_refreshes_vendored_schemas_by_file_name",
+        "skill-lab/tests/test_lab_core_sync.py::TestSync::test_unknown_schema_files_are_left_alone_with_a_warning"
+      ]
+    },
+    {
+      "id": "FR-015",
+      "implemented_by": [
+        "skill-lab/lab/sync.py"
+      ],
+      "verified_by": [
+        "skill-lab/tests/test_lab_core_sync.py::TestSync::test_fresh_fixture_is_in_sync",
+        "skill-lab/tests/test_lab_core_sync.py::TestAddSchema::test_adds_one_contract",
+        "skill-lab/tests/test_lab_core_sync.py::TestAddSchema::test_check_mode_reports_the_missing_contract",
+        "skill-lab/tests/test_lab_core_sync.py::TestAddSchema::test_needs_exactly_one_skill",
+        "skill-lab/tests/test_lab_core_sync.py::TestAddSchema::test_unknown_contract",
+        "skill-lab/tests/test_lab_core_sync.py::TestAddSchema::test_skill_without_scripts_is_refused"
+      ]
+    },
+    {
+      "id": "FR-016",
+      "implemented_by": [
+        "skill-lab/lab/install.py"
+      ],
+      "verified_by": [
+        "skill-lab/tests/test_lab_core_install.py::TestProjectSymlinks::test_default_creates_relative_symlinks_for_all_runtimes",
+        "skill-lab/tests/test_lab_core_install.py::TestProjectSymlinks::test_runtime_selection",
+        "skill-lab/tests/test_lab_core_install.py::TestProjectSymlinks::test_dry_run_writes_nothing",
+        "skill-lab/tests/test_lab_core_install.py::TestProjectSymlinks::test_project_option_installs_into_another_project",
+        "skill-lab/tests/test_lab_core_install.py::TestCopies::test_copy_mode_writes_a_marked_identical_copy",
+        "skill-lab/tests/test_lab_core_install.py::TestGlobal::test_global_install_uses_absolute_symlinks_under_home"
+      ]
+    },
+    {
+      "id": "FR-017",
+      "implemented_by": [
+        "skill-lab/lab/install.py"
+      ],
+      "verified_by": [
+        "skill-lab/tests/test_lab_core_install.py::TestRefusal::test_unmanaged_path_is_refused_without_changes",
+        "skill-lab/tests/test_lab_core_install.py::TestRefusal::test_foreign_symlink_is_refused",
+        "skill-lab/tests/test_lab_core_install.py::TestRefusal::test_force_replaces_the_unmanaged_path",
+        "skill-lab/tests/test_lab_core_install.py::TestParityAndPruning::test_check_reports_missing_entries",
+        "skill-lab/tests/test_lab_core_install.py::TestParityAndPruning::test_dangling_managed_symlink_is_stale",
+        "skill-lab/tests/test_lab_core_install.py::TestParityAndPruning::test_orphaned_managed_entries_are_removed",
+        "skill-lab/tests/test_lab_core_install.py::TestCopies::test_stale_copy_is_refreshed"
+      ]
+    },
+    {
+      "id": "FR-018",
+      "implemented_by": [
+        "skill-lab/lab/catalog.py"
+      ],
+      "verified_by": [
+        "skill-lab/tests/test_lab_core_catalog.py::TestCatalog::test_writes_a_sorted_valid_catalog",
+        "skill-lab/tests/test_lab_core_catalog.py::TestCatalog::test_output_is_byte_stable",
+        "skill-lab/tests/test_lab_core_catalog.py::TestCatalog::test_unparseable_skill_is_skipped_with_a_warning",
+        "skill-lab/tests/test_lab_core_catalog.py::TestCatalog::test_empty_skills_folder"
+      ]
+    },
+    {
+      "id": "FR-019",
+      "implemented_by": [
+        "skill-lab/lab/catalog.py"
+      ],
+      "verified_by": [
+        "skill-lab/tests/test_lab_core_catalog.py::TestCatalog::test_check_detects_missing_and_stale_without_writing"
+      ]
+    },
+    {
+      "id": "FR-020",
+      "implemented_by": [
+        "skill-lab/lab/scaffold.py",
+        "skill-lab/templates/skill/SKILL.md.tmpl",
+        "skill-lab/templates/skill/scripts/example.py.tmpl",
+        "skill-lab/templates/skill/_spec/spec.md.tmpl",
+        "skill-lab/templates/skill/_spec/traceability.json.tmpl",
+        "skill-lab/lab/paths.py"
+      ],
+      "verified_by": [
+        "skill-lab/tests/test_lab_core_scaffold.py::TestScaffoldOutput::test_payload_lists_the_skill_and_spec",
+        "skill-lab/tests/test_lab_core_scaffold.py::TestScaffoldOutput::test_validates_with_zero_errors_and_only_scaffold_and_install_warnings",
+        "skill-lab/tests/test_lab_core_scaffold.py::TestScaffoldOutput::test_example_script_is_executable_and_its_unit_tests_pass",
+        "skill-lab/tests/test_lab_core_scaffold.py::TestScaffoldOutput::test_every_case_is_valid_and_every_deterministic_case_passes",
+        "skill-lab/tests/test_lab_core_scaffold.py::TestScaffoldOutput::test_spec_stub_has_the_required_sections_and_complete_traceability",
+        "skill-lab/tests/test_lab_core_scaffold.py::TestScaffoldOptions::test_spec_numbers_skip_used_ones",
+        "skill-lab/tests/test_lab_core_scaffold.py::TestScaffoldConventions::test_planned_skills_reads_only_the_section_6_skill_rows",
+        "skill-lab/tests/test_lab_core_scaffold.py::TestScaffoldConventions::test_the_real_table_lists_the_thirteen_catalog_skills",
+        "skill-lab/tests/test_lab_core_scaffold.py::TestScaffoldConventions::test_a_catalog_skill_gets_its_assigned_spec_and_family",
+        "skill-lab/tests/test_lab_core_scaffold.py::TestScaffoldConventions::test_matching_flags_are_accepted",
+        "skill-lab/tests/test_lab_core_scaffold.py::TestScaffoldConventions::test_other_skills_skip_reserved_numbers",
+        "skill-lab/tests/test_lab_core_scaffold.py::TestScaffoldConventions::test_a_spec_written_first_is_kept_and_only_the_skill_is_rendered",
+        "skill-lab/tests/test_lab_core_scaffold.py::TestScaffoldConventions::test_an_unlisted_skill_reuses_its_existing_spec_number",
+        "skill-lab/tests/test_lab_core_scaffold.py::TestScaffoldConventions::test_new_specs_are_created"
+      ]
+    },
+    {
+      "id": "FR-021",
+      "implemented_by": [
+        "skill-lab/lab/scaffold.py"
+      ],
+      "verified_by": [
+        "skill-lab/tests/test_lab_core_scaffold.py::TestScaffoldRefusals::test_invalid_names_exit_2",
+        "skill-lab/tests/test_lab_core_scaffold.py::TestScaffoldRefusals::test_reserved_name_exits_4",
+        "skill-lab/tests/test_lab_core_scaffold.py::TestScaffoldRefusals::test_existing_skill_exits_4_and_is_untouched",
+        "skill-lab/tests/test_lab_core_scaffold.py::TestScaffoldRefusals::test_spec_conflicts",
+        "skill-lab/tests/test_lab_core_scaffold.py::TestScaffoldRefusals::test_bad_text_options",
+        "skill-lab/tests/test_lab_core_scaffold.py::TestScaffoldRefusals::test_unknown_placeholder_is_a_template_error",
+        "skill-lab/tests/test_lab_core_scaffold.py::TestScaffoldOptions::test_dry_run_writes_nothing",
+        "skill-lab/tests/test_lab_core_scaffold.py::TestScaffoldOptions::test_description_and_author_are_escaped",
+        "skill-lab/tests/test_lab_core_scaffold.py::TestScaffoldOutput::test_no_staging_folders_are_left_behind",
+        "skill-lab/tests/test_lab_core_scaffold.py::TestScaffoldConventions::test_contradicting_flags_exit_2",
+        "skill-lab/tests/test_lab_core_scaffold.py::TestScaffoldConventions::test_a_spec_folder_numbered_against_the_table_exits_2"
+      ]
+    },
+    {
+      "id": "FR-022",
+      "implemented_by": [
+        "skill-lab/lab/validate.py",
+        "skill-lab/templates/skill/_README.md"
+      ],
+      "verified_by": [
+        "skill-lab/tests/test_lab_core_scaffold.py::TestScaffoldOutput::test_validates_with_zero_errors_and_only_scaffold_and_install_warnings",
+        "skill-lab/tests/test_lab_core_scaffold.py::TestScaffoldOutput::test_frontmatter_is_filled_in"
+      ]
+    },
+    {
+      "id": "FR-023",
+      "implemented_by": [
+        "skill-lab/lab/doctor.py"
+      ],
+      "verified_by": [
+        "skill-lab/tests/test_lab_core_doctor.py::TestChecks::test_python_version_floor",
+        "skill-lab/tests/test_lab_core_doctor.py::TestChecks::test_git_presence",
+        "skill-lab/tests/test_lab_core_doctor.py::TestChecks::test_layout_and_skills",
+        "skill-lab/tests/test_lab_core_doctor.py::TestChecks::test_install_parity",
+        "skill-lab/tests/test_lab_core_doctor.py::TestChecks::test_env_presence_never_includes_values",
+        "skill-lab/tests/test_lab_core_doctor.py::TestCommand::test_failed_check_exits_1",
+        "skill-lab/tests/test_lab_core_doctor.py::TestCommand::test_secret_values_never_reach_stdout"
+      ]
+    },
+    {
+      "id": "FR-024",
+      "implemented_by": [
+        "skill-lab/lab/doctor.py"
+      ],
+      "verified_by": [
+        "skill-lab/tests/test_lab_core_doctor.py::TestChecks::test_probe_statuses",
+        "skill-lab/tests/test_lab_core_doctor.py::TestChecks::test_gitea_probe_uses_the_configured_url_without_printing_it",
+        "skill-lab/tests/test_lab_core_doctor.py::TestChecks::test_probe_exceptions_become_warnings",
+        "skill-lab/tests/test_lab_core_doctor.py::TestChecks::test_offline_skips_every_probe",
+        "skill-lab/tests/test_lab_core_doctor.py::TestCommand::test_unreachable_network_is_not_a_failure",
+        "skill-lab/tests/test_lab_core_doctor.py::TestHttpProbe::test_ok_and_unauthorised",
+        "skill-lab/tests/test_lab_core_doctor.py::TestHttpProbe::test_closed_port",
+        "skill-lab/tests/test_lab_core_doctor.py::TestHttpProbe::test_invalid_url"
+      ]
+    },
+    {
+      "id": "FR-025",
+      "implemented_by": [
+        "skill-lab/lab/testrun.py"
+      ],
+      "verified_by": [
+        "skill-lab/tests/test_lab_core_testrun.py::TestParseSummary::test_ok",
+        "skill-lab/tests/test_lab_core_testrun.py::TestParseSummary::test_ok_with_skips",
+        "skill-lab/tests/test_lab_core_testrun.py::TestParseSummary::test_failed",
+        "skill-lab/tests/test_lab_core_testrun.py::TestParseSummary::test_unexpected_success_counts_as_failure",
+        "skill-lab/tests/test_lab_core_testrun.py::TestParseSummary::test_no_tests",
+        "skill-lab/tests/test_lab_core_testrun.py::TestParseSummary::test_crash_has_no_summary",
+        "skill-lab/tests/test_lab_core_testrun.py::TestCommand::test_aggregates_every_suite",
+        "skill-lab/tests/test_lab_core_testrun.py::TestCommand::test_skill_tests_run_from_the_skill_folder"
+      ]
+    },
+    {
+      "id": "FR-026",
+      "implemented_by": [
+        "skill-lab/lab/testrun.py"
+      ],
+      "verified_by": [
+        "skill-lab/tests/test_lab_core_testrun.py::TestCommand::test_skill_filter_runs_only_those_skills",
+        "skill-lab/tests/test_lab_core_testrun.py::TestCommand::test_lab_only",
+        "skill-lab/tests/test_lab_core_testrun.py::TestCommand::test_import_crash_is_an_error",
+        "skill-lab/tests/test_lab_core_testrun.py::TestCommand::test_empty_tests_folder_is_reported_not_failed",
+        "skill-lab/tests/test_lab_core_testrun.py::TestCommand::test_timeout_is_an_error",
+        "skill-lab/tests/test_lab_core_testrun.py::TestCommand::test_options_are_validated"
+      ]
+    },
+    {
+      "id": "FR-027",
+      "implemented_by": [
+        "skill-lab/lab",
+        "skill-lab/bin/skill-lab",
+        "skill-lab/templates/skill"
+      ],
+      "verified_by": [
+        "skill-lab/tests/test_lab_core_sources.py::TestLabSources::test_python39_grammar_docstring_and_future_import",
+        "skill-lab/tests/test_lab_core_sources.py::TestLabSources::test_imports_are_stdlib_lab_or_skillkit",
+        "skill-lab/tests/test_lab_core_sources.py::TestLabSources::test_no_shell_eval_exec_or_runtime_unions",
+        "skill-lab/tests/test_lab_core_sources.py::TestLabSources::test_bin_is_executable",
+        "skill-lab/tests/test_lab_core_sources.py::TestTemplate::test_every_template_renders_with_known_placeholders",
+        "skill-lab/tests/test_lab_core_sources.py::TestTemplate::test_placeholder_list_in_readme_matches_the_scaffold"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,366 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:skill-lab:schema:skill-score:v1",
+  "title": "Skill score",
+  "description": "A skill's release readiness: static validation, unit tests, benchmark tiers and every success-criteria gate with its actual value. release_ready requires zero failed tests and every gate passed or explicitly skipped (with a reason); a gate with no actual value never passes.",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "skill",
+    "version",
+    "static",
+    "tests",
+    "bench",
+    "gates",
+    "release_ready",
+    "computed_at"
+  ],
+  "properties": {
+    "schema_version": {
+      "description": "Contract major version.",
+      "type": "integer",
+      "const": 1
+    },
+    "skill": {
+      "$ref": "#/$defs/skill_name"
+    },
+    "version": {
+      "$ref": "#/$defs/semver"
+    },
+    "static": {
+      "type": "object",
+      "required": [
+        "score",
+        "findings"
+      ],
+      "properties": {
+        "score": {
+          "description": "0-100; 100 means no findings.",
+          "type": "number",
+          "minimum": 0,
+          "maximum": 100
+        },
+        "findings": {
+          "type": "object",
+          "required": [
+            "errors",
+            "warnings"
+          ],
+          "properties": {
+            "errors": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "warnings": {
+              "type": "integer",
+              "minimum": 0
+            }
+          },
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false
+    },
+    "tests": {
+      "type": "object",
+      "required": [
+        "passed",
+        "failed"
+      ],
+      "properties": {
+        "passed": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "failed": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "skipped": {
+          "type": "integer",
+          "minimum": 0
+        }
+      },
+      "additionalProperties": false
+    },
+    "bench": {
+      "description": "Benchmark totals per tier; null when the tier did not run.",
+      "type": "object",
+      "required": [
+        "deterministic",
+        "agentic",
+        "trigger"
+      ],
+      "properties": {
+        "deterministic": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/tier_summary"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "agentic": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/tier_summary"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "trigger": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/tier_summary"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "additionalProperties": false
+    },
+    "gates": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/gate_result"
+      }
+    },
+    "release_ready": {
+      "type": "boolean"
+    },
+    "run_id": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$"
+    },
+    "computed_at": {
+      "$ref": "#/$defs/date_time"
+    }
+  },
+  "additionalProperties": false,
+  "allOf": [
+    {
+      "description": "release_ready requires no failed tests and every gate passed or explicitly skipped.",
+      "anyOf": [
+        {
+          "properties": {
+            "release_ready": {
+              "const": false
+            }
+          }
+        },
+        {
+          "description": "Ready means no failed tests and every gate passed or was explicitly skipped.",
+          "properties": {
+            "tests": {
+              "properties": {
+                "failed": {
+                  "const": 0
+                }
+              }
+            },
+            "gates": {
+              "items": {
+                "anyOf": [
+                  {
+                    "properties": {
+                      "passed": {
+                        "const": true
+                      }
+                    }
+                  },
+                  {
+                    "required": [
+                      "skipped"
+                    ],
+                    "properties": {
+                      "skipped": {
+                        "const": true
+                      }
+                    }
+                  }
+                ]
+              }
+            }
+          }
+        }
+      ]
+    }
+  ],
+  "$defs": {
+    "date_time": {
+      "description": "RFC 3339 timestamp; producers emit YYYY-MM-DDTHH:MM:SSZ.",
+      "type": "string",
+      "format": "date-time"
+    },
+    "gate_result": {
+      "type": "object",
+      "required": [
+        "id",
+        "metric",
+        "actual",
+        "threshold",
+        "passed"
+      ],
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/identifier"
+        },
+        "metric": {
+          "description": "Dotted metric name, e.g. bench.deterministic.pass_rate, bench.trigger.accuracy, tests.failed, static.errors.",
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9_]*(\\.[a-z][a-z0-9_]*)*$",
+          "maxLength": 100
+        },
+        "op": {
+          "enum": [
+            "gte",
+            "lte",
+            "eq",
+            "gt",
+            "lt"
+          ]
+        },
+        "actual": {
+          "description": "Measured value; null when the metric could not be measured.",
+          "type": [
+            "number",
+            "null"
+          ]
+        },
+        "threshold": {
+          "type": "number"
+        },
+        "passed": {
+          "type": "boolean"
+        },
+        "skipped": {
+          "type": "boolean"
+        },
+        "reason": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "maxLength": 500
+        }
+      },
+      "additionalProperties": false,
+      "allOf": [
+        {
+          "description": "No measurement, no pass.",
+          "anyOf": [
+            {
+              "properties": {
+                "actual": {
+                  "type": "number"
+                }
+              }
+            },
+            {
+              "properties": {
+                "passed": {
+                  "const": false
+                }
+              }
+            }
+          ]
+        },
+        {
+          "description": "A skipped gate did not pass and says why.",
+          "anyOf": [
+            {
+              "properties": {
+                "skipped": {
+                  "const": false
+                }
+              }
+            },
+            {
+              "required": [
+                "reason"
+              ],
+              "properties": {
+                "passed": {
+                  "const": false
+                },
+                "reason": {
+                  "type": "string",
+                  "minLength": 1
+                }
+              }
+            }
+          ]
+        }
+      ]
+    },
+    "identifier": {
+      "description": "Short stable identifier, e.g. unit, B-01, has-acceptance-criteria.",
+      "type": "string",
+      "pattern": "^[A-Za-z0-9]+([._:-][A-Za-z0-9]+)*$",
+      "maxLength": 100
+    },
+    "semver": {
+      "description": "Semantic version, e.g. 0.1.0.",
+      "type": "string",
+      "pattern": "^(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)(-[0-9A-Za-z.-]+)?(\\+[0-9A-Za-z.-]+)?$"
+    },
+    "skill_name": {
+      "description": "Skill name (also its folder name).",
+      "type": "string",
+      "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$",
+      "maxLength": 64
+    },
+    "tier_summary": {
+      "type": "object",
+      "required": [
+        "total",
+        "passed",
+        "failed",
+        "errored",
+        "skipped",
+        "pass_rate"
+      ],
+      "properties": {
+        "total": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "passed": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "failed": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "errored": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "skipped": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "pass_rate": {
+          "description": "passed / (passed + failed + errored); null when nothing ran. Skipped cases never count as passed.",
+          "type": [
+            "number",
+            "null"
+          ],
+          "minimum": 0,
+          "maximum": 1
+        }
+      },
+      "additionalProperties": false
+    }
+  }
+}

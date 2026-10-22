@@ -1,0 +1,182 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:skill-lab:schema:transition-decision:v1",
+  "title": "Transition decision",
+  "description": "The deterministic state machine's ruling on one requested board action. The model may recommend; this decides. allowed is true only when every precondition is met.",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "issue",
+    "from_state",
+    "action",
+    "to_state",
+    "allowed",
+    "reason",
+    "required_role",
+    "preconditions"
+  ],
+  "properties": {
+    "schema_version": {
+      "description": "Contract major version.",
+      "type": "integer",
+      "const": 1
+    },
+    "issue": {
+      "$ref": "#/$defs/issue_number"
+    },
+    "pr": {
+      "type": [
+        "integer",
+        "null"
+      ],
+      "minimum": 1
+    },
+    "from_state": {
+      "$ref": "#/$defs/board_state"
+    },
+    "action": {
+      "description": "Requested action, e.g. DISPATCH_PSE, MOVE_TO_REVIEW, RETURN_TO_PSE, EVALUATE_MERGE_POLICY, WAIT, NOOP.",
+      "type": "string",
+      "pattern": "^[A-Z][A-Z0-9_]*$",
+      "maxLength": 64
+    },
+    "to_state": {
+      "description": "State the action leads to; null when it changes no state (WAIT, NOOP).",
+      "enum": [
+        "BACKLOG",
+        "READY_FOR_SPEC",
+        "SPECIFYING",
+        "READY_FOR_BUILD",
+        "IN_PROGRESS",
+        "REVIEW",
+        "CHANGES_REQUESTED",
+        "READY_TO_MERGE",
+        "DONE",
+        "BLOCKED",
+        null
+      ]
+    },
+    "allowed": {
+      "type": "boolean"
+    },
+    "reason": {
+      "$ref": "#/$defs/line"
+    },
+    "required_role": {
+      "$ref": "#/$defs/actor_role"
+    },
+    "actor_role": {
+      "$ref": "#/$defs/actor_role"
+    },
+    "preconditions": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "id",
+          "met"
+        ],
+        "properties": {
+          "id": {
+            "$ref": "#/$defs/identifier"
+          },
+          "met": {
+            "type": "boolean"
+          },
+          "detail": {
+            "$ref": "#/$defs/line"
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    "lease_id": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$"
+    },
+    "decided_at": {
+      "$ref": "#/$defs/date_time"
+    }
+  },
+  "additionalProperties": false,
+  "allOf": [
+    {
+      "description": "An allowed transition has every precondition met.",
+      "anyOf": [
+        {
+          "properties": {
+            "allowed": {
+              "const": false
+            }
+          }
+        },
+        {
+          "description": "Every precondition is met.",
+          "properties": {
+            "preconditions": {
+              "items": {
+                "properties": {
+                  "met": {
+                    "const": true
+                  }
+                }
+              }
+            }
+          }
+        }
+      ]
+    }
+  ],
+  "$defs": {
+    "actor_role": {
+      "description": "Role that acts or owns the work.",
+      "enum": [
+        "lead",
+        "pse",
+        "review",
+        "system"
+      ]
+    },
+    "board_state": {
+      "description": "Kanban state (engineering report, Kanban state machine).",
+      "enum": [
+        "BACKLOG",
+        "READY_FOR_SPEC",
+        "SPECIFYING",
+        "READY_FOR_BUILD",
+        "IN_PROGRESS",
+        "REVIEW",
+        "CHANGES_REQUESTED",
+        "READY_TO_MERGE",
+        "DONE",
+        "BLOCKED"
+      ]
+    },
+    "date_time": {
+      "description": "RFC 3339 timestamp; producers emit YYYY-MM-DDTHH:MM:SSZ.",
+      "type": "string",
+      "format": "date-time"
+    },
+    "identifier": {
+      "description": "Short stable identifier, e.g. unit, B-01, has-acceptance-criteria.",
+      "type": "string",
+      "pattern": "^[A-Za-z0-9]+([._:-][A-Za-z0-9]+)*$",
+      "maxLength": 100
+    },
+    "issue_number": {
+      "description": "Gitea issue number.",
+      "type": "integer",
+      "minimum": 1
+    },
+    "line": {
+      "description": "One line of text (no line breaks), at most 500 characters.",
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 500,
+      "pattern": "^[^\\r\\n]+$"
+    }
+  }
+}

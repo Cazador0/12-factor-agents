@@ -1,0 +1,229 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:skill-lab:schema:task-graph:v1",
+  "title": "Task dependency graph",
+  "description": "The DAG derived from a Spec Kit tasks.md: tasks with explicit and phase-order dependencies, topologically ordered parallel waves, and any cycles (which make the graph unschedulable).",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "feature",
+    "source_path",
+    "tasks",
+    "edges",
+    "waves",
+    "cycles",
+    "warnings"
+  ],
+  "properties": {
+    "schema_version": {
+      "description": "Contract major version.",
+      "type": "integer",
+      "const": 1
+    },
+    "feature": {
+      "$ref": "#/$defs/feature"
+    },
+    "source_path": {
+      "$ref": "#/$defs/rel_path"
+    },
+    "tasks": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/task"
+      },
+      "description": "Tasks in file order."
+    },
+    "edges": {
+      "type": "array",
+      "items": {
+        "description": "'from' must finish before 'to' starts.",
+        "type": "object",
+        "required": [
+          "from",
+          "to",
+          "kind"
+        ],
+        "properties": {
+          "from": {
+            "$ref": "#/$defs/task_id"
+          },
+          "to": {
+            "$ref": "#/$defs/task_id"
+          },
+          "kind": {
+            "description": "explicit: '(depends on ...)' in tasks.md; phase: implied by phase order (Setup, Foundational, stories, Polish).",
+            "enum": [
+              "explicit",
+              "phase"
+            ]
+          }
+        },
+        "additionalProperties": false
+      },
+      "description": "Dependency edges, sorted by from then to."
+    },
+    "waves": {
+      "type": "array",
+      "items": {
+        "type": "array",
+        "items": {
+          "$ref": "#/$defs/task_id"
+        },
+        "minItems": 1,
+        "uniqueItems": true
+      },
+      "description": "Batches that can run in parallel, in dependency order. Empty when cycles exist."
+    },
+    "cycles": {
+      "type": "array",
+      "items": {
+        "type": "array",
+        "items": {
+          "$ref": "#/$defs/task_id"
+        },
+        "minItems": 1
+      },
+      "description": "Each cycle as the task IDs along it."
+    },
+    "warnings": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/finding"
+      }
+    }
+  },
+  "additionalProperties": false,
+  "$defs": {
+    "feature": {
+      "description": "Feature directory name under specs/, e.g. 042-session-refresh.",
+      "type": "string",
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,99}$"
+    },
+    "finding": {
+      "type": "object",
+      "required": [
+        "code",
+        "message"
+      ],
+      "properties": {
+        "code": {
+          "type": "string",
+          "pattern": "^[A-Z][A-Z0-9_]*$",
+          "maxLength": 64
+        },
+        "message": {
+          "$ref": "#/$defs/line"
+        },
+        "task_id": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "pattern": "^T[0-9]{3,}$"
+        },
+        "line": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 1
+        }
+      },
+      "additionalProperties": false
+    },
+    "line": {
+      "description": "One line of text (no line breaks), at most 500 characters.",
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 500,
+      "pattern": "^[^\\r\\n]+$"
+    },
+    "rel_path": {
+      "description": "Relative path with '/' separators; no leading '/', drive letter, '..' segment or backslash.",
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 500,
+      "pattern": "^(?!/)(?![A-Za-z]:)(?!.*(?:^|/)\\.\\.(?:/|$))[^\\\\\\x00]+$"
+    },
+    "task": {
+      "type": "object",
+      "required": [
+        "id",
+        "title",
+        "phase",
+        "story",
+        "parallel",
+        "depends_on",
+        "write_domains",
+        "checked"
+      ],
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/task_id"
+        },
+        "title": {
+          "$ref": "#/$defs/line"
+        },
+        "phase": {
+          "description": "Phase heading the task appears under, e.g. Setup, Foundational, User Story 1, Polish.",
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 200
+        },
+        "phase_index": {
+          "description": "0-based order of the phase in the file.",
+          "type": "integer",
+          "minimum": 0
+        },
+        "story": {
+          "description": "User-story label such as US1, or null.",
+          "type": [
+            "string",
+            "null"
+          ],
+          "pattern": "^US[0-9]+$"
+        },
+        "parallel": {
+          "description": "True when marked [P].",
+          "type": "boolean"
+        },
+        "depends_on": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/task_id"
+          },
+          "uniqueItems": true
+        },
+        "write_domains": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/write_domain"
+          },
+          "uniqueItems": true
+        },
+        "checked": {
+          "description": "True when the checkbox is [x].",
+          "type": "boolean"
+        },
+        "line": {
+          "description": "1-based line in source_path.",
+          "type": "integer",
+          "minimum": 1
+        }
+      },
+      "additionalProperties": false
+    },
+    "task_id": {
+      "description": "Spec Kit task ID, e.g. T001.",
+      "type": "string",
+      "pattern": "^T[0-9]{3,}$"
+    },
+    "write_domain": {
+      "description": "Repository-relative glob a task may write, e.g. packages/auth/**.",
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 300,
+      "pattern": "^(?!/)(?![A-Za-z]:)(?!.*(?:^|/)\\.\\.(?:/|$))[^\\\\\\x00]+$"
+    }
+  }
+}

@@ -1,0 +1,30 @@
+{
+  "action": "MOVE_TO_REVIEW",
+  "actor_role": "pse",
+  "allowed": true,
+  "decided_at": "2026-10-22T08:00:00Z",
+  "from_state": "IN_PROGRESS",
+  "issue": 184,
+  "lease_id": "lease-issue-184-pse",
+  "pr": 211,
+  "preconditions": [
+    {
+      "detail": "PR #211 is open against main",
+      "id": "pr-open",
+      "met": true
+    },
+    {
+      "id": "ci-baseline-passed",
+      "met": true
+    },
+    {
+      "detail": "lease-issue-184-pse is active",
+      "id": "lease-held",
+      "met": true
+    }
+  ],
+  "reason": "PR 211 is open, CI baseline passed and the PSE lease is held.",
+  "required_role": "pse",
+  "schema_version": 1,
+  "to_state": "REVIEW"
+}

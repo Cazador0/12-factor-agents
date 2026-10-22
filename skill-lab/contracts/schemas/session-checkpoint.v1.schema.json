@@ -1,0 +1,201 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:skill-lab:schema:session-checkpoint:v1",
+  "title": "Session checkpoint",
+  "description": "A compact, durable handoff written on stop, handoff or replacement so a successor session can resume from repository + Gitea + this file. It records decisions, evidence and next action; it is deliberately not chain-of-thought, and list sizes are capped to stay small.",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "role",
+    "session_id",
+    "issue",
+    "spec",
+    "branch",
+    "head_commit",
+    "goal",
+    "completed",
+    "decisions",
+    "evidence",
+    "blockers",
+    "next_action",
+    "unresolved_questions",
+    "lease"
+  ],
+  "properties": {
+    "schema_version": {
+      "description": "Contract major version.",
+      "type": "integer",
+      "const": 1
+    },
+    "role": {
+      "$ref": "#/$defs/actor_role"
+    },
+    "session_id": {
+      "$ref": "#/$defs/session_id"
+    },
+    "predecessor_session": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$"
+    },
+    "repository": {
+      "$ref": "#/$defs/repository"
+    },
+    "issue": {
+      "type": [
+        "integer",
+        "null"
+      ],
+      "minimum": 1
+    },
+    "spec": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "pattern": "^SPEC-[0-9]{3}$"
+    },
+    "branch": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "minLength": 1,
+      "maxLength": 250,
+      "pattern": "^[^\\s~^:?*\\[\\\\]+$"
+    },
+    "head_commit": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "pattern": "^[0-9a-f]{7,64}$"
+    },
+    "goal": {
+      "$ref": "#/$defs/line"
+    },
+    "completed": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/line"
+      },
+      "maxItems": 50
+    },
+    "decisions": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "id",
+          "summary",
+          "source"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^D-[0-9]{2,}$"
+          },
+          "summary": {
+            "$ref": "#/$defs/line"
+          },
+          "source": {
+            "description": "Where the decision is recorded, e.g. docs/decisions/ADR-021.md.",
+            "type": [
+              "string",
+              "null"
+            ],
+            "maxLength": 500
+          }
+        },
+        "additionalProperties": false
+      },
+      "maxItems": 50
+    },
+    "evidence": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/line"
+      },
+      "maxItems": 50
+    },
+    "blockers": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/line"
+      },
+      "maxItems": 20
+    },
+    "next_action": {
+      "$ref": "#/$defs/line"
+    },
+    "unresolved_questions": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/line"
+      },
+      "maxItems": 20
+    },
+    "lease": {
+      "description": "The lease the session held, if any.",
+      "type": "object",
+      "required": [],
+      "properties": {
+        "id": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$"
+        },
+        "expires_at": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "format": "date-time"
+        }
+      },
+      "additionalProperties": false
+    },
+    "created_at": {
+      "$ref": "#/$defs/date_time"
+    }
+  },
+  "additionalProperties": false,
+  "$defs": {
+    "actor_role": {
+      "description": "Role that acts or owns the work.",
+      "enum": [
+        "lead",
+        "pse",
+        "review",
+        "system"
+      ]
+    },
+    "date_time": {
+      "description": "RFC 3339 timestamp; producers emit YYYY-MM-DDTHH:MM:SSZ.",
+      "type": "string",
+      "format": "date-time"
+    },
+    "line": {
+      "description": "One line of text (no line breaks), at most 500 characters.",
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 500,
+      "pattern": "^[^\\r\\n]+$"
+    },
+    "repository": {
+      "description": "Repository as owner/name.",
+      "type": "string",
+      "pattern": "^[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+$",
+      "maxLength": 200
+    },
+    "session_id": {
+      "description": "Agent session identifier.",
+      "type": "string",
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$"
+    }
+  }
+}

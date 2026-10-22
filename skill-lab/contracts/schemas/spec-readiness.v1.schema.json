@@ -1,0 +1,174 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:skill-lab:schema:spec-readiness:v1",
+  "title": "Specification readiness",
+  "description": "Whether a feature specification may move to Ready for Build: each completeness check, missing artifacts, and requirement-to-task traceability. ready is true only when no check fails, nothing is missing, and every requirement is covered.",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "feature",
+    "ready",
+    "checks",
+    "missing",
+    "traceability"
+  ],
+  "properties": {
+    "schema_version": {
+      "description": "Contract major version.",
+      "type": "integer",
+      "const": 1
+    },
+    "feature": {
+      "$ref": "#/$defs/feature"
+    },
+    "spec_id": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "pattern": "^SPEC-[0-9]{3}$"
+    },
+    "ready": {
+      "type": "boolean"
+    },
+    "checks": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "id",
+          "status",
+          "evidence",
+          "message"
+        ],
+        "properties": {
+          "id": {
+            "$ref": "#/$defs/identifier"
+          },
+          "status": {
+            "description": "na means the check does not apply to this feature.",
+            "enum": [
+              "pass",
+              "fail",
+              "na"
+            ]
+          },
+          "evidence": {
+            "description": "Where the evidence is, e.g. spec.md:42; null when there is none.",
+            "type": [
+              "string",
+              "null"
+            ],
+            "maxLength": 500
+          },
+          "message": {
+            "$ref": "#/$defs/line"
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    "missing": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/line"
+      },
+      "uniqueItems": true,
+      "description": "Required artifacts or sections that do not exist."
+    },
+    "traceability": {
+      "description": "Requirement -> task coverage.",
+      "type": "object",
+      "required": [
+        "requirements",
+        "covered",
+        "uncovered"
+      ],
+      "properties": {
+        "requirements": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "covered": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "uncovered": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/requirement_id"
+          },
+          "uniqueItems": true
+        }
+      },
+      "additionalProperties": false
+    }
+  },
+  "additionalProperties": false,
+  "allOf": [
+    {
+      "description": "ready requires no failed check, nothing missing and no uncovered requirement.",
+      "anyOf": [
+        {
+          "properties": {
+            "ready": {
+              "const": false
+            }
+          }
+        },
+        {
+          "description": "Ready means nothing failed, nothing is missing, nothing is uncovered.",
+          "properties": {
+            "checks": {
+              "items": {
+                "properties": {
+                  "status": {
+                    "enum": [
+                      "pass",
+                      "na"
+                    ]
+                  }
+                }
+              }
+            },
+            "missing": {
+              "maxItems": 0
+            },
+            "traceability": {
+              "properties": {
+                "uncovered": {
+                  "maxItems": 0
+                }
+              }
+            }
+          }
+        }
+      ]
+    }
+  ],
+  "$defs": {
+    "feature": {
+      "description": "Feature directory name under specs/, e.g. 042-session-refresh.",
+      "type": "string",
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,99}$"
+    },
+    "identifier": {
+      "description": "Short stable identifier, e.g. unit, B-01, has-acceptance-criteria.",
+      "type": "string",
+      "pattern": "^[A-Za-z0-9]+([._:-][A-Za-z0-9]+)*$",
+      "maxLength": 100
+    },
+    "line": {
+      "description": "One line of text (no line breaks), at most 500 characters.",
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 500,
+      "pattern": "^[^\\r\\n]+$"
+    },
+    "requirement_id": {
+      "description": "Functional or non-functional requirement ID, e.g. FR-001 or NFR-002.",
+      "type": "string",
+      "pattern": "^(?:FR|NFR)-[0-9]{3,}$"
+    }
+  }
+}

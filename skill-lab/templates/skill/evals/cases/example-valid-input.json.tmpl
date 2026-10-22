@@ -1,0 +1,36 @@
+{
+  "description": "TODO(scaffold): replace with a real case. A valid document is echoed as the payload with ok true.",
+  "expect": {
+    "assertions": [
+      {
+        "op": "eq",
+        "path": "/ok",
+        "value": true
+      },
+      {
+        "op": "eq",
+        "path": "/payload/kind",
+        "value": "lease"
+      }
+    ],
+    "exit_code": 0,
+    "schema_valid": true
+  },
+  "id": "example-valid-input",
+  "judgments": [],
+  "run": {
+    "args": [
+      "--input",
+      "evals/fixtures/valid-envelope.json",
+      "--contract",
+      "envelope"
+    ],
+    "script": "scripts/example.py"
+  },
+  "schema": "urn:skill-lab:schema:benchmark-case:v1",
+  "skill": "{{name}}",
+  "tags": [
+    "scaffold-todo"
+  ],
+  "tier": "deterministic"
+}

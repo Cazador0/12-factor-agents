@@ -1,0 +1,36 @@
+{
+  "description": "TODO(scaffold): replace with a real case. Input that is not JSON exits 2 with INPUT_NOT_JSON.",
+  "expect": {
+    "assertions": [
+      {
+        "op": "eq",
+        "path": "/errors/0/code",
+        "value": "INPUT_NOT_JSON"
+      },
+      {
+        "op": "eq",
+        "path": "/payload",
+        "value": null
+      }
+    ],
+    "exit_code": 2,
+    "schema_valid": true
+  },
+  "id": "example-malformed-json",
+  "judgments": [],
+  "run": {
+    "args": [
+      "--input",
+      "evals/fixtures/malformed.json",
+      "--contract",
+      "envelope"
+    ],
+    "script": "scripts/example.py"
+  },
+  "schema": "urn:skill-lab:schema:benchmark-case:v1",
+  "skill": "{{name}}",
+  "tags": [
+    "scaffold-todo"
+  ],
+  "tier": "deterministic"
+}

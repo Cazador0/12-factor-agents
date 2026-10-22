@@ -1,0 +1,46 @@
+{
+  "catalog": {
+    "bytes": 9812,
+    "limit": 51200
+  },
+  "generated_at": "2026-10-22T08:00:00Z",
+  "lab_version": "0.1.0",
+  "ok": false,
+  "runtime_profiles": [
+    "zed",
+    "claude",
+    "codex"
+  ],
+  "schema_version": 1,
+  "skills": [
+    {
+      "findings": [
+        {
+          "message": "description must be a double-quoted string",
+          "path": "skills/lead-architect/SKILL.md:3",
+          "rule": "frontmatter.description-quoted",
+          "severity": "error"
+        }
+      ],
+      "name": "lead-architect",
+      "ok": false
+    },
+    {
+      "findings": [
+        {
+          "message": "description is 312 chars; aim for 350-900",
+          "path": "skills/review-verifier/SKILL.md:3",
+          "rule": "body.description-length",
+          "severity": "warning"
+        }
+      ],
+      "name": "review-verifier",
+      "ok": true
+    }
+  ],
+  "summary": {
+    "errors": 1,
+    "warnings": 1
+  },
+  "target": "skills"
+}

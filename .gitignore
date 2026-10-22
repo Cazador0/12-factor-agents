@@ -1,0 +1,5 @@
+# skill-lab: per-project skill state, benchmark output, Python bytecode
+.skill-state/
+skill-lab/benchmarks/runs/
+__pycache__/
+*.pyc

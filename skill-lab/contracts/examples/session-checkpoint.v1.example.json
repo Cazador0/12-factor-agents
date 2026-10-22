@@ -1,0 +1,35 @@
+{
+  "blockers": [],
+  "branch": "agent/pse/184-session-refresh",
+  "completed": [
+    "Added refresh token rotation.",
+    "Added duplicate-use invalidation."
+  ],
+  "created_at": "2026-10-22T08:00:00Z",
+  "decisions": [
+    {
+      "id": "D-01",
+      "source": "docs/decisions/ADR-021.md",
+      "summary": "Token family invalidation is transactional."
+    }
+  ],
+  "evidence": [
+    "pytest tests/auth -q: pass",
+    "pytest tests/integration -q: pass"
+  ],
+  "goal": "Implement AC-01 through AC-03 for issue 184.",
+  "head_commit": "4f2c9a1e7b3d5f60a8c2e1d9b7f4a3c2e1d0b9a8",
+  "issue": 184,
+  "lease": {
+    "expires_at": "2026-10-22T09:00:00Z",
+    "id": "lease-issue-184-pse"
+  },
+  "next_action": "Open the PR after the full integration suite passes.",
+  "predecessor_session": null,
+  "repository": "acme/factory",
+  "role": "pse",
+  "schema_version": 1,
+  "session_id": "sess_pse_184_01",
+  "spec": "SPEC-042",
+  "unresolved_questions": []
+}

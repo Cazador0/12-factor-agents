@@ -1,0 +1,596 @@
+{
+  "spec": "SPEC-202",
+  "requirements": [
+    {
+      "id": "FR-001",
+      "implemented_by": [
+        "skill-lab/shared/_skillkit/policy.py"
+      ],
+      "verified_by": [
+        "skill-lab/tests/test_skillkit_policy_r2.py::TestPolicyR2Matrix::test_agent_implementation_allows_19",
+        "skill-lab/tests/test_skillkit_policy_r2.py::TestPolicyR2Matrix::test_shadow_refuses_all_r2_actions",
+        "skill-lab/tests/test_containment_r2.py::TestContainmentShadow::test_zero_effects"
+      ],
+      "planned": true
+    },
+    {
+      "id": "FR-002",
+      "implemented_by": [
+        "skill-lab/shared/_skillkit/policy.py",
+        "skill-lab/shared/_skillkit/gitrepo.py"
+      ],
+      "verified_by": [
+        "skill-lab/tests/test_skillkit_policy_base.py::TestBaseBranch::test_worktree_raise_is_ineffective",
+        "skill-lab/tests/test_skillkit_policy_base.py::TestBaseBranch::test_missing_base_yields_shadow",
+        "skill-lab/tests/test_skillkit_policy_base.py::TestBaseBranch::test_agent_base_ref_refused"
+      ],
+      "planned": true
+    },
+    {
+      "id": "FR-003",
+      "implemented_by": [
+        "skill-lab/shared/_skillkit/policy.py",
+        "skill-lab/lab/containment.py"
+      ],
+      "verified_by": [
+        "skill-lab/tests/test_skillkit_policy_r2.py::TestPolicyR2Matrix::test_human_only_refused_every_level",
+        "skill-lab/tests/test_skillkit_policy_r2.py::TestPolicyR2Matrix::test_guarded_autonomous_refused",
+        "skill-lab/tests/test_containment_r2.py::TestContainmentAgentImplementation::test_zero_effects"
+      ],
+      "planned": true
+    },
+    {
+      "id": "FR-004",
+      "implemented_by": [
+        "skill-lab/shared/_skillkit/gitea.py"
+      ],
+      "verified_by": [
+        "skill-lab/tests/test_skillkit_gitea_r2.py::TestEndpointTable::test_unsupported_op_refused",
+        "skill-lab/tests/test_skillkit_gitea_r2.py::TestEndpointTable::test_no_merge_row",
+        "skill-lab/tests/test_skillkit_gitea_r2.py::TestEndpointTable::test_no_generic_request_method",
+        "skill-lab/tests/test_skillkit_gitea_r2.py::TestEndpointTable::test_lease_mirror_row"
+      ],
+      "planned": true
+    },
+    {
+      "id": "FR-005",
+      "implemented_by": [
+        "skill-lab/shared/_skillkit/gitea.py",
+        "skill-lab/shared/_skillkit/mutations.py",
+        "skill-lab/contracts/schemas/mutation-receipt.v1.schema.json"
+      ],
+      "verified_by": [
+        "skill-lab/tests/test_skillkit_mutations.py::TestLedger::test_repeated_key_already_applied",
+        "skill-lab/tests/test_skillkit_mutations.py::TestLedger::test_crash_between_write_and_receipt",
+        "skill-lab/tests/test_skillkit_gitea_r2.py::TestWritePath::test_version_conflict",
+        "skill-lab/tests/integration/test_r2_us4_resume.py::TestResume::test_every_step"
+      ],
+      "planned": true
+    },
+    {
+      "id": "FR-006",
+      "implemented_by": [
+        "skill-lab/shared/_skillkit/gitea.py"
+      ],
+      "verified_by": [
+        "skill-lab/tests/test_skillkit_gitea_r2.py::TestTransport::test_https_required_except_loopback",
+        "skill-lab/tests/test_skillkit_gitea_r2.py::TestTransport::test_read_retry_and_no_blind_write_retry",
+        "skill-lab/tests/test_skillkit_gitea_r2.py::TestTransport::test_error_mapping"
+      ],
+      "planned": true
+    },
+    {
+      "id": "FR-007",
+      "implemented_by": [
+        "skill-lab/shared/_skillkit/gitea.py",
+        "skill-lab/contracts/schemas/gitea-project.v1.schema.json",
+        "skill-lab/config/gitea/skill-gitea.example.json"
+      ],
+      "verified_by": [
+        "skill-lab/tests/test_skillkit_gitea_r2.py::TestIdentity::test_identity_mismatch_refused",
+        "skill-lab/tests/test_skillkit_gitea_r2.py::TestIdentity::test_review_login_must_differ",
+        "skill-lab/tests/test_contracts_r2.py::TestGiteaProject::test_examples"
+      ],
+      "planned": true
+    },
+    {
+      "id": "FR-008",
+      "implemented_by": [
+        "skill-lab/shared/_skillkit/gitea_memory.py",
+        "skill-lab/lab/gitea_double.py",
+        "skill-lab/lab/containment.py",
+        "skill-lab/contracts/schemas/gitea-fixture.v1.schema.json",
+        "skill-lab/contracts/schemas/containment-report.v1.schema.json"
+      ],
+      "verified_by": [
+        "skill-lab/tests/test_skillkit_gitea_memory.py::TestEngine::test_endpoint_rows",
+        "skill-lab/tests/test_skillkit_gitea_memory.py::TestEngine::test_fault_injection",
+        "skill-lab/tests/test_gitea_double_r2.py::TestHttpDouble::test_write_log_and_admin_merge"
+      ],
+      "planned": true
+    },
+    {
+      "id": "FR-009",
+      "implemented_by": [
+        "skill-lab/shared/_skillkit/markers.py"
+      ],
+      "verified_by": [
+        "skill-lab/tests/test_skillkit_markers.py::TestMarkers::test_untrusted_author_ignored",
+        "skill-lab/tests/test_skillkit_markers.py::TestMarkers::test_verdict_marker_unchanged",
+        "skills/pse-implementer/evals/cases/agentic-r2-injected-issue-body.json"
+      ],
+      "planned": true
+    },
+    {
+      "id": "FR-010",
+      "implemented_by": [
+        "skill-lab/shared/_skillkit/leases.py",
+        "skill-lab/shared/_skillkit/delivery.py"
+      ],
+      "verified_by": [
+        "skill-lab/tests/test_skillkit_leases.py::TestVerify::test_lease_codes",
+        "skills/pse-implementer/tests/test_delivery_plan_apply.py::TestDeliveryApply::test_lease_refusals",
+        "skill-lab/tests/integration/test_r2_us1_pse_delivery.py::TestPseDelivery::test_scenario_5_lease"
+      ],
+      "planned": true
+    },
+    {
+      "id": "FR-011",
+      "implemented_by": [
+        "skills/pse-implementer/scripts/delivery_plan.py",
+        "skill-lab/shared/_skillkit/delivery.py",
+        "skill-lab/shared/_skillkit/gitrepo.py",
+        "skill-lab/contracts/schemas/worktree-state.v1.schema.json"
+      ],
+      "verified_by": [
+        "skill-lab/tests/test_skillkit_delivery.py::TestWorktreeStep::test_create_and_adopt",
+        "skills/pse-implementer/evals/cases/worktree-applied.json",
+        "skill-lab/tests/integration/test_r2_us1_pse_delivery.py::TestPseDelivery::test_scenario_1_worktree"
+      ],
+      "planned": true
+    },
+    {
+      "id": "FR-012",
+      "implemented_by": [
+        "skills/pse-implementer/scripts/evidence_manifest.py",
+        "skill-lab/shared/_skillkit/checks.py",
+        "skill-lab/contracts/schemas/check-run.v1.schema.json"
+      ],
+      "verified_by": [
+        "skill-lab/tests/test_skillkit_checks_r2.py::TestCheckRun::test_tree_clean_recorded",
+        "skills/pse-implementer/tests/test_evidence_integrity.py::TestIntegrity::test_six_codes",
+        "skills/pse-implementer/evals/cases/evidence-dirty-tree.json"
+      ],
+      "planned": true
+    },
+    {
+      "id": "FR-013",
+      "implemented_by": [
+        "skill-lab/shared/_skillkit/delivery.py",
+        "skill-lab/shared/_skillkit/gitrepo.py",
+        "skills/pse-implementer/assets/templates/commit-message.txt"
+      ],
+      "verified_by": [
+        "skill-lab/tests/test_skillkit_delivery.py::TestCommitStep::test_scope_and_policy_paths",
+        "skills/pse-implementer/evals/cases/commit-policy-path.json",
+        "skills/pse-implementer/evals/cases/commit-out-of-domain.json"
+      ],
+      "planned": true
+    },
+    {
+      "id": "FR-014",
+      "implemented_by": [
+        "skill-lab/shared/_skillkit/delivery.py",
+        "skill-lab/shared/_skillkit/gitrepo.py"
+      ],
+      "verified_by": [
+        "skill-lab/tests/test_skillkit_gitrepo_r2.py::TestPush::test_exact_refspec_no_force",
+        "skills/pse-implementer/evals/cases/push-foreign-branch.json",
+        "skill-lab/tests/integration/test_r2_us1_pse_delivery.py::TestPseDelivery::test_no_foreign_refs"
+      ],
+      "planned": true
+    },
+    {
+      "id": "FR-015",
+      "implemented_by": [
+        "skill-lab/shared/_skillkit/delivery.py",
+        "skill-lab/contracts/schemas/pr-request.v1.schema.json",
+        "skills/pse-implementer/assets/templates/pr-body.md"
+      ],
+      "verified_by": [
+        "skill-lab/tests/test_skillkit_delivery.py::TestPrStep::test_idempotent_by_head",
+        "skills/pse-implementer/evals/cases/pr-create-rerun.json",
+        "skill-lab/tests/integration/test_r2_us1_pse_delivery.py::TestPseDelivery::test_scenario_6_pr_rerun"
+      ],
+      "planned": true
+    },
+    {
+      "id": "FR-016",
+      "implemented_by": [
+        "skills/session-checkpoint/scripts/checkpoint.py"
+      ],
+      "verified_by": [
+        "skills/session-checkpoint/tests/test_checkpoint_publish.py::TestPublish::test_dedupe_and_lease",
+        "skills/session-checkpoint/evals/cases/publish-rerun.json",
+        "skill-lab/tests/integration/test_r2_us1_pse_delivery.py::TestPseDelivery::test_scenario_9_checkpoint"
+      ],
+      "planned": true
+    },
+    {
+      "id": "FR-017",
+      "implemented_by": [
+        "skills/review-verifier/scripts/review_verdict.py",
+        "skill-lab/contracts/schemas/review-post.v1.schema.json"
+      ],
+      "verified_by": [
+        "skills/review-verifier/tests/test_verdict_post.py::TestPost::test_event_mapping",
+        "skills/review-verifier/evals/cases/post-applied.json",
+        "skill-lab/tests/integration/test_r2_us2_review_merge.py::TestReviewMerge::test_scenario_1_post"
+      ],
+      "planned": true
+    },
+    {
+      "id": "FR-018",
+      "implemented_by": [
+        "skills/review-verifier/scripts/review_verdict.py"
+      ],
+      "verified_by": [
+        "skills/review-verifier/tests/test_verdict_post.py::TestPost::test_independence_identity_and_session",
+        "skills/review-verifier/evals/cases/independence-author-login.json",
+        "skills/review-verifier/evals/cases/agentic-r2-self-review-refusal.json"
+      ],
+      "planned": true
+    },
+    {
+      "id": "FR-019",
+      "implemented_by": [
+        "skills/review-verifier/scripts/review_verdict.py"
+      ],
+      "verified_by": [
+        "skills/review-verifier/tests/test_verdict_post.py::TestPost::test_verdict_stale_and_pr_not_open",
+        "skills/review-verifier/evals/cases/post-stale-head.json"
+      ],
+      "planned": true
+    },
+    {
+      "id": "FR-020",
+      "implemented_by": [
+        "skills/merge-policy-gate/scripts/merge_decision.py"
+      ],
+      "verified_by": [
+        "skills/merge-policy-gate/tests/test_merge_decision_r2.py::TestCap::test_never_auto_merge",
+        "skills/merge-policy-gate/evals/cases/cap-low-risk.json",
+        "skill-lab/tests/release/test_r2_release_gates.py::TestNoMerge::test_zero_auto_merge_and_merge_calls"
+      ],
+      "planned": true
+    },
+    {
+      "id": "FR-021",
+      "implemented_by": [
+        "skills/merge-policy-gate/scripts/branch_audit.py",
+        "skills/merge-policy-gate/assets/branch-policy-map.json",
+        "skill-lab/contracts/schemas/branch-protection-audit.v1.schema.json"
+      ],
+      "verified_by": [
+        "skills/merge-policy-gate/tests/test_branch_audit.py::TestAudit::test_twelve_fixtures",
+        "skills/merge-policy-gate/evals/cases/branch-audit-recommended.json"
+      ],
+      "planned": true
+    },
+    {
+      "id": "FR-022",
+      "implemented_by": [
+        "skills/merge-policy-gate/scripts/merge_decision.py"
+      ],
+      "verified_by": [
+        "skills/merge-policy-gate/tests/test_merge_decision_r2.py::TestGates::test_blocked_without_review_post",
+        "skills/merge-policy-gate/evals/cases/blocked-missing-review.json",
+        "skills/merge-policy-gate/tests/test_merge_decision_r2.py::TestGates::test_noncompliant_audit_is_advisory_reason_and_schema_valid"
+      ],
+      "planned": true
+    },
+    {
+      "id": "FR-023",
+      "implemented_by": [
+        "skills/speckit-gitea-taskstoissues/scripts/tasks_to_issues.py",
+        "skill-lab/shared/_skillkit/plan_apply.py",
+        "skill-lab/contracts/schemas/apply-report.v1.schema.json"
+      ],
+      "verified_by": [
+        "skills/speckit-gitea-taskstoissues/tests/test_tasks_to_issues_apply.py::TestApply::test_rerun_zero_writes",
+        "skills/speckit-gitea-taskstoissues/evals/cases/dedupe-closed.json",
+        "skill-lab/tests/integration/test_r2_us3_lead_board.py::TestLeadBoard::test_fault_sweep"
+      ],
+      "planned": true
+    },
+    {
+      "id": "FR-024",
+      "implemented_by": [
+        "skill-lab/shared/_skillkit/plan_apply.py"
+      ],
+      "verified_by": [
+        "skill-lab/tests/test_skillkit_plan_apply.py::TestApplier::test_plan_stale",
+        "skill-lab/tests/test_skillkit_plan_apply.py::TestApplier::test_stop_at_first_failure",
+        "skills/speckit-gitea-taskstoissues/evals/cases/plan-stale.json"
+      ],
+      "planned": true
+    },
+    {
+      "id": "FR-025",
+      "implemented_by": [
+        "skills/kanban-state-machine/scripts/labels_plan.py"
+      ],
+      "verified_by": [
+        "skills/kanban-state-machine/tests/test_labels_plan_apply.py::TestLabelsApply::test_recompute_and_role",
+        "skills/kanban-state-machine/evals/cases/role-not-authorized.json",
+        "skill-lab/tests/integration/test_r2_us3_lead_board.py::TestLeadBoard::test_scenario_7_transition"
+      ],
+      "planned": true
+    },
+    {
+      "id": "FR-026",
+      "implemented_by": [
+        "skills/lead-architect/scripts/dispatch_recommend.py"
+      ],
+      "verified_by": [
+        "skills/lead-architect/tests/test_dispatch_apply.py::TestDispatch::test_claiming_sequence",
+        "skills/lead-architect/evals/cases/dispatch-applied.json",
+        "skill-lab/tests/integration/test_r2_us3_lead_board.py::TestLeadBoard::test_scenario_5_dispatch"
+      ],
+      "planned": true
+    },
+    {
+      "id": "FR-027",
+      "implemented_by": [
+        "skills/work-lease/scripts/lease.py"
+      ],
+      "verified_by": [
+        "skills/work-lease/tests/test_lease_mirror.py::TestMirror::test_foreign_mirror_refused",
+        "skills/work-lease/evals/cases/mirror-rerun.json"
+      ],
+      "planned": true
+    },
+    {
+      "id": "FR-028",
+      "implemented_by": [
+        "skills/speckit-gitea-sync/scripts/comment_plan.py",
+        "skills/lead-architect/scripts/arbitrate.py",
+        "skill-lab/shared/_skillkit/plan_apply.py"
+      ],
+      "verified_by": [
+        "skills/speckit-gitea-sync/tests/test_comment_plan_apply.py::TestCommentApply::test_comment_only_dedupe",
+        "skills/lead-architect/tests/test_arbitrate_publish.py::TestPublish::test_marker_dedupe"
+      ],
+      "planned": true
+    },
+    {
+      "id": "FR-029",
+      "implemented_by": [
+        "skills/lead-architect/scripts/complete_issue.py"
+      ],
+      "verified_by": [
+        "skills/lead-architect/tests/test_complete_issue.py::TestComplete::test_done_and_close_pending",
+        "skill-lab/tests/integration/test_r2_us4_golden_e2e.py::TestGoldenE2E::test_complete_after_human_merge"
+      ],
+      "planned": true
+    },
+    {
+      "id": "FR-030",
+      "implemented_by": [
+        "skills/speckit-development/scripts/delivery_record.py",
+        "skills/speckit-development/scripts/delivery_plan.py",
+        "skill-lab/contracts/schemas/delivery-record.v1.schema.json"
+      ],
+      "verified_by": [
+        "skills/speckit-development/tests/test_delivery_record.py::TestRecord::test_resume_first_not_done",
+        "skill-lab/tests/integration/test_r2_us4_golden_e2e.py::TestGoldenE2E::test_reaches_handoff",
+        "skill-lab/tests/integration/test_r2_us4_resume.py::TestResume::test_every_step",
+        "skills/speckit-development/tests/test_delivery_record.py::TestRecord::test_checks_follow_commit"
+      ],
+      "planned": true
+    },
+    {
+      "id": "FR-031",
+      "implemented_by": [
+        "skills/speckit-development/scripts/delivery_record.py"
+      ],
+      "verified_by": [
+        "skills/speckit-development/tests/test_delivery_record.py::TestRecord::test_not_converged_after_three_passes",
+        "skills/speckit-development/evals/cases/not-converged.json"
+      ],
+      "planned": true
+    },
+    {
+      "id": "FR-032",
+      "implemented_by": [
+        "skills/speckit-development/scripts/delivery_plan.py",
+        "skills/speckit-development/assets/templates/review-dispatch.md",
+        "skill-lab/shared/_skillkit/delivery.py"
+      ],
+      "verified_by": [
+        "skills/speckit-development/tests/test_delivery_review_steps.py::TestReviewSteps::test_requests_review_login_and_dispatch",
+        "skills/speckit-development/evals/cases/review-request-rerun.json",
+        "skills/speckit-development/evals/cases/rounds-exhausted.json"
+      ],
+      "planned": true
+    },
+    {
+      "id": "FR-033",
+      "implemented_by": [
+        "skills/speckit-development/scripts/delivery_plan.py",
+        "skill-lab/shared/_skillkit/delivery.py"
+      ],
+      "verified_by": [
+        "skills/speckit-development/tests/test_delivery_plan_apply.py::TestForge::test_github_emits_pr_request_only",
+        "skills/speckit-development/evals/cases/forge-github-pr-request.json"
+      ],
+      "planned": true
+    },
+    {
+      "id": "FR-034",
+      "implemented_by": [
+        "skills/speckit-development/scripts/delivery_record.py"
+      ],
+      "verified_by": [
+        "skills/speckit-development/evals/cases/never-merges.json",
+        "skills/speckit-development/evals/cases/agentic-r2-no-merge.json",
+        "skill-lab/tests/integration/test_r2_us4_golden_e2e.py::TestGoldenE2E::test_no_merge_requested"
+      ],
+      "planned": true
+    },
+    {
+      "id": "FR-035",
+      "implemented_by": [
+        "skill-lab/lab/signoff.py",
+        "skill-lab/contracts/schemas/human-signoff.v1.schema.json"
+      ],
+      "verified_by": [
+        "skill-lab/tests/test_signoff.py::TestSignoff::test_requires_interactive_confirmation",
+        "skill-lab/tests/test_signoff.py::TestSignoff::test_digest_binding"
+      ],
+      "planned": true
+    },
+    {
+      "id": "FR-036",
+      "implemented_by": [
+        "skill-lab/lab/l1_gate.py",
+        "skill-lab/contracts/schemas/inference-gate.v1.schema.json"
+      ],
+      "verified_by": [
+        "skill-lab/tests/test_l1_gate.py::TestL1Matrix::test_all_rows"
+      ],
+      "planned": true
+    },
+    {
+      "id": "FR-037",
+      "implemented_by": [
+        "skill-lab/lab/install.py",
+        "skill-lab/config/zed/local-ollama.disabled.jsonc"
+      ],
+      "verified_by": [
+        "skill-lab/tests/test_install_local_inference.py::TestInstall::test_gated_without_enabled",
+        "skill-lab/tests/test_install_local_inference.py::TestInstall::test_cloud_profiles_kept"
+      ],
+      "planned": true
+    },
+    {
+      "id": "FR-038",
+      "implemented_by": [
+        "skill-lab/lab/doctor.py"
+      ],
+      "verified_by": [
+        "skill-lab/tests/test_doctor_ollama_local.py::TestDoctor::test_num_ctx_too_small",
+        "skill-lab/tests/test_doctor_ollama_local.py::TestDoctor::test_unreachable"
+      ],
+      "planned": true
+    },
+    {
+      "id": "FR-039",
+      "implemented_by": [
+        "skill-lab/lab/runtimes/ollama_local.py",
+        "skill-lab/lab/install.py",
+        "AGENTS.md",
+        "skill-lab/docs/runbooks/local-inference-l1.md"
+      ],
+      "verified_by": [
+        "skill-lab/tests/test_runtime_ollama_local.py::TestOllamaLocal::test_no_fallback_to_cloud",
+        "skill-lab/tests/test_install_local_inference.py::TestInstall::test_check_reports_demotion"
+      ],
+      "planned": true
+    },
+    {
+      "id": "FR-040",
+      "implemented_by": [
+        "skill-lab/lab/runtimes/ollama_local.py",
+        "skill-lab/lab/record_run.py"
+      ],
+      "verified_by": [
+        "skill-lab/tests/test_runtime_ollama_local.py::TestOllamaLocal::test_no_format_and_num_ctx",
+        "skill-lab/tests/test_runtime_ollama_local.py::TestOllamaLocal::test_run_metadata_recorded"
+      ],
+      "planned": true
+    },
+    {
+      "id": "FR-041",
+      "implemented_by": [
+        "skill-lab/lab/smoke_gitea.py",
+        "skill-lab/shared/_skillkit/gitea.py",
+        "skill-lab/contracts/schemas/smoke-report.v1.schema.json"
+      ],
+      "verified_by": [
+        "skill-lab/tests/test_smoke_gitea.py::TestSmoke::test_not_configured_and_sandbox_guard",
+        "skill-lab/tests/integration/test_r2_us6_smoke_double.py::TestSmokeDouble::test_live_writes_unlocked_after_pass"
+      ],
+      "planned": true
+    },
+    {
+      "id": "FR-042",
+      "implemented_by": [
+        "skills/pse-implementer/SKILL.md",
+        "skills/review-verifier/SKILL.md",
+        "skills/merge-policy-gate/SKILL.md",
+        "skills/speckit-gitea-taskstoissues/SKILL.md",
+        "skills/speckit-gitea-sync/SKILL.md",
+        "skills/kanban-state-machine/SKILL.md",
+        "skills/work-lease/SKILL.md",
+        "skills/lead-architect/SKILL.md",
+        "skills/session-checkpoint/SKILL.md",
+        "skills/speckit-development/SKILL.md",
+        "skills/CATALOG.json"
+      ],
+      "verified_by": [
+        "skill-lab/tests/test_validate_r2.py::TestValidateR2::test_budgets_and_catalog_size"
+      ],
+      "planned": true
+    },
+    {
+      "id": "FR-043",
+      "implemented_by": [
+        "skill-lab/lab/validate_policy.py",
+        "skill-lab/lab/config_rules.py"
+      ],
+      "verified_by": [
+        "skill-lab/tests/test_validate_r2.py::TestValidateR2::test_eval_inventory_r2",
+        "skill-lab/tests/release/test_r2_release_gates.py::TestCoverage::test_case_counts",
+        "skills/pse-implementer/evals/cases/pr-update-refused-at-shadow.json",
+        "skills/speckit-gitea-taskstoissues/evals/cases/issue-update-refused-at-shadow.json",
+        "skills/lead-architect/evals/cases/labels-set-refused-at-shadow.json",
+        "skills/speckit-development/evals/cases/pr-update-refused-at-shadow.json"
+      ],
+      "planned": true
+    },
+    {
+      "id": "FR-044",
+      "implemented_by": [
+        "skill-lab/shared/_skillkit/redact.py",
+        "skill-lab/shared/_skillkit/gitea.py",
+        "skill-lab/shared/_skillkit/checks.py",
+        "skill-lab/config/zed/settings.example.jsonc"
+      ],
+      "verified_by": [
+        "skill-lab/tests/release/test_r2_release_gates.py::TestSecrets::test_no_canary_leaks"
+      ],
+      "planned": true
+    },
+    {
+      "id": "FR-045",
+      "implemented_by": [
+        "skill-lab/docs/adr/0201-per-role-gitea-identities.md",
+        "skill-lab/docs/adr/0202-single-host-lease-authority-with-gitea-mirror.md",
+        "skill-lab/docs/adr/0203-l1-local-inference-gate-and-human-signoff.md",
+        "skill-lab/docs/adr/0204-skills-are-gitea-only-orchestrator-owns-github.md",
+        "skill-lab/docs/adr/0205-optimistic-concurrency-and-idempotent-writes.md",
+        "skill-lab/docs/adr/0206-live-gitea-smoke-before-first-live-write.md",
+        "skill-lab/docs/adr/0207-base-branch-verification-of-autonomy-policy.md",
+        "skill-lab/docs/CONVENTIONS.md",
+        "skill-lab/docs/autonomy.md",
+        "skill-lab/specs/202-release-agent-implementation/gates.json"
+      ],
+      "verified_by": [
+        "skill-lab/tests/test_validate_r2.py::TestValidateR2::test_adr_references_hold",
+        "skill-lab/tests/test_contracts_r2.py::TestCatalogRows::test_conventions_lists_r2_contracts"
+      ],
+      "planned": true
+    }
+  ]
+}

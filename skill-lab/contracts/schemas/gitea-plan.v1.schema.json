@@ -1,0 +1,169 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:skill-lab:schema:gitea-plan:v1",
+  "title": "Gitea plan",
+  "description": "The dry-run plan of Gitea REST calls taskstoissues would make, each with an idempotency key and a reason. Applying it requires --apply; skipped tasks say why (usually: issue already exists).",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "repository",
+    "operations",
+    "skipped"
+  ],
+  "properties": {
+    "schema_version": {
+      "description": "Contract major version.",
+      "type": "integer",
+      "const": 1
+    },
+    "feature": {
+      "$ref": "#/$defs/feature"
+    },
+    "repository": {
+      "$ref": "#/$defs/repository"
+    },
+    "operations": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "op",
+          "idempotency_key",
+          "request",
+          "reason"
+        ],
+        "properties": {
+          "op": {
+            "description": "Operation name, e.g. create_issue, add_dependency, add_labels, add_to_project.",
+            "type": "string",
+            "pattern": "^[a-z]+(_[a-z]+)*$",
+            "maxLength": 64
+          },
+          "idempotency_key": {
+            "$ref": "#/$defs/idempotency_key"
+          },
+          "task_id": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "pattern": "^T[0-9]{3,}$"
+          },
+          "request": {
+            "type": "object",
+            "required": [
+              "method",
+              "path",
+              "body"
+            ],
+            "properties": {
+              "method": {
+                "enum": [
+                  "GET",
+                  "POST",
+                  "PATCH",
+                  "PUT",
+                  "DELETE"
+                ]
+              },
+              "path": {
+                "description": "Gitea REST path under /api/v1 (no host, no credentials).",
+                "type": "string",
+                "pattern": "^(?!.*/\\.\\.(?:/|$))/api/v1/[^\\s]+$",
+                "maxLength": 500
+              },
+              "body": {
+                "description": "JSON request body (open), or null.",
+                "type": [
+                  "object",
+                  "array",
+                  "null"
+                ],
+                "additionalProperties": true
+              }
+            },
+            "additionalProperties": false
+          },
+          "depends_on": {
+            "type": "array",
+            "items": {
+              "$ref": "#/$defs/idempotency_key"
+            },
+            "uniqueItems": true,
+            "description": "Operations (by idempotency key) that must succeed first, e.g. both issues before a dependency link."
+          },
+          "reason": {
+            "$ref": "#/$defs/line"
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    "skipped": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "task_id",
+          "issue",
+          "reason"
+        ],
+        "properties": {
+          "task_id": {
+            "$ref": "#/$defs/task_id"
+          },
+          "issue": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 1
+          },
+          "reason": {
+            "$ref": "#/$defs/line"
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    "generated_at": {
+      "$ref": "#/$defs/date_time"
+    }
+  },
+  "additionalProperties": false,
+  "$defs": {
+    "date_time": {
+      "description": "RFC 3339 timestamp; producers emit YYYY-MM-DDTHH:MM:SSZ.",
+      "type": "string",
+      "format": "date-time"
+    },
+    "feature": {
+      "description": "Feature directory name under specs/, e.g. 042-session-refresh.",
+      "type": "string",
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,99}$"
+    },
+    "idempotency_key": {
+      "description": "Key that makes a retried mutation a no-op; derived deterministically from the inputs when not given.",
+      "type": "string",
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,199}$"
+    },
+    "line": {
+      "description": "One line of text (no line breaks), at most 500 characters.",
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 500,
+      "pattern": "^[^\\r\\n]+$"
+    },
+    "repository": {
+      "description": "Repository as owner/name.",
+      "type": "string",
+      "pattern": "^[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+$",
+      "maxLength": 200
+    },
+    "task_id": {
+      "description": "Spec Kit task ID, e.g. T001.",
+      "type": "string",
+      "pattern": "^T[0-9]{3,}$"
+    }
+  }
+}

@@ -1,0 +1,599 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:skill-lab:schema:benchmark-run:v1",
+  "title": "Benchmark run",
+  "description": "One benchmark invocation: every case result plus per-tier totals. results[] items are benchmark-result.v1 documents.",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "run_id",
+    "started_at",
+    "runtime",
+    "jev_mode",
+    "results",
+    "summary"
+  ],
+  "properties": {
+    "schema_version": {
+      "description": "Contract major version.",
+      "type": "integer",
+      "const": 1
+    },
+    "run_id": {
+      "$ref": "#/$defs/token_id"
+    },
+    "started_at": {
+      "$ref": "#/$defs/date_time"
+    },
+    "finished_at": {
+      "$ref": "#/$defs/date_time"
+    },
+    "runtime": {
+      "type": "string",
+      "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$",
+      "maxLength": 64
+    },
+    "model": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "maxLength": 200
+    },
+    "jev_mode": {
+      "$ref": "#/$defs/jev_mode"
+    },
+    "filters": {
+      "type": "object",
+      "required": [],
+      "properties": {
+        "skill": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$",
+          "maxLength": 64
+        },
+        "tier": {
+          "enum": [
+            "deterministic",
+            "agentic",
+            "trigger",
+            null
+          ]
+        }
+      },
+      "additionalProperties": false
+    },
+    "environment": {
+      "type": "object",
+      "required": [],
+      "properties": {
+        "python": {
+          "type": "string",
+          "maxLength": 100
+        },
+        "platform": {
+          "type": "string",
+          "maxLength": 200
+        }
+      },
+      "additionalProperties": false
+    },
+    "lab_version": {
+      "$ref": "#/$defs/semver"
+    },
+    "results": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/benchmark_result"
+      }
+    },
+    "summary": {
+      "description": "Totals by tier.",
+      "type": "object",
+      "required": [],
+      "properties": {
+        "deterministic": {
+          "$ref": "#/$defs/tier_summary"
+        },
+        "agentic": {
+          "$ref": "#/$defs/tier_summary"
+        },
+        "trigger": {
+          "$ref": "#/$defs/tier_summary"
+        },
+        "overall": {
+          "$ref": "#/$defs/tier_summary"
+        }
+      },
+      "additionalProperties": false
+    },
+    "notes": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/line"
+      }
+    }
+  },
+  "additionalProperties": false,
+  "$defs": {
+    "assertion_result": {
+      "type": "object",
+      "required": [
+        "path",
+        "op",
+        "passed"
+      ],
+      "properties": {
+        "path": {
+          "$ref": "#/$defs/json_pointer"
+        },
+        "op": {
+          "enum": [
+            "eq",
+            "ne",
+            "in",
+            "not_in",
+            "contains",
+            "not_contains",
+            "regex",
+            "gte",
+            "lte",
+            "gt",
+            "lt",
+            "len_eq",
+            "len_gte",
+            "len_lte",
+            "exists",
+            "not_exists",
+            "type"
+          ]
+        },
+        "passed": {
+          "type": "boolean"
+        },
+        "actual": {
+          "description": "Value found at path (its length for len_* ops); absent or null when missing."
+        }
+      },
+      "additionalProperties": false
+    },
+    "benchmark_result": {
+      "description": "A benchmark-result.v1 document.",
+      "type": "object",
+      "required": [
+        "schema_version",
+        "case_id",
+        "skill",
+        "tier",
+        "runtime",
+        "status",
+        "assertions",
+        "judgments",
+        "duration_ms",
+        "jev_mode",
+        "notes"
+      ],
+      "properties": {
+        "schema_version": {
+          "description": "Contract major version.",
+          "type": "integer",
+          "const": 1
+        },
+        "case_id": {
+          "$ref": "#/$defs/case_id"
+        },
+        "skill": {
+          "$ref": "#/$defs/skill_name"
+        },
+        "tier": {
+          "$ref": "#/$defs/tier"
+        },
+        "runtime": {
+          "description": "Where the case ran, e.g. script, zed-ollama-local, zed-ollama-cloud, claude-code, codex.",
+          "type": "string",
+          "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$",
+          "maxLength": 64
+        },
+        "model": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "maxLength": 200
+        },
+        "status": {
+          "enum": [
+            "pass",
+            "fail",
+            "error",
+            "skipped"
+          ]
+        },
+        "skip_reason": {
+          "$ref": "#/$defs/line"
+        },
+        "error": {
+          "$ref": "#/$defs/run_error"
+        },
+        "exit_code": {
+          "type": [
+            "integer",
+            "null"
+          ]
+        },
+        "schema_valid": {
+          "type": [
+            "boolean",
+            "null"
+          ]
+        },
+        "routed_skill": {
+          "description": "trigger tier: the skill the runtime chose (null: none).",
+          "type": [
+            "string",
+            "null"
+          ],
+          "maxLength": 64
+        },
+        "assertions": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/assertion_result"
+          }
+        },
+        "judgments": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/judgment_result"
+          }
+        },
+        "duration_ms": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "jev_mode": {
+          "$ref": "#/$defs/jev_mode"
+        },
+        "notes": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/line"
+          }
+        },
+        "started_at": {
+          "$ref": "#/$defs/date_time"
+        }
+      },
+      "additionalProperties": false,
+      "allOf": [
+        {
+          "description": "A skipped case says why.",
+          "anyOf": [
+            {
+              "properties": {
+                "status": {
+                  "enum": [
+                    "pass",
+                    "fail",
+                    "error"
+                  ]
+                }
+              }
+            },
+            {
+              "description": "Has a skip_reason.",
+              "required": [
+                "skip_reason"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "An errored case carries the error.",
+          "anyOf": [
+            {
+              "properties": {
+                "status": {
+                  "enum": [
+                    "pass",
+                    "fail",
+                    "skipped"
+                  ]
+                }
+              }
+            },
+            {
+              "description": "Has an error.",
+              "required": [
+                "error"
+              ]
+            }
+          ]
+        },
+        {
+          "description": "No Jev results without Jev: judgments need jev_mode live or replay.",
+          "anyOf": [
+            {
+              "properties": {
+                "jev_mode": {
+                  "enum": [
+                    "live",
+                    "replay"
+                  ]
+                }
+              }
+            },
+            {
+              "description": "No judgments.",
+              "properties": {
+                "judgments": {
+                  "maxItems": 0
+                }
+              }
+            }
+          ]
+        },
+        {
+          "description": "pass means every assertion and judgment passed and the schema was not invalid.",
+          "anyOf": [
+            {
+              "properties": {
+                "status": {
+                  "enum": [
+                    "fail",
+                    "error",
+                    "skipped"
+                  ]
+                }
+              }
+            },
+            {
+              "description": "Everything passed.",
+              "properties": {
+                "assertions": {
+                  "items": {
+                    "properties": {
+                      "passed": {
+                        "const": true
+                      }
+                    }
+                  }
+                },
+                "judgments": {
+                  "items": {
+                    "properties": {
+                      "pass": {
+                        "const": true
+                      }
+                    }
+                  }
+                },
+                "schema_valid": {
+                  "enum": [
+                    true,
+                    null
+                  ]
+                }
+              }
+            }
+          ]
+        }
+      ]
+    },
+    "case_id": {
+      "description": "Benchmark case ID; equals the case file name without .json.",
+      "type": "string",
+      "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$",
+      "maxLength": 80
+    },
+    "date_time": {
+      "description": "RFC 3339 timestamp; producers emit YYYY-MM-DDTHH:MM:SSZ.",
+      "type": "string",
+      "format": "date-time"
+    },
+    "identifier": {
+      "description": "Short stable identifier, e.g. unit, B-01, has-acceptance-criteria.",
+      "type": "string",
+      "pattern": "^[A-Za-z0-9]+([._:-][A-Za-z0-9]+)*$",
+      "maxLength": 100
+    },
+    "jev_mode": {
+      "description": "How Jev judgments were obtained: live API call, replay of a cassette recorded live, or off (no judgments).",
+      "enum": [
+        "live",
+        "replay",
+        "off"
+      ]
+    },
+    "json_pointer": {
+      "description": "RFC 6901 JSON Pointer ('' is the whole document).",
+      "type": "string",
+      "maxLength": 500,
+      "pattern": "^(?:/(?:[^~/]|~[01])*)*$"
+    },
+    "judgment_result": {
+      "description": "One Jev judgment result; uncertain counts as a fail and needs a human.",
+      "type": "object",
+      "required": [
+        "id",
+        "type",
+        "value",
+        "pass",
+        "band"
+      ],
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/identifier"
+        },
+        "type": {
+          "enum": [
+            "noul",
+            "score",
+            "choice"
+          ]
+        },
+        "value": {
+          "description": "noul probability, expected score, or chosen label as returned by Jev.",
+          "type": [
+            "number",
+            "string",
+            "null"
+          ]
+        },
+        "confidence": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "minimum": 0,
+          "maximum": 1
+        },
+        "pass": {
+          "type": "boolean"
+        },
+        "band": {
+          "description": "noul bands: pass >= threshold, uncertain in [0.35, threshold), fail < 0.35. score/choice use pass or fail.",
+          "enum": [
+            "pass",
+            "uncertain",
+            "fail"
+          ]
+        },
+        "needs_human": {
+          "type": "boolean"
+        },
+        "request_id": {
+          "description": "x-typesafe-request-id of the live call (or of the recorded call, in replay).",
+          "type": [
+            "string",
+            "null"
+          ],
+          "maxLength": 200
+        }
+      },
+      "additionalProperties": false,
+      "anyOf": [
+        {
+          "properties": {
+            "band": {
+              "enum": [
+                "pass",
+                "fail"
+              ]
+            }
+          }
+        },
+        {
+          "description": "Uncertain counts as a fail and is flagged for a human.",
+          "required": [
+            "needs_human"
+          ],
+          "properties": {
+            "pass": {
+              "const": false
+            },
+            "needs_human": {
+              "const": true
+            }
+          }
+        }
+      ]
+    },
+    "line": {
+      "description": "One line of text (no line breaks), at most 500 characters.",
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 500,
+      "pattern": "^[^\\r\\n]+$"
+    },
+    "run_error": {
+      "type": "object",
+      "required": [
+        "code",
+        "message"
+      ],
+      "properties": {
+        "code": {
+          "type": "string",
+          "pattern": "^[A-Z][A-Z0-9_]*$",
+          "maxLength": 64
+        },
+        "message": {
+          "type": "string",
+          "maxLength": 300
+        }
+      },
+      "additionalProperties": false
+    },
+    "semver": {
+      "description": "Semantic version, e.g. 0.1.0.",
+      "type": "string",
+      "pattern": "^(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)(-[0-9A-Za-z.-]+)?(\\+[0-9A-Za-z.-]+)?$"
+    },
+    "skill_name": {
+      "description": "Skill name (also its folder name).",
+      "type": "string",
+      "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$",
+      "maxLength": 64
+    },
+    "tier": {
+      "description": "Benchmark tier.",
+      "enum": [
+        "deterministic",
+        "agentic",
+        "trigger"
+      ]
+    },
+    "tier_summary": {
+      "type": "object",
+      "required": [
+        "total",
+        "passed",
+        "failed",
+        "errored",
+        "skipped",
+        "pass_rate"
+      ],
+      "properties": {
+        "total": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "passed": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "failed": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "errored": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "skipped": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "pass_rate": {
+          "description": "passed / (passed + failed + errored); null when nothing ran. Skipped cases never count as passed.",
+          "type": [
+            "number",
+            "null"
+          ],
+          "minimum": 0,
+          "maximum": 1
+        }
+      },
+      "additionalProperties": false
+    },
+    "token_id": {
+      "description": "Opaque identifier (letters, digits, . _ : -).",
+      "type": "string",
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$"
+    }
+  }
+}

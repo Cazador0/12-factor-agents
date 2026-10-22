@@ -1,0 +1,92 @@
+{
+  "bench": {
+    "agentic": {
+      "errored": 0,
+      "failed": 0,
+      "pass_rate": null,
+      "passed": 0,
+      "skipped": 2,
+      "total": 2
+    },
+    "deterministic": {
+      "errored": 0,
+      "failed": 0,
+      "pass_rate": 1.0,
+      "passed": 6,
+      "skipped": 0,
+      "total": 6
+    },
+    "trigger": {
+      "errored": 0,
+      "failed": 0,
+      "pass_rate": null,
+      "passed": 0,
+      "skipped": 4,
+      "total": 4
+    }
+  },
+  "computed_at": "2026-10-22T08:00:00Z",
+  "gates": [
+    {
+      "actual": 1.0,
+      "id": "deterministic-all-pass",
+      "metric": "bench.deterministic.pass_rate",
+      "op": "gte",
+      "passed": true,
+      "threshold": 1.0
+    },
+    {
+      "actual": null,
+      "id": "agentic-quality",
+      "metric": "bench.agentic.pass_rate",
+      "op": "gte",
+      "passed": false,
+      "reason": "No model endpoint reachable; agentic cases skipped.",
+      "skipped": true,
+      "threshold": 0.8
+    },
+    {
+      "actual": null,
+      "id": "trigger-routing",
+      "metric": "bench.trigger.accuracy",
+      "op": "gte",
+      "passed": false,
+      "reason": "No model endpoint reachable; trigger cases skipped.",
+      "skipped": true,
+      "threshold": 0.9
+    },
+    {
+      "actual": 0,
+      "id": "unit-tests",
+      "metric": "tests.failed",
+      "op": "eq",
+      "passed": true,
+      "threshold": 0
+    },
+    {
+      "actual": 0,
+      "id": "static-clean",
+      "metric": "static.errors",
+      "op": "eq",
+      "passed": true,
+      "threshold": 0
+    }
+  ],
+  "release_ready": true,
+  "run_id": "run-20261022T080000Z",
+  "schema_version": 1,
+  "skill": "review-verifier",
+  "static": {
+    "findings": {
+      "errors": 0,
+      "warnings": 1
+    },
+    "score": 97.5
+  },
+  "tests": {
+    "failed": 0,
+    "passed": 42,
+    "skipped": 0
+  },
+  "version": "0.1.0"
+}

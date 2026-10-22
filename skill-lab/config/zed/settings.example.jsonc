@@ -1,0 +1,366 @@
+// Zed Agent settings for this repository's skills: Ollama provider, Lead / PSE / Review
+// profiles, and the cross-role tool-permission guardrails (CONVENTIONS §7).
+// How to use and what each part does: skill-lab/config/zed/README.md.
+//
+// Merge these keys into your user settings file (command palette: "zed: open settings file").
+// Every model name is an EXAMPLE. Check what you have with `ollama list`; check context length and
+// whether "tools" is listed under Capabilities with `ollama show <model>`.
+//
+// The lab's test (skill-lab/tests/test_configs.py) strips the comments and parses the rest as
+// strict JSON, so keep this file free of trailing commas.
+{
+  "language_models": {
+    "ollama": {
+      // Pattern (a), recommended: the local Ollama app or `ollama serve`, signed in once with
+      // `ollama signin`. That one URL serves local models AND cloud models (tags ending in "-cloud"
+      // or ":cloud"), so Zed's single Ollama provider reaches both at the same time. Ollama documents
+      // `gpt-oss:120b-cloud` "through the local API" after signin (docs: api/authentication.mdx).
+      //
+      // Pattern (b), cloud only: "api_url": "https://ollama.com" with OLLAMA_API_KEY set (or the key
+      // entered in the provider UI). Local models are unreachable while it is set, and model names are
+      // the ones https://ollama.com/api/tags returns, such as "gemma4:31b", with no "-cloud" suffix.
+      "api_url": "http://localhost:11434",
+      // Zed also lists every model the daemon reports. The entries below pin context and capabilities.
+      "auto_discover": true,
+      // Sent to Ollama as num_ctx. Zed's default is 4096, which is too small for skills. 32768 fits a
+      // GPU under 24 GB (ADR-0003). A model's "max_tokens" overrides this value.
+      "context_window": 32768,
+      "available_models": [
+        // Cloud, through the signed-in local daemon. Cloud models run at their maximum context.
+        // gpt-oss has a 128k context window. Confirm with `ollama show gpt-oss:120b-cloud`.
+        {
+          "name": "gpt-oss:120b-cloud",
+          "display_name": "gpt-oss 120b (cloud)",
+          "max_tokens": 131072,
+          "supports_tools": true,
+          "supports_thinking": true,
+          "supports_images": false
+        },
+        // Local, `ollama pull <name>` first. Per SPEC-200 these are NOT profile defaults until the L1
+        // gate passes (cloud first, local second). Keep them at 32768 and check `ollama ps` shows
+        // "100% GPU"; partial CPU offload makes agent turns very slow.
+        {
+          "name": "gpt-oss:20b",
+          "display_name": "gpt-oss 20b (local)",
+          "max_tokens": 32768,
+          "supports_tools": true,
+          "supports_thinking": true,
+          "supports_images": false
+        },
+        {
+          "name": "qwen3:8b",
+          "display_name": "qwen3 8b (local)",
+          "max_tokens": 32768,
+          "supports_tools": true,
+          "supports_thinking": true,
+          "supports_images": false
+        },
+        // Ollama documents gemma4 for vision and structured outputs. Its tool support is not verified
+        // here, and a model without tools cannot load skills. Set "supports_tools" to true only after
+        // `ollama show gemma4` lists "tools".
+        {
+          "name": "gemma4",
+          "display_name": "gemma4 (local)",
+          "max_tokens": 32768,
+          "supports_tools": false,
+          "supports_thinking": false,
+          "supports_images": true
+        }
+      ]
+    }
+  },
+  "agent": {
+    // Used by threads whose profile sets no model. If Zed reports an unknown provider, pick the model
+    // once in the Agent Panel model selector: Zed writes the exact provider id here.
+    "default_model": { "provider": "ollama", "model": "gpt-oss:120b-cloud" },
+    // Compact a little earlier than Zed's 90% default, so a 32k thread keeps room for tool output.
+    "auto_compact": { "enabled": true, "threshold": "80%" },
+    // Profiles decide which tools EXIST in a thread (tool sets fixed by ADR-0008). Every built-in tool
+    // is listed explicitly, so a profile never depends on Zed's default for a tool it does not mention.
+    // Profiles cannot scope a tool to paths; tool_permissions below does that, globally for every
+    // profile. fetch and search_web are off everywhere: skills work offline and pages are untrusted.
+    "profiles": {
+      // Lead: specs, docs, AGENTS.md, issue contracts. Uses lead-architect, speckit-gitea-*,
+      // kanban-state-machine, merge-policy-gate, session-checkpoint. May delegate read-heavy work.
+      "lead": {
+        "name": "Lead",
+        "tools": {
+          "copy_path": true,
+          "create_directory": true,
+          "delete_path": true,
+          "diagnostics": true,
+          "edit_file": true,
+          "fetch": false,
+          "find_path": true,
+          "grep": true,
+          "list_directory": true,
+          "move_path": true,
+          "read_file": true,
+          "search_web": false,
+          "skill": true,
+          "spawn_agent": true,
+          "terminal": true,
+          "write_file": true
+        },
+        "enable_all_context_servers": false,
+        "context_servers": {},
+        "default_model": { "provider": "ollama", "model": "gpt-oss:120b-cloud" }
+      },
+      // PSE: production code and tests on its own leased branch. Uses pse-implementer, work-lease,
+      // session-checkpoint. No spawn_agent: a subagent gets the parent's write tools and would be a
+      // second writer on the leased branch. After the SPEC-202 L1 gate, a local model such as
+      // "gpt-oss:20b" may replace the cloud default here (ADR-0003).
+      "pse": {
+        "name": "PSE",
+        "tools": {
+          "copy_path": true,
+          "create_directory": true,
+          "delete_path": true,
+          "diagnostics": true,
+          "edit_file": true,
+          "fetch": false,
+          "find_path": true,
+          "grep": true,
+          "list_directory": true,
+          "move_path": true,
+          "read_file": true,
+          "search_web": false,
+          "skill": true,
+          "spawn_agent": false,
+          "terminal": true,
+          "write_file": true
+        },
+        "enable_all_context_servers": false,
+        "context_servers": {},
+        "default_model": { "provider": "ollama", "model": "gpt-oss:120b-cloud" }
+      },
+      // Review: reads, runs checks and skill scripts, never edits. Uses review-verifier,
+      // merge-policy-gate (read), twelve-factor-audit. Zed cannot limit edits to tests/ or evals/ for
+      // one profile, so Review gets no edit tools at all. Test code Review authors is written in a
+      // separate session on a test-only branch (README: "Review and test code").
+      "review": {
+        "name": "Review",
+        "tools": {
+          "copy_path": false,
+          "create_directory": false,
+          "delete_path": false,
+          "diagnostics": true,
+          "edit_file": false,
+          "fetch": false,
+          "find_path": true,
+          "grep": true,
+          "list_directory": true,
+          "move_path": false,
+          "read_file": true,
+          "search_web": false,
+          "skill": true,
+          "spawn_agent": true,
+          "terminal": true,
+          "write_file": false
+        },
+        "enable_all_context_servers": false,
+        "context_servers": {},
+        "default_model": { "provider": "ollama", "model": "gpt-oss:120b-cloud" }
+      }
+    },
+    // GLOBAL rules: they apply to every profile. Precedence: built-in rules > always_deny >
+    // always_confirm > always_allow > the tool's "default" > the global "default". Patterns are Rust
+    // regexes matched case-insensitively. File patterns start with (^|/) because Zed may pass a path
+    // relative to the worktree, prefixed with the worktree name, or absolute. If you loosen a "default"
+    // to "allow" for speed, the deny and confirm lists still apply.
+    "tool_permissions": {
+      "default": "confirm",
+      "tools": {
+        // Model-invoked skills prompt unless allowed. The pattern matches the absolute SKILL.md path
+        // under a worktree's .agents/skills/. A user-typed /skill-name never prompts. To keep the same
+        // names in other projects prompting, prefix the pattern with your checkout path, for example
+        // "^/home/you/src/12-factor-agents/\\.agents/skills/(...)/SKILL\\.md$".
+        "skill": {
+          "default": "confirm",
+          "always_allow": [
+            {
+              "pattern": "/\\.agents/skills/(lead-architect|pse-implementer|review-verifier|speckit-gitea-taskstoissues|speckit-gitea-sync|kanban-state-machine|work-lease|gitea-event-normalizer|merge-policy-gate|session-checkpoint|twelve-factor-audit|skill-forge|speckit-development)/SKILL\\.md$"
+            }
+          ]
+        },
+        "terminal": {
+          "default": "confirm",
+          "always_allow": [
+            { "pattern": "^git\\s+(status|diff|log|show|rev-parse|merge-base|ls-files|blame)(\\s|$)" },
+            // Skill scripts are read-only without --apply (CONVENTIONS §3). Path segments may not start
+            // with ".", so "../" cannot leave the checkout.
+            {
+              "pattern": "^python3\\s+((/[^/\\s.][^/\\s]*)+/)?\\.agents/skills/(lead-architect|pse-implementer|review-verifier|speckit-gitea-taskstoissues|speckit-gitea-sync|kanban-state-machine|work-lease|gitea-event-normalizer|merge-policy-gate|session-checkpoint|twelve-factor-audit|skill-forge|speckit-development)/scripts/[a-z0-9_]+\\.py(\\s|$)"
+            },
+            {
+              "pattern": "^python3\\s+skill-lab/bin/skill-lab\\s+(validate|test|bench|doctor|score|catalog\\s+--check|sync\\s+--check|install\\s+--check)(\\s|$)"
+            },
+            { "pattern": "^python3\\s+-m\\s+unittest(\\s|$)" }
+          ],
+          "always_confirm": [
+            { "pattern": "\\s--apply(\\s|=|$)" },
+            { "pattern": "^git\\s+(push|commit|merge|rebase|reset|clean|restore|tag|worktree)(\\s|$)" },
+            { "pattern": "^git\\s+branch\\s+(-d|-D|--delete)(\\s|$)" },
+            { "pattern": "^(ba|z|da|k)?sh\\s+-c(\\s|$)" },
+            { "pattern": "^sudo(\\s|$)" },
+            // Network clients and forge CLIs: every call is visible (ADR-0008).
+            { "pattern": "^(curl|wget|gh|tea)(\\s|$)" },
+            { "pattern": "\\b(pip3?|npm|pnpm|yarn|brew|apt|apt-get)\\s+(install|add)(\\s|$)" }
+          ],
+          "always_deny": [
+            { "pattern": "\\bgit\\b.*\\bpush\\b.*\\s(-f|--force|--force-with-lease|--force-if-includes)(=\\S*)?(\\s|$)" },
+            { "pattern": "\\bgit\\b.*\\bpush\\b.*\\s\\+\\S" },
+            { "pattern": "\\bgit\\b.*\\bpush\\b.*[\\s:](main|master)(\\s|$)" },
+            { "pattern": "\\bgit\\b.*\\s--no-verify(\\s|$)" },
+            { "pattern": "\\brm\\s+(.*\\s)?(-[a-z]*r[a-z]*|--recursive)(\\s|$)" },
+            { "pattern": "\\b(curl|wget)\\b.*\\|\\s*(sudo\\s+)?(ba|z|da|k)?sh(\\s|$)" },
+            // The second half of `curl ... | sh`, because Zed checks each sub-command of a chain.
+            { "pattern": "^(sudo\\s+)?(ba|z|da|k)?sh(\\s+-s(\\s.*)?)?$" },
+            // The autonomy level is set by a human only (CONVENTIONS §8).
+            { "pattern": "\\.skill-policy\\.json" }
+          ]
+        },
+        // The five file tools share one rule set. deny: the autonomy policy and every other file that
+        // defines an agent's authority (CI workflows, live runtime settings, CODEOWNERS; ADR-0008),
+        // vendored and generated files (regenerate them with `skill-lab sync` / `skill-lab catalog`),
+        // secrets, and .git. confirm: contracts, gates, templates and conventions, which an agent may
+        // change only in a PR that a human merges.
+        "edit_file": {
+          "default": "confirm",
+          "always_deny": [
+            { "pattern": "(^|/)\\.skill-policy\\.json$" },
+            { "pattern": "(^|/)skills/[^/]+/scripts/_skillkit(/|$)" },
+            { "pattern": "(^|/)skills/[^/]+/assets/schemas(/|$)" },
+            { "pattern": "(^|/)skills/CATALOG\\.json$" },
+            { "pattern": "(^|/)\\.env(\\.[^/]*)?$" },
+            { "pattern": "\\.(pem|key)$" },
+            { "pattern": "(^|/)\\.git(/|$)" },
+            { "pattern": "(^|/)\\.skill-gitea\\.json$" },
+            { "pattern": "(^|/)\\.(github|gitea)/workflows/" },
+            { "pattern": "(^|/)\\.claude/settings(\\.local)?\\.json$" },
+            { "pattern": "(^|/)\\.zed/settings\\.json$" },
+            { "pattern": "(^|/)CODEOWNERS$" }
+          ],
+          "always_confirm": [
+            { "pattern": "(^|/)skill-lab/contracts/" },
+            { "pattern": "(^|/)skill-lab/benchmarks/criteria/" },
+            { "pattern": "(^|/)skill-lab/config/" },
+            { "pattern": "(^|/)skill-lab/shared/_skillkit/" },
+            { "pattern": "(^|/)skill-lab/docs/CONVENTIONS\\.md$" },
+            { "pattern": "(^|/)(AGENTS|CLAUDE)\\.md$" },
+            { "pattern": "(^|/)skills/[^/]+/SKILL\\.md$" },
+            { "pattern": "(^|/)\\.(agents|claude|codex)/" }
+          ]
+        },
+        "write_file": {
+          "default": "confirm",
+          "always_deny": [
+            { "pattern": "(^|/)\\.skill-policy\\.json$" },
+            { "pattern": "(^|/)skills/[^/]+/scripts/_skillkit(/|$)" },
+            { "pattern": "(^|/)skills/[^/]+/assets/schemas(/|$)" },
+            { "pattern": "(^|/)skills/CATALOG\\.json$" },
+            { "pattern": "(^|/)\\.env(\\.[^/]*)?$" },
+            { "pattern": "\\.(pem|key)$" },
+            { "pattern": "(^|/)\\.git(/|$)" },
+            { "pattern": "(^|/)\\.skill-gitea\\.json$" },
+            { "pattern": "(^|/)\\.(github|gitea)/workflows/" },
+            { "pattern": "(^|/)\\.claude/settings(\\.local)?\\.json$" },
+            { "pattern": "(^|/)\\.zed/settings\\.json$" },
+            { "pattern": "(^|/)CODEOWNERS$" }
+          ],
+          "always_confirm": [
+            { "pattern": "(^|/)skill-lab/contracts/" },
+            { "pattern": "(^|/)skill-lab/benchmarks/criteria/" },
+            { "pattern": "(^|/)skill-lab/config/" },
+            { "pattern": "(^|/)skill-lab/shared/_skillkit/" },
+            { "pattern": "(^|/)skill-lab/docs/CONVENTIONS\\.md$" },
+            { "pattern": "(^|/)(AGENTS|CLAUDE)\\.md$" },
+            { "pattern": "(^|/)skills/[^/]+/SKILL\\.md$" },
+            { "pattern": "(^|/)\\.(agents|claude|codex)/" }
+          ]
+        },
+        "delete_path": {
+          "default": "confirm",
+          "always_deny": [
+            { "pattern": "(^|/)\\.skill-policy\\.json$" },
+            { "pattern": "(^|/)skills/[^/]+/scripts/_skillkit(/|$)" },
+            { "pattern": "(^|/)skills/[^/]+/assets/schemas(/|$)" },
+            { "pattern": "(^|/)skills/CATALOG\\.json$" },
+            { "pattern": "(^|/)\\.env(\\.[^/]*)?$" },
+            { "pattern": "\\.(pem|key)$" },
+            { "pattern": "(^|/)\\.git(/|$)" },
+            { "pattern": "(^|/)\\.skill-gitea\\.json$" },
+            { "pattern": "(^|/)\\.(github|gitea)/workflows/" },
+            { "pattern": "(^|/)\\.claude/settings(\\.local)?\\.json$" },
+            { "pattern": "(^|/)\\.zed/settings\\.json$" },
+            { "pattern": "(^|/)CODEOWNERS$" }
+          ],
+          "always_confirm": [
+            { "pattern": "(^|/)skill-lab/contracts/" },
+            { "pattern": "(^|/)skill-lab/benchmarks/criteria/" },
+            { "pattern": "(^|/)skill-lab/config/" },
+            { "pattern": "(^|/)skill-lab/shared/_skillkit/" },
+            { "pattern": "(^|/)skill-lab/docs/CONVENTIONS\\.md$" },
+            { "pattern": "(^|/)(AGENTS|CLAUDE)\\.md$" },
+            { "pattern": "(^|/)skills/[^/]+/SKILL\\.md$" },
+            { "pattern": "(^|/)\\.(agents|claude|codex)/" }
+          ]
+        },
+        "move_path": {
+          "default": "confirm",
+          "always_deny": [
+            { "pattern": "(^|/)\\.skill-policy\\.json$" },
+            { "pattern": "(^|/)skills/[^/]+/scripts/_skillkit(/|$)" },
+            { "pattern": "(^|/)skills/[^/]+/assets/schemas(/|$)" },
+            { "pattern": "(^|/)skills/CATALOG\\.json$" },
+            { "pattern": "(^|/)\\.env(\\.[^/]*)?$" },
+            { "pattern": "\\.(pem|key)$" },
+            { "pattern": "(^|/)\\.git(/|$)" },
+            { "pattern": "(^|/)\\.skill-gitea\\.json$" },
+            { "pattern": "(^|/)\\.(github|gitea)/workflows/" },
+            { "pattern": "(^|/)\\.claude/settings(\\.local)?\\.json$" },
+            { "pattern": "(^|/)\\.zed/settings\\.json$" },
+            { "pattern": "(^|/)CODEOWNERS$" }
+          ],
+          "always_confirm": [
+            { "pattern": "(^|/)skill-lab/contracts/" },
+            { "pattern": "(^|/)skill-lab/benchmarks/criteria/" },
+            { "pattern": "(^|/)skill-lab/config/" },
+            { "pattern": "(^|/)skill-lab/shared/_skillkit/" },
+            { "pattern": "(^|/)skill-lab/docs/CONVENTIONS\\.md$" },
+            { "pattern": "(^|/)(AGENTS|CLAUDE)\\.md$" },
+            { "pattern": "(^|/)skills/[^/]+/SKILL\\.md$" },
+            { "pattern": "(^|/)\\.(agents|claude|codex)/" }
+          ]
+        },
+        "copy_path": {
+          "default": "confirm",
+          "always_deny": [
+            { "pattern": "(^|/)\\.skill-policy\\.json$" },
+            { "pattern": "(^|/)skills/[^/]+/scripts/_skillkit(/|$)" },
+            { "pattern": "(^|/)skills/[^/]+/assets/schemas(/|$)" },
+            { "pattern": "(^|/)skills/CATALOG\\.json$" },
+            { "pattern": "(^|/)\\.env(\\.[^/]*)?$" },
+            { "pattern": "\\.(pem|key)$" },
+            { "pattern": "(^|/)\\.git(/|$)" },
+            { "pattern": "(^|/)\\.skill-gitea\\.json$" },
+            { "pattern": "(^|/)\\.(github|gitea)/workflows/" },
+            { "pattern": "(^|/)\\.claude/settings(\\.local)?\\.json$" },
+            { "pattern": "(^|/)\\.zed/settings\\.json$" },
+            { "pattern": "(^|/)CODEOWNERS$" }
+          ],
+          "always_confirm": [
+            { "pattern": "(^|/)skill-lab/contracts/" },
+            { "pattern": "(^|/)skill-lab/benchmarks/criteria/" },
+            { "pattern": "(^|/)skill-lab/config/" },
+            { "pattern": "(^|/)skill-lab/shared/_skillkit/" },
+            { "pattern": "(^|/)skill-lab/docs/CONVENTIONS\\.md$" },
+            { "pattern": "(^|/)(AGENTS|CLAUDE)\\.md$" },
+            { "pattern": "(^|/)skills/[^/]+/SKILL\\.md$" },
+            { "pattern": "(^|/)\\.(agents|claude|codex)/" }
+          ]
+        }
+      }
+    }
+  }
+}

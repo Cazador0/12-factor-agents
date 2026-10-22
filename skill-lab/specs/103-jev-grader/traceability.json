@@ -1,0 +1,126 @@
+{
+  "spec": "SPEC-103",
+  "requirements": [
+    {
+      "id": "FR-001",
+      "implemented_by": [
+        "skill-lab/lab/jev.py"
+      ],
+      "verified_by": [
+        "skill-lab/tests/test_jev_client.py::TestConfiguration::test_key_precedence_and_defaults",
+        "skill-lab/tests/test_jev_client.py::TestSystemOne::test_request_shape_and_typed_answers"
+      ]
+    },
+    {
+      "id": "FR-002",
+      "implemented_by": [
+        "skill-lab/lab/jev.py",
+        "skill-lab/lab/runtimes/transport.py"
+      ],
+      "verified_by": [
+        "skill-lab/tests/test_jev_client.py::TestSystemOne::test_429_with_retry_after_is_retried",
+        "skill-lab/tests/test_jev_client.py::TestSystemOne::test_retries_are_bounded_then_http_error",
+        "skill-lab/tests/test_jev_client.py::TestSystemOne::test_connection_failure"
+      ]
+    },
+    {
+      "id": "FR-003",
+      "implemented_by": [
+        "skill-lab/lab/jev.py"
+      ],
+      "verified_by": [
+        "skill-lab/tests/test_jev_client.py::TestSystemOne::test_422_carries_the_detail_list",
+        "skill-lab/tests/test_jev_client.py::TestSystemOne::test_401_and_403_are_auth_errors_without_the_key",
+        "skill-lab/tests/test_jev_client.py::TestSystemOne::test_retries_are_bounded_then_http_error",
+        "skill-lab/tests/test_jev_client.py::TestConfiguration::test_missing_or_malformed_key"
+      ]
+    },
+    {
+      "id": "FR-004",
+      "implemented_by": [
+        "skill-lab/lab/jev.py"
+      ],
+      "verified_by": [
+        "skill-lab/tests/test_jev_client.py::TestStrictResponses::test_good_response_parses",
+        "skill-lab/tests/test_jev_client.py::TestStrictResponses::test_protocol_violations",
+        "skill-lab/tests/test_jev_client.py::TestStrictResponses::test_non_json_200_is_a_protocol_error"
+      ]
+    },
+    {
+      "id": "FR-005",
+      "implemented_by": [
+        "skill-lab/lab/jev.py",
+        "skill-lab/lab/cassette.py"
+      ],
+      "verified_by": [
+        "skill-lab/tests/test_jev_client.py::TestSystemOne::test_401_and_403_are_auth_errors_without_the_key",
+        "skill-lab/tests/test_jev_client.py::TestSystemOne::test_retry_log_never_contains_the_key",
+        "skill-lab/tests/test_jev_cassette.py::TestCassette::test_record_then_replay_through_the_jev_client"
+      ]
+    },
+    {
+      "id": "FR-006",
+      "implemented_by": [
+        "skill-lab/lab/jev.py"
+      ],
+      "verified_by": [
+        "skill-lab/tests/test_jev_client.py::TestBuilders::test_question_for_drops_runner_fields",
+        "skill-lab/tests/test_jev_client.py::TestBuilders::test_build_state_only_includes_declared_parts",
+        "skill-lab/tests/test_jev_client.py::TestBuilders::test_routing_question"
+      ]
+    },
+    {
+      "id": "FR-007",
+      "implemented_by": [
+        "skill-lab/lab/jev.py",
+        "skill-lab/lab/bench.py"
+      ],
+      "verified_by": [
+        "skill-lab/tests/test_jev_client.py::TestBuilders::test_batches_group_by_state_from_set",
+        "skill-lab/tests/test_bench_runner.py::TestModelTiers::test_agentic_and_trigger_with_live_fakes"
+      ]
+    },
+    {
+      "id": "FR-008",
+      "implemented_by": [
+        "skill-lab/lab/cassette.py",
+        "skill-lab/lab/jev.py"
+      ],
+      "verified_by": [
+        "skill-lab/tests/test_jev_cassette.py::TestCassette::test_record_then_replay_through_the_jev_client",
+        "skill-lab/tests/test_jev_cassette.py::TestCassette::test_replay_miss_is_never_answered",
+        "skill-lab/tests/test_jev_cassette.py::TestCassette::test_modes_are_checked"
+      ]
+    },
+    {
+      "id": "FR-009",
+      "implemented_by": [
+        "skill-lab/lab/bench.py"
+      ],
+      "verified_by": [
+        "skill-lab/tests/test_bench_runner.py::TestModelTiers::test_missing_jev_key_means_off_without_network",
+        "skill-lab/tests/test_bench_runner.py::TestModelTiers::test_jev_off_leaves_judged_cases_ungraded",
+        "skill-lab/tests/test_bench_runner.py::TestModelTiers::test_replay_needs_a_cassette",
+        "skill-lab/tests/test_bench_runner.py::TestModelTiers::test_agentic_and_trigger_with_live_fakes"
+      ]
+    },
+    {
+      "id": "FR-010",
+      "implemented_by": [
+        "skill-lab/lab/jev.py"
+      ],
+      "verified_by": [
+        "skill-lab/tests/test_jev_client.py::TestConfiguration::test_question_checks_happen_before_any_request"
+      ]
+    },
+    {
+      "id": "FR-011",
+      "implemented_by": [
+        "skill-lab/lab/jev.py"
+      ],
+      "verified_by": [
+        "skill-lab/tests/test_jev_client.py::TestSystemOne::test_list_models"
+      ]
+    }
+  ]
+}
