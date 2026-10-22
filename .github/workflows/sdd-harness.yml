@@ -1,0 +1,32 @@
+name: sdd-harness
+
+on:
+  pull_request:
+    paths:
+      - "packages/sdd-harness/**"
+      - "extensions/intake/**"
+      - "bin/**"
+      - ".github/workflows/sdd-harness.yml"
+  push:
+    branches: [main]
+    paths:
+      - "packages/sdd-harness/**"
+      - "extensions/intake/**"
+      - "bin/**"
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: packages/sdd-harness
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+      - run: uv sync --locked
+      - run: uv run ruff check src tests
+      - run: uv run ruff format --check src tests
+      - run: uv run pytest -q
