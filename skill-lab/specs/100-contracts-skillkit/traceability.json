@@ -325,7 +325,10 @@
         "skill-lab/tests/test_skillkit_stdlib_modules.py::TestIsStdlib::test_fallback_without_stdlib_module_names",
         "skill-lab/tests/test_skillkit_stdlib_modules.py::TestIsStdlib::test_portable_requires_python39_and_current",
         "skill-lab/tests/test_skillkit_stdlib_modules.py::TestPython39List::test_list_shape",
-        "skill-lab/tests/test_skillkit_stdlib_modules.py::TestPython39List::test_consistent_with_running_interpreter"
+        "skill-lab/tests/test_skillkit_stdlib_modules.py::TestPython39List::test_consistent_with_running_interpreter",
+        "skill-lab/tests/test_skillkit_stdlib_modules.py::TestIsStdlib::test_known_stdlib_does_not_depend_on_the_interpreter",
+        "skill-lab/tests/test_skillkit_stdlib_modules.py::TestPython39List::test_post_39_list_holds_only_newer_modules",
+        "skill-lab/tests/test_lab_core_validate.py::TestScriptRules::test_newer_stdlib_module_is_not_portable_when_validating_on_python_39"
       ]
     },
     {
