@@ -6,6 +6,11 @@
     sdd-jev schema [--check]                             # schemas/jev-message.v1.json
 
 Run every 10 minutes from the LangGraph service's scheduler or cron: */10 * * * *
+Jev's token needs the scopes read:repository, write:issue and read:user (read:organization for organisation
+labels), and its account must not have push, merge or admin rights.
+
+Exit codes: 0 scanned (or skipped: another scan holds the lock), 1 at least one session's scan failed,
+2 usage or configuration, 3 Gitea unreachable at start-up, 4 refused: Jev's account has too many rights.
 """
 
 from __future__ import annotations
@@ -22,7 +27,7 @@ from pydantic import TypeAdapter
 from ..config import Settings
 from . import schema
 from .explain import make_explainer
-from .gitea import HttpGiteaClient
+from .gitea import GiteaError, HttpGiteaClient
 from .models import SessionInfo, Thresholds
 from .scan import run_scan
 from .store import ScanStore
@@ -79,18 +84,25 @@ def main(argv: list[str] | None = None) -> int:
     now = datetime.fromisoformat(args.now) if args.now else datetime.now(UTC)
     if now.tzinfo is None:
         now = now.replace(tzinfo=UTC)
-    report = run_scan(
-        settings.root,
-        sessions,
-        HttpGiteaClient(args.gitea_url, token),
-        _db(settings),
-        now,
-        Thresholds(),
-        dry_run=args.dry_run,
-        explain=make_explainer(args.explain, settings),
-    )
+    try:
+        report = run_scan(
+            settings.root,
+            sessions,
+            HttpGiteaClient(args.gitea_url, token),
+            _db(settings),
+            now,
+            Thresholds(),
+            dry_run=args.dry_run,
+            explain=make_explainer(args.explain, settings),
+        )
+    except PermissionError as exc:
+        print(f"sdd-jev: refusing to run: {exc}", file=sys.stderr)
+        return 4
+    except GiteaError as exc:
+        print(f"sdd-jev: Gitea unreachable at start-up, nothing scanned: {exc}", file=sys.stderr)
+        return 3
     print(json.dumps(report, indent=2))
-    return 0
+    return 1 if report.get("failed") else 0
 
 
 if __name__ == "__main__":

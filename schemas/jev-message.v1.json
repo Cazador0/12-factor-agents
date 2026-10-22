@@ -103,8 +103,8 @@
       "type": "array"
     },
     "scan_id": {
-      "description": "The scan slot, e.g. 2026-10-22T10:20Z",
-      "minLength": 1,
+      "description": "The UTC scan slot, e.g. 2026-10-22T10:20Z",
+      "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}Z$",
       "title": "Scan Id",
       "type": "string"
     },

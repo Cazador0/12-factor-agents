@@ -78,7 +78,9 @@ taking evidence and scan history and returning a verdict.
 **From bad scans to escalation**
 
 - One bad scan warns and nudges the session; two in a row mean the session is stuck.
-- A scan Jev could not observe (for example, Gitea is unreachable) changes nothing.
+- A scan Jev could not observe (for example, Gitea is unreachable) changes nothing: baselines come from the last observed scan.
+- A loop counts once: loop rules re-apply only when new calls completed since the last observed scan.
+- Recovery means a healthy scan with durable progress. A restarted session starts a new history.
 - A stuck session goes up a ladder:
   1. Jev asks the session to stop.
   2. After one scan of grace, the Lead stops it.
@@ -88,9 +90,12 @@ taking evidence and scan history and returning a verdict.
 **What Jev may and may not do**
 
 - Jev only comments and labels. It never edits code, pushes, approves or merges.
-- It refuses to run if its token can push or merge.
-- Each episode gets one living comment. Jev finds it by a hidden marker and edits it in place, and an intent record keeps this safe across crashes.
-- Each episode gets one exclusive label, added by ID: `jev/warning`, `jev/stuck` or `jev/parked`.
+- It refuses to run if its account has push, merge or admin rights, or if those rights cannot be read.
+  The token needs the scopes `read:repository`, `write:issue` and `read:user`, plus `read:organization` for organisation labels.
+- Each episode gets one living comment per work item. Jev finds it by a hidden marker and edits it in place, and an intent record keeps this safe across crashes. A deleted comment is posted again.
+- Each episode gets one exclusive label, added by ID from the repository's or organisation's labels: `jev/warning`, `jev/stuck` or `jev/parked`.
+- Closing an episode clears its labels and marks its comment resolved. Jev retries this until it succeeds, and keeps the labels while another session's episode is still open on the same issue.
+- One scan runs at a time (a lock file next to the database). An error in one session's scan never stops the others: the CLI exits 1 and names the session.
 
 **Messages and explanations**
 

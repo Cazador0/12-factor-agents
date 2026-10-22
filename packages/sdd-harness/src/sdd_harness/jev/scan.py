@@ -2,16 +2,18 @@
 
 Jev's write set is its own issue comments and its ``jev/*`` labels. It never edits code, pushes, approves or
 merges; a stop is a request the session and the Lead carry out (Art. III). Healthy and unknown scans are recorded
-locally only.
+locally only, except that a healthy scan finishes resolving episodes that have closed.
 """
 
 from __future__ import annotations
 
+import fcntl
 import json
 from collections.abc import Callable
 from dataclasses import dataclass, field
 from datetime import datetime
 from pathlib import Path
+from typing import IO
 
 from .decide import decide, open_episode, scan_slot
 from .gitea import GiteaClient, GiteaError, find_comment, label_ids, marker, self_check
@@ -20,18 +22,21 @@ from .models import (
     JevKind,
     JevMessage,
     NextAction,
+    Reason,
     ScanRecord,
     SessionInfo,
     Thresholds,
+    as_utc,
     idempotency_key,
 )
 from .signals import collect
-from .store import ScanStore
+from .store import Intent, ScanStore
 
 LABEL_WARN, LABEL_STUCK, LABEL_PARKED = "jev/warning", "jev/stuck", "jev/parked"
 JEV_LABELS = [LABEL_WARN, LABEL_STUCK, LABEL_PARKED]
 
 Explainer = Callable[[JevMessage], str | None]
+LabelMaps = dict[tuple[str, str], dict[str, int]]
 
 SUMMARY = {
     NextAction.NUDGE_SESSION: "First bad scan: the session is nudged. A second consecutive bad scan means stuck.",
@@ -56,6 +61,11 @@ class ScanResult:
     problems: list[str] = field(default_factory=list)
 
 
+def episode_key(session_id: str, episode_id: str | None, owner: str, repo: str, issue: int | None) -> str:
+    """One living comment per episode per work item."""
+    return idempotency_key(session_id, episode_id, f"episode:{owner}/{repo}#{issue}")
+
+
 def render_comment(msg: JevMessage, key: str, explanation: str | None = None, resolved: bool = False) -> str:
     title = "resolved" if resolved else msg.kind.value
     lines = [marker(key), f"**Jev** · {title} · `{msg.session_id}` · scan {msg.scan_id}", ""]
@@ -68,10 +78,17 @@ def render_comment(msg: JevMessage, key: str, explanation: str | None = None, re
     return "\n".join(lines) + "\n"
 
 
+def _labels_for(gitea: GiteaClient, maps: LabelMaps, owner: str, repo: str) -> dict[str, int]:
+    if (owner, repo) not in maps:
+        maps[(owner, repo)] = label_ids(gitea, owner, repo, JEV_LABELS)
+    return maps[(owner, repo)]
+
+
 def _upsert_comment(
     gitea: GiteaClient,
     store: ScanStore,
     s: SessionInfo,
+    issue: int,
     msg: JevMessage,
     key: str,
     login: str,
@@ -79,19 +96,84 @@ def _upsert_comment(
     now: datetime,
 ) -> str:
     """One living comment per episode: find it by the stored id or the marker, then edit; post only if absent."""
+    where = (s.owner, s.repo, issue)
+    episode = msg.episode_id or "-"
     known = store.intent(key)
-    comment_id = known[1] if known else None
+    comment_id = known.comment_id if known else None
     if comment_id is None:
-        comment_id = find_comment(gitea, s.owner, s.repo, s.issue, key, login)  # crashed after POST last time
-    store.mark_intent(key, s.session_id, s.issue, msg.episode_id or "-", "intended", comment_id, now)
+        comment_id = find_comment(gitea, s.owner, s.repo, issue, key, login)  # crashed after POST last time
+    store.mark_intent(key, s.session_id, where, episode, "intended", comment_id, now)
+    action = ""
     if comment_id is not None:
-        gitea.edit_comment(s.owner, s.repo, comment_id, body)
-        action = f"edited comment {comment_id}"
-    else:
-        comment_id = gitea.create_comment(s.owner, s.repo, s.issue, body)
+        try:
+            gitea.edit_comment(s.owner, s.repo, comment_id, body)
+            action = f"edited comment {comment_id}"
+        except GiteaError as exc:
+            if exc.status != 404:
+                raise
+            store.forget_comment(key)  # a person deleted it: post the episode's comment again
+            comment_id = None
+    if comment_id is None:
+        comment_id = gitea.create_comment(s.owner, s.repo, issue, body)
         action = f"posted comment {comment_id}"
-    store.mark_intent(key, s.session_id, s.issue, msg.episode_id or "-", "posted", comment_id, now)
+    store.mark_intent(key, s.session_id, where, episode, "posted", comment_id, now)
     return action
+
+
+def _resolve_closed(
+    gitea: GiteaClient,
+    store: ScanStore,
+    s: SessionInfo,
+    msg: JevMessage,
+    still_open: str | None,
+    login: str,
+    maps: LabelMaps,
+    now: datetime,
+    dry_run: bool,
+    result: ScanResult,
+) -> None:
+    """Finish every closed episode of this session: clear its labels and mark its comment resolved.
+
+    Runs on every ok scan until each one succeeds, so a failed Gitea write is retried rather than forgotten. Labels
+    stay while another unresolved episode (any session) still shares the issue.
+    """
+    for intent in store.unresolved(s.session_id):
+        if intent.episode_id == still_open:
+            continue
+        if dry_run:
+            result.actions.append(f"would resolve episode {intent.episode_id}")
+            continue
+        try:
+            _resolve(gitea, store, s, msg, intent, login, maps, now)
+            result.actions.append(f"resolved episode {intent.episode_id}")
+        except GiteaError as exc:
+            result.problems.append(f"episode {intent.episode_id} not resolved yet, will retry next ok scan: {exc}")
+
+
+def _resolve(
+    gitea: GiteaClient,
+    store: ScanStore,
+    s: SessionInfo,
+    msg: JevMessage,
+    intent: Intent,
+    login: str,
+    maps: LabelMaps,
+    now: datetime,
+) -> None:
+    where = (intent.owner, intent.repo, intent.issue)
+    if not store.others_unresolved_on(where, intent.key):
+        labels = _labels_for(gitea, maps, intent.owner, intent.repo)
+        for name in (LABEL_WARN, LABEL_STUCK):  # parked needs a person's reset
+            if name in labels:
+                gitea.remove_label(intent.owner, intent.repo, intent.issue, labels[name])  # absent label: no-op
+    cid = intent.comment_id or find_comment(gitea, intent.owner, intent.repo, intent.issue, intent.key, login)
+    if cid is not None:
+        try:
+            gitea.edit_comment(intent.owner, intent.repo, cid, render_comment(msg, intent.key, resolved=True))
+        except GiteaError as exc:
+            if exc.status != 404:  # a deleted comment has nothing left to resolve
+                raise
+    store.mark_intent(intent.key, s.session_id, where, intent.episode_id, "resolved", cid, now)
 
 
 def scan_session(
@@ -101,14 +183,20 @@ def scan_session(
     store: ScanStore,
     now: datetime,
     login: str,
-    labels: dict[str, int],
+    maps: LabelMaps,
     t: Thresholds,
     dry_run: bool = False,
     explain: Explainer | None = None,
 ) -> tuple[ScanResult, Evidence]:
     scan_id = scan_slot(now, t.scan_interval_min)
     history = store.history(s.session_id, before_scan=scan_id)
-    ev = collect(root, s, gitea, now, history[0].at if history else None, t)
+    # Baselines come from this incarnation's last *observed* scan: an unknown scan saw nothing and moves nothing.
+    observed = [r for r in history if r.at >= s.started_at and r.kind is not JevKind.UNKNOWN]
+    seen_heads: dict[str, datetime] = {}
+    for r in reversed(observed):  # oldest first: keep when each head was first seen
+        if r.head_sha is not None:
+            seen_heads.setdefault(r.head_sha, r.at)
+    ev = collect(root, s, gitea, now, observed[0].at if observed else None, t, seen_heads=seen_heads)
     v = decide(ev, history, t)
     level = f"{v.kind.value}:{v.next_action.value}"
     msg = JevMessage(
@@ -122,18 +210,23 @@ def scan_session(
         evidence=v.facts,
         idempotency_key=idempotency_key(s.session_id, v.episode_id, level),
     )
-    store.record(msg, now, ev.durable_progress_since_last_scan)
+    store.record(msg, now, ev.durable_progress_since_last_scan, ev.head_sha)
     result = ScanResult(msg)
 
     if v.kind is JevKind.OK:
-        _resolve_if_recovered(gitea, store, s, msg, history, login, labels, now, t, dry_run, result)
+        current = ScanRecord(
+            s.session_id, scan_id, now, JevKind.OK, (), NextAction.NONE, None, ev.durable_progress_since_last_scan
+        )
+        mine = [r for r in history if r.at >= s.started_at]
+        still_open = open_episode([current, *mine], t.recovery_hold_scans)
+        _resolve_closed(gitea, store, s, msg, still_open, login, maps, now, dry_run, result)
         return result, ev
     if v.kind is JevKind.UNKNOWN:
         return result, ev
     if s.issue is None:
         result.problems.append("no issue to comment on; verdict recorded locally only")
         return result, ev
-    key = idempotency_key(s.session_id, v.episode_id, "episode")
+    key = episode_key(s.session_id, v.episode_id, s.owner, s.repo, s.issue)
     label = (
         LABEL_PARKED if v.next_action is NextAction.PARK else (LABEL_WARN if v.kind is JevKind.WARN else LABEL_STUCK)
     )
@@ -148,8 +241,12 @@ def scan_session(
             result.problems.append(f"explanation skipped: {exc}")
     try:
         result.actions.append(
-            _upsert_comment(gitea, store, s, msg, key, login, render_comment(msg, key, explanation), now)
+            _upsert_comment(gitea, store, s, s.issue, msg, key, login, render_comment(msg, key, explanation), now)
         )
+    except GiteaError as exc:
+        result.problems.append(f"comment write failed, will retry next scan: {exc}")
+    try:  # independent of the comment: a failed comment never holds back the label, nor the reverse
+        labels = _labels_for(gitea, maps, s.owner, s.repo)
         if label in labels:
             applied = gitea.add_labels(s.owner, s.repo, s.issue, [labels[label]])
             if labels[label] in applied:
@@ -157,34 +254,39 @@ def scan_session(
             else:
                 result.problems.append(f"label {label} not present after POST")
         else:
-            result.problems.append(f"label {label} missing in {s.owner}/{s.repo}: a person creates it once (exclusive)")
+            result.problems.append(
+                f"label {label} not found in {s.owner}/{s.repo} or its organisation: a person creates it once "
+                "(exclusive)"
+            )
     except GiteaError as exc:
-        result.problems.append(f"Gitea write failed, will retry next scan: {exc}")
+        result.problems.append(f"label write failed, will retry next scan: {exc}")
     return result, ev
 
 
-def _resolve_if_recovered(gitea, store, s, msg, history, login, labels, now, t, dry_run, result) -> None:
-    """When an ok scan closes an episode (past the recovery hold), clear Jev's labels and mark the comment resolved."""
-    episode = open_episode(history, t.recovery_hold_scans)
-    if episode is None or s.issue is None:
-        return
-    current = ScanRecord(s.session_id, msg.scan_id, now, JevKind.OK, (), NextAction.NONE, None, False)
-    if open_episode([current, *history], t.recovery_hold_scans) is not None:
-        return  # still inside the hold: a relapse would reuse the episode
-    if dry_run:
-        result.actions.append(f"would resolve episode {episode}")
-        return
+def _failed(s: SessionInfo, now: datetime, t: Thresholds, exc: Exception) -> ScanResult:
+    """A session whose scan raised: reported as unknown (not recorded), so the other sessions are still scanned."""
+    msg = JevMessage(
+        kind=JevKind.UNKNOWN,
+        scan_id=scan_slot(now, t.scan_interval_min),
+        session_id=s.session_id,
+        issue=s.issue,
+        reasons=(Reason.UNOBSERVABLE,),
+        idempotency_key=idempotency_key(s.session_id, None, "health.unknown:none"),
+    )
+    return ScanResult(msg, problems=[f"scan failed: {exc!r}"])
+
+
+def _lock(db_path: Path) -> IO[str] | None:
+    """One Jev scan at a time: overlapping runs would race on the same episode's comment."""
+    path = db_path.with_suffix(".lock")
+    path.parent.mkdir(parents=True, exist_ok=True)
+    fh = path.open("a")
     try:
-        for name in (LABEL_WARN, LABEL_STUCK):  # parked needs a person's reset
-            if name in labels:
-                gitea.remove_label(s.owner, s.repo, s.issue, labels[name])
-        key = idempotency_key(s.session_id, episode, "episode")
-        known = store.intent(key)
-        if known and known[1]:
-            gitea.edit_comment(s.owner, s.repo, known[1], render_comment(msg, key, resolved=True))
-        result.actions.append(f"resolved episode {episode}")
-    except GiteaError as exc:
-        result.problems.append(f"could not clear labels for the resolved episode: {exc}")
+        fcntl.flock(fh, fcntl.LOCK_EX | fcntl.LOCK_NB)
+    except BlockingIOError:
+        fh.close()
+        return None
+    return fh
 
 
 def run_scan(
@@ -197,32 +299,45 @@ def run_scan(
     dry_run: bool = False,
     explain: Explainer | None = None,
 ) -> dict:
+    """Scan every session once. Raises ``PermissionError`` (Jev has too many rights) or ``GiteaError`` (start-up)."""
     t = t or Thresholds()
+    now = as_utc(now)
+    scan_id = scan_slot(now, t.scan_interval_min)
+    lock = _lock(db_path)
+    if lock is None:
+        return {"scan_id": scan_id, "skipped": "another Jev scan holds the lock", "results": [], "failed": []}
     store = ScanStore(db_path)
     try:
         repos = {(s.owner, s.repo) for s in sessions}
-        login = self_check(gitea, repos)  # raises PermissionError if Jev could push or merge
-        maps = {r: label_ids(gitea, r[0], r[1], JEV_LABELS) for r in repos}
+        login = self_check(gitea, repos)  # raises PermissionError if Jev could push, merge or administer
+        maps: LabelMaps = {r: label_ids(gitea, r[0], r[1], JEV_LABELS) for r in sorted(repos)}
         out: list[ScanResult] = []
         evidence: list[Evidence] = []
+        failed: list[str] = []
         for s in sessions:
-            res, ev = scan_session(root, s, gitea, store, now, login, maps[(s.owner, s.repo)], t, dry_run, explain)
+            try:
+                res, ev = scan_session(root, s, gitea, store, now, login, maps, t, dry_run, explain)
+                evidence.append(ev)
+            except Exception as exc:  # one session's failure must not blind Jev to the others
+                res = _failed(s, now, t, exc)
+                failed.append(s.session_id)
             out.append(res)
-            evidence.append(ev)
         notes = []
-        observed = [e for e in evidence if e.observable]
+        observed = [e for e in evidence if e.observable and e.session.branch is not None]
         if len(observed) > 1 and all(e.ci_never_reported for e in observed):
             notes.append("no session's CI has reported: the runner pool is likely down (one dependency alert, not N)")
         pruned = store.prune_intents(now)
         return {
-            "scan_id": scan_slot(now, t.scan_interval_min),
+            "scan_id": scan_id,
             "bot": login,
             "results": [
                 {"message": json.loads(r.message.model_dump_json()), "actions": r.actions, "problems": r.problems}
                 for r in out
             ],
+            "failed": failed,
             "notes": notes,
             "pruned_intents": pruned,
         }
     finally:
         store.close()
+        lock.close()

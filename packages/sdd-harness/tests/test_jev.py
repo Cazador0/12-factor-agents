@@ -5,7 +5,7 @@ from __future__ import annotations
 import json
 import subprocess
 import sys
-from datetime import UTC, datetime, timedelta
+from datetime import UTC, datetime, timedelta, timezone
 from pathlib import Path
 
 import pytest
@@ -28,8 +28,9 @@ from sdd_harness.jev import (
     scan_slot,
 )
 from sdd_harness.jev import schema as jev_schema
-from sdd_harness.jev.gitea import GiteaError, combine, failing_contexts, marker
-from sdd_harness.jev.signals import ci_failing_streak, in_flight, read_commands, trailing_alternation
+from sdd_harness.jev.gitea import GiteaError, HttpGiteaClient, combine, commit_outcome, failing_contexts, marker
+from sdd_harness.jev.scan import episode_key
+from sdd_harness.jev.signals import ci_failing_streak, collect, in_flight, read_commands, trailing_alternation
 
 T0 = datetime(2026, 10, 22, 10, 0, tzinfo=UTC)
 REPO_ROOT = Path(__file__).resolve().parents[3]
@@ -367,18 +368,21 @@ def test_alternation_detects_two_state_cycles(tmp_path):
 class FakeGitea:
     def __init__(self, can_push=False):
         self.login = "jev-bot"
-        self.can_push = can_push
+        self.permissions = {"admin": False, "push": can_push, "pull": True}
+        self.can_merge_main = False
         self.commits: dict[str, list[dict]] = {}
         self.statuses: dict[str, list[dict]] = {}
-        self.runs: dict[str, list[dict]] = {}
         self.comments: dict[int, list[dict]] = {}
         self.labels = [
             {"id": 41, "name": "jev/warning"},
             {"id": 42, "name": "jev/stuck"},
             {"id": 43, "name": "jev/parked"},
         ]
+        self.org_label_list: list[dict] = []
         self.issue_labels: dict[int, set[int]] = {}
         self.fail_reads = False
+        self.fail_remove = 0  # remove_label calls that fail before one succeeds
+        self.crash_branch: str | None = None
         self.posts = 0
 
     def me(self):
@@ -387,22 +391,21 @@ class FakeGitea:
     def version(self):
         return "28.2.0"
 
-    def default_branch(self, owner, repo):
-        return "main"
+    def repo_info(self, owner, repo):
+        return {"default_branch": "main", "permissions": self.permissions}
 
     def branch_rights(self, owner, repo, branch):
-        return (self.can_push, False)
+        return (False, self.can_merge_main)
 
     def branch_commits(self, owner, repo, branch, limit):
         if self.fail_reads:
-            raise GiteaError("HTTP 503")
+            raise GiteaError("HTTP 503", 503)
+        if branch == self.crash_branch:
+            raise RuntimeError("unexpected payload")
         return self.commits.get(branch, [])[:limit]
 
     def commit_statuses(self, owner, repo, sha):
         return self.statuses.get(sha, [])
-
-    def runs_for_commit(self, owner, repo, sha):
-        return self.runs.get(sha, [])
 
     def list_comments(self, owner, repo, issue):
         return list(self.comments.get(issue, []))
@@ -418,18 +421,26 @@ class FakeGitea:
             for c in cs:
                 if c["id"] == comment_id:
                     c["body"] = body
+                    return
+        raise GiteaError(f"PATCH comment {comment_id} → HTTP 404", 404)
 
     def repo_labels(self, owner, repo):
         return self.labels
 
+    def org_labels(self, owner):
+        return self.org_label_list
+
     def add_labels(self, owner, repo, issue, label_ids):
         have = self.issue_labels.setdefault(issue, set())
         for lid in label_ids:  # jev/* labels are exclusive within their scope
-            have -= {41, 42, 43}
+            have -= {41, 42, 43, 51, 52, 53}
             have.add(lid)
         return sorted(have)
 
     def remove_label(self, owner, repo, issue, label_id):
+        if self.fail_remove:
+            self.fail_remove -= 1
+            raise GiteaError("DELETE label → HTTP 500", 500)
         self.issue_labels.get(issue, set()).discard(label_id)
 
 
@@ -483,7 +494,7 @@ def test_scan_posts_one_living_comment_per_episode(tmp_path):
     assert g.posts == 1 and len(g.comments[184]) == 1, "the episode comment is edited in place, not re-posted"
     assert g.issue_labels[184] == {42}
     body = g.comments[184][0]["body"]
-    assert marker(idempotency_key("pse-184", m1["episode_id"], "episode")) in body and "```json" in body
+    assert marker(episode_key("pse-184", m1["episode_id"], "acme", "factory", 184)) in body and "```json" in body
 
 
 def test_crash_after_post_does_not_duplicate_the_comment(tmp_path):
@@ -532,7 +543,7 @@ def test_dry_run_and_missing_labels(tmp_path):
     assert r["results"][0]["actions"] and g.posts == 0
     g.labels = []
     r = run_scan(tmp_path, [session()], g, tmp_path / "k.sqlite", T0)
-    assert any("missing" in p for p in r["results"][0]["problems"]) and g.posts == 1
+    assert any("not found" in p for p in r["results"][0]["problems"]) and g.posts == 1
 
 
 def test_episode_resolution_clears_labels(tmp_path):
@@ -585,3 +596,340 @@ def test_shared_runner_outage_is_one_note(tmp_path):
     )
     r = run_scan(tmp_path, [a, b], g, tmp_path / "j.sqlite", T0)
     assert any("runner pool" in n for n in r["notes"])
+
+
+# ---------------------------------------------------------------- regressions from the adversarial review
+
+
+def end_row(at: datetime, action: str = "x", ok: bool = True, outcome: str = "ok:x", **kw) -> dict:
+    return {
+        "event": "end",
+        "at": at.isoformat(),
+        "tool": "Bash",
+        "action": action,
+        "exit_code": 0 if ok else 1,
+        "ok": ok,
+        "outcome": outcome,
+        **kw,
+    }
+
+
+def test_obeyed_stop_is_reported_stopped_even_when_signals_clear():
+    h = [rec(10, JevKind.STUCK, NextAction.REQUEST_STOP, "e1"), rec(0, JevKind.WARN, NextAction.NUDGE_SESSION, "e1")]
+    done = session(lease=Lease(released=True))
+    v = decide(ev(20, session=done, checkpoint_at=T0 + timedelta(minutes=14)), h)  # healthy-looking: progress
+    assert v.kind is JevKind.STOP and v.next_action is NextAction.NOTIFY_LEAD and v.episode_id == "e1"
+    revoked = session(lease=Lease(released=True), lead_ack_at=T0 + timedelta(minutes=12))
+    v = decide(ev(20, session=revoked, action_error_streak=4), h)  # the Lead hard-stopped it: no checkpoint
+    assert v.kind is JevKind.STOP and v.next_action is NextAction.NOTIFY_LEAD
+
+
+def test_red_pushes_do_not_reset_the_ci_chain():
+    h = [rec(0, JevKind.WARN, NextAction.NUDGE_SESSION, "e1", reasons=[Reason.CI_NOT_CONVERGING])]
+    v = decide(ev(10, ci_failing_streak=4, durable_progress_since_last_scan=True), h)
+    assert v.kind is JevKind.STUCK and Reason.CI_NOT_CONVERGING in v.reasons
+
+
+def test_waiting_on_a_person_pauses_loop_and_ci_rules():
+    v = decide(ev(session=session(waiting_on_human=True), action_error_streak=5, ci_failing_streak=4), [])
+    assert v.kind is JevKind.OK
+
+
+def test_unknown_scans_do_not_use_up_the_lookback():
+    hung = dict(last_loop_event_at=T0 - timedelta(minutes=90), durable_progress_since_last_scan=False)
+    h = [rec(80 - 10 * i, JevKind.UNKNOWN) for i in range(6)]
+    h += [rec(10, JevKind.STUCK, NextAction.REQUEST_STOP, "e1"), rec(0, JevKind.WARN, NextAction.NUDGE_SESSION, "e1")]
+    v = decide(ev(90, **hung), h)
+    assert v.kind is JevKind.STUCK and v.episode_id == "e1"
+
+
+def test_chatty_ok_scans_do_not_close_the_episode():
+    h = [rec(20, JevKind.OK), rec(10, JevKind.OK), rec(0, JevKind.WARN, NextAction.NUDGE_SESSION, "e1")]
+    v = decide(ev(30, action_error_streak=3, durable_progress_since_last_scan=False), h)
+    assert v.episode_id == "e1" and v.kind is JevKind.STUCK
+
+
+def test_stop_grace_is_counted_in_scans_not_wall_clock():
+    request = ScanRecord(
+        "pse-184", scan_slot(T0), T0 + timedelta(seconds=2), JevKind.STUCK, (), NextAction.REQUEST_STOP, "e1", False
+    )
+    acked = session(lead_ack_at=T0 + timedelta(minutes=1))
+    assert decide(ev(10, session=acked, action_error_streak=4), [request]).next_action is NextAction.HARD_STOP
+
+
+def test_in_flight_call_pauses_hung_but_not_spinning():
+    v = decide(
+        ev(
+            last_durable_progress_at=T0 - timedelta(hours=3),
+            durable_progress_since_last_scan=False,
+            in_flight_started_at=T0 - timedelta(seconds=30),
+            in_flight_timeout_s=600,
+        ),
+        [],
+    )
+    assert Reason.SPINNING in v.reasons
+
+
+def test_dead_sessions_escalate_and_park():
+    dead = dict(lease=Lease(heartbeat_at=T0 - timedelta(hours=2), ttl_s=1800))
+    assert decide(ev(session=session(restarts=2, **dead)), []).next_action is NextAction.PARK
+    h = [rec(0, JevKind.STUCK, NextAction.NOTIFY_LEAD, "e1", reasons=[Reason.DEAD])]
+    assert decide(ev(10, session=session(**dead)), h).next_action is NextAction.PAGE_PERSON
+
+
+def test_a_restart_begins_a_new_incarnation():
+    restarted = session(started_at=T0 - timedelta(minutes=5), restarts=1)
+    h = [rec(-30, JevKind.STUCK, NextAction.REQUEST_STOP, "old")]
+    v = decide(ev(session=restarted, action_error_streak=4), h)
+    assert v.episode_id != "old" and v.next_action is NextAction.REQUEST_STOP
+
+
+def test_naive_timestamps_are_utc_and_scan_ids_are_utc_slots():
+    s = SessionInfo(session_id="r", role="review", owner="o", repo="r", started_at=datetime(2026, 10, 22, 8, 0))
+    assert s.started_at.tzinfo is not None and s.branch is None
+    assert scan_slot(T0.astimezone(timezone(timedelta(hours=2)))) == scan_slot(T0) == "2026-10-22T10:00Z"
+    with pytest.raises(ValidationError):
+        SessionInfo(session_id="p", role="pse", owner="o", repo="r", started_at=T0)  # a PSE names its branch
+    with pytest.raises(ValidationError):
+        JevMessage(kind=JevKind.OK, scan_id="x", session_id="s", idempotency_key=idempotency_key("s", None, "x"))
+
+
+def test_collect_counts_a_loop_once_and_ignores_older_incarnations(tmp_path):
+    g = FakeGitea()
+    write_log(tmp_path, failing_loop(T0, 3))
+    s = session()
+    first = collect(tmp_path, s, g, T0, None)
+    assert first.action_error_streak == 3
+    again = collect(tmp_path, s, g, T0 + timedelta(minutes=10), T0)  # no new calls since the last scan
+    assert again.action_error_streak == 0
+    g.commits[s.branch] = [
+        {"sha": f"r{i}", "created": (T0 - timedelta(hours=1, minutes=i)).isoformat()} for i in range(3)
+    ]
+    for i in range(3):
+        g.statuses[f"r{i}"] = [{"id": 1, "context": "ci", "status": "failure", "description": "Failing after 1m"}]
+    fresh = session(started_at=T0 + timedelta(seconds=30), restarts=1)  # restarted after the old loop
+    ev2 = collect(tmp_path, fresh, g, T0 + timedelta(minutes=1), None)
+    assert ev2.action_error_streak == 0 and ev2.ci_failing_streak == 0 and ev2.last_loop_event_at is None
+
+
+def test_push_time_comes_from_the_head_change_not_the_commit_date(tmp_path):
+    g = FakeGitea()
+    s = session(started_at=T0 - timedelta(hours=2))
+    write_log(tmp_path, [end_row(T0 + timedelta(minutes=55))])
+    g.commits[s.branch] = [{"sha": "old", "created": (T0 - timedelta(hours=1)).isoformat()}]
+    seen = {"old": T0 - timedelta(minutes=50)}
+    g.commits[s.branch] = [{"sha": "late", "created": T0.isoformat()}, *g.commits[s.branch]]  # committed 10:00
+    e = collect(tmp_path, s, g, T0 + timedelta(minutes=60), T0 + timedelta(minutes=50), seen_heads=seen)
+    assert e.durable_progress_since_last_scan and e.last_durable_progress_at == T0 + timedelta(minutes=60)
+    e = collect(
+        tmp_path,
+        s,
+        g,
+        T0 + timedelta(minutes=70),
+        T0 + timedelta(minutes=60),
+        seen_heads={**seen, "late": T0 + timedelta(minutes=60)},
+    )
+    assert not e.durable_progress_since_last_scan and e.last_durable_progress_at == T0 + timedelta(minutes=60)
+
+
+def test_branchless_sessions_read_no_branch_or_ci(tmp_path):
+    g = FakeGitea()
+    g.fail_reads = True  # any branch read would make the scan unknown
+    review = session(session_id="rev-1", role="review", branch=None, commands_log=None)
+    assert collect(tmp_path, review, g, T0, None).observable
+
+
+def test_cancelled_actions_jobs_and_status_order():
+    g = FakeGitea()
+    g.statuses["a"] = [
+        {"id": 3, "context": "CI / build (push)", "status": "failure", "description": "Canceled after 2m"},
+        {"id": 1, "context": "ci/woodpecker", "status": "pending"},
+        {"id": 2, "context": "ci/woodpecker", "status": "failure", "description": "tests failed"},
+    ]
+    ci = commit_outcome(g, "o", "r", "a")
+    assert ci.outcome == "failure" and ci.failing_contexts == {"ci/woodpecker"}
+    g.statuses["b"] = [
+        {"id": 1, "context": "CI / test (push)", "status": "failure", "description": "Canceled after 9s"}
+    ]
+    assert commit_outcome(g, "o", "r", "b").outcome == "cancelled"
+    assert (
+        combine([{"id": 1, "context": "ci", "status": "pending"}, {"id": 9, "context": "ci", "status": "success"}])
+        == "success"
+    )
+
+
+def test_unknown_scan_does_not_move_the_baseline(tmp_path):
+    g = FakeGitea()
+    s = session(started_at=T0 - timedelta(hours=2))
+    db = tmp_path / "j.sqlite"
+    g.commits[s.branch] = [{"sha": "c0", "created": (T0 - timedelta(hours=1)).isoformat()}]
+    write_log(tmp_path, failing_loop(T0, 3))
+    assert run_scan(tmp_path, [s], g, db, T0)["results"][0]["message"]["kind"] == "health.warn"
+    g.commits[s.branch] = [{"sha": "c1", "created": (T0 + timedelta(minutes=5)).isoformat()}, *g.commits[s.branch]]
+    g.fail_reads = True
+    assert (
+        run_scan(tmp_path, [s], g, db, T0 + timedelta(minutes=10))["results"][0]["message"]["kind"] == "health.unknown"
+    )
+    g.fail_reads = False
+    write_log(
+        tmp_path,
+        failing_loop(T0, 3)
+        + [end_row(T0 + timedelta(minutes=19, seconds=i), "pytest -q", False, "err:new") for i in range(3)],
+    )
+    m = run_scan(tmp_path, [s], g, db, T0 + timedelta(minutes=20))["results"][0]["message"]
+    assert m["kind"] == "health.warn", "the push before the outage still broke the chain"
+
+
+def test_retried_scan_in_the_same_slot_reuses_the_episode(tmp_path):
+    g = FakeGitea()
+    write_log(tmp_path, failing_loop(T0, 3))
+    db = tmp_path / "j.sqlite"
+    run_scan(tmp_path, [session()], g, db, T0)
+    r = run_scan(tmp_path, [session()], g, db, T0 + timedelta(minutes=4))
+    assert g.posts == 1 and any("edited" in a for a in r["results"][0]["actions"])
+
+
+def test_deleted_comment_is_recreated_and_label_still_moves(tmp_path):
+    g = FakeGitea()
+    s = session(started_at=T0 - timedelta(hours=3))
+    db = tmp_path / "j.sqlite"
+    write_log(tmp_path, failing_loop(T0, 3))
+    run_scan(tmp_path, [s], g, db, T0)
+    g.comments[184] = []  # a person deleted Jev's comment
+    write_log(tmp_path, failing_loop(T0 + timedelta(minutes=10), 4))
+    run_scan(tmp_path, [s], g, db, T0 + timedelta(minutes=10))
+    assert g.posts == 2 and len(g.comments[184]) == 1 and g.issue_labels[184] == {42}
+
+
+def test_comment_follows_the_work_item(tmp_path):
+    g = FakeGitea()
+    db = tmp_path / "j.sqlite"
+    write_log(tmp_path, failing_loop(T0, 3))
+    run_scan(tmp_path, [session()], g, db, T0)
+    write_log(tmp_path, failing_loop(T0 + timedelta(minutes=10), 4))
+    run_scan(tmp_path, [session(issue=190)], g, db, T0 + timedelta(minutes=10))
+    assert len(g.comments.get(190, [])) == 1 and g.issue_labels[190] == {42}
+
+
+def test_failed_resolution_is_retried(tmp_path):
+    g = FakeGitea()
+    s = session(started_at=T0 - timedelta(hours=3))
+    db = tmp_path / "j.sqlite"
+    write_log(tmp_path, failing_loop(T0, 3))
+    run_scan(tmp_path, [s], g, db, T0)
+    g.fail_remove = 1
+    problems = []
+    for i in range(1, 4):
+        at = T0 + timedelta(minutes=10 * i)
+        g.commits[s.branch] = [{"sha": f"s{i}", "created": (at - timedelta(minutes=1)).isoformat()}]
+        write_log(tmp_path, [end_row(at - timedelta(minutes=1), f"step {i}", outcome=f"ok:{i}")])
+        problems += run_scan(tmp_path, [s], g, db, at)["results"][0]["problems"]
+    assert any("will retry" in p for p in problems)
+    assert g.issue_labels[184] == set() and "resolved" in g.comments[184][0]["body"]
+
+
+def test_shared_issue_keeps_its_label_while_another_episode_is_open(tmp_path):
+    g = FakeGitea()
+    db = tmp_path / "j.sqlite"
+    pse = session(started_at=T0 - timedelta(hours=3))
+    rev = session(session_id="rev-1", role="review", branch=None, commands_log=".specify/sessions/commands/rev-1.jsonl")
+    for name in ("pse-184", "rev-1"):
+        path = tmp_path / f".specify/sessions/commands/{name}.jsonl"
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text("".join(json.dumps(r) + "\n" for r in failing_loop(T0, 3)))
+    run_scan(tmp_path, [pse, rev], g, db, T0)
+    for i in range(1, 3):  # the PSE recovers with pushes; the reviewer stays silent and gets worse
+        at = T0 + timedelta(minutes=10 * i)
+        g.commits[pse.branch] = [{"sha": f"s{i}", "created": (at - timedelta(minutes=1)).isoformat()}]
+        write_log(tmp_path, [end_row(at - timedelta(minutes=1), f"step {i}", outcome=f"ok:{i}")])
+        run_scan(tmp_path, [pse, rev], g, db, at)
+    assert g.issue_labels[184], "the reviewer's open episode keeps its label on the shared issue"
+
+
+def test_one_session_failing_does_not_blind_jev_to_the_others(tmp_path):
+    g = FakeGitea()
+    write_log(tmp_path, failing_loop(T0, 4))
+    a = session()
+    b = session(session_id="pse-185", issue=185, branch="agent/pse/185-y")
+    g.crash_branch = b.branch
+    r = run_scan(tmp_path, [b, a], g, tmp_path / "j.sqlite", T0)
+    assert r["failed"] == ["pse-185"] and r["results"][1]["message"]["kind"] == "health.stuck"
+
+
+def test_only_one_scan_runs_at_a_time(tmp_path):
+    import fcntl
+
+    db = tmp_path / "j.sqlite"
+    with (tmp_path / "j.lock").open("a") as held:
+        fcntl.flock(held, fcntl.LOCK_EX)
+        r = run_scan(tmp_path, [session()], FakeGitea(), db, T0)
+    assert "skipped" in r and not r["results"]
+
+
+@pytest.mark.parametrize(
+    "setup",
+    [
+        lambda g: g.permissions.update(push=True),
+        lambda g: g.permissions.update(admin=True),
+        lambda g: setattr(g, "can_merge_main", True),
+        lambda g: setattr(g, "permissions", {}),
+    ],
+    ids=["repo-push", "repo-admin", "merge-main", "unreadable"],
+)
+def test_self_check_refuses_any_write_authority(tmp_path, setup):
+    g = FakeGitea()
+    setup(g)
+    with pytest.raises(PermissionError):
+        run_scan(tmp_path, [session()], g, tmp_path / "j.sqlite", T0)
+
+
+def test_org_labels_are_found(tmp_path):
+    g = FakeGitea()
+    g.labels, g.org_label_list = [], [{"id": 51, "name": "jev/warning"}, {"id": 52, "name": "jev/stuck"}]
+    write_log(tmp_path, failing_loop(T0, 3))
+    run_scan(tmp_path, [session()], g, tmp_path / "j.sqlite", T0)
+    assert g.issue_labels[184] == {51}
+
+
+# ---------------------------------------------------------------- the HTTP client, without a network
+
+
+class StubHttp(HttpGiteaClient):
+    def __init__(self, pages: dict[str, list], total: int | None, missing_branch: bool = False):
+        super().__init__("http://gitea.invalid", "t")
+        self.pages, self.total, self.missing_branch, self.calls = pages, total, missing_branch, 0
+
+    def _request(self, method, path, body=None, query=None):
+        self.calls += 1
+        if self.missing_branch and path.endswith("/commits"):
+            raise GiteaError("GET commits → HTTP 404", 404)
+        page = (query or {}).get("page", 1)
+        items = self.pages.get(path, [])
+        clamp = 20  # the server's MAX_RESPONSE_ITEMS is below Jev's page size
+        batch = items[(page - 1) * clamp : page * clamp]
+        return batch, ({"x-total-count": str(self.total if self.total is not None else len(items))})
+
+
+def test_paging_reads_past_a_clamped_page_and_404_branches_are_empty():
+    labels = [{"id": i, "name": f"l{i}"} for i in range(24)] + [{"id": 41, "name": "jev/warning"}]
+    c = StubHttp({"/repos/o/r/labels": labels}, None)
+    assert {"id": 41, "name": "jev/warning"} in c.repo_labels("o", "r")
+    assert StubHttp({}, None, missing_branch=True).branch_commits("o", "r", "agent/x", 10) == []
+
+
+def test_non_json_response_is_a_gitea_error(monkeypatch):
+    class Resp:
+        headers = {}
+
+        def read(self):
+            return b"<html>login</html>"
+
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *a):
+            return False
+
+    monkeypatch.setattr("urllib.request.urlopen", lambda req, timeout: Resp())
+    with pytest.raises(GiteaError):
+        HttpGiteaClient("http://gitea.invalid", "t").me()

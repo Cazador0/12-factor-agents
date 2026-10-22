@@ -1,21 +1,32 @@
 """Jev's types: the strict message contract shared with OCaml, and the evidence a scan collects.
 
 ``JevMessage`` is the only thing Jev publishes. It is strict (no coercion), frozen and closed
-(``extra="forbid"``); its JSON Schema is exported to ``schemas/jev-message.v1.json`` so the OCaml side can
-derive the same type with ``ppx_deriving_yojson``.
+(``extra="forbid"``); its JSON Schema is exported to ``schemas/jev-message.v1.json`` as the cross-language
+contract. Enums travel as plain JSON strings (``"health.ok"``), so an OCaml consumer writes its enum
+``of_yojson``/``to_yojson`` by hand (or uses atdgen ``<json name=...>``): ``ppx_deriving_yojson`` would encode
+variants as ``["health.ok"]``. All timestamps are UTC; a naive input is read as UTC.
 """
 
 from __future__ import annotations
 
 import hashlib
 from dataclasses import dataclass, field
-from datetime import datetime
+from datetime import UTC, datetime
 from enum import StrEnum
-from typing import Literal
+from typing import Annotated, Literal
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import AfterValidator, BaseModel, ConfigDict, Field, model_validator
 
 SCHEMA_VERSION = 1
+SCAN_ID_PATTERN = r"^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}Z$"
+
+
+def as_utc(dt: datetime) -> datetime:
+    """Aware and in UTC; a naive value is read as UTC (as ``parse_ts`` and ``--now`` do)."""
+    return dt.replace(tzinfo=UTC) if dt.tzinfo is None else dt.astimezone(UTC)
+
+
+UtcDatetime = Annotated[datetime, AfterValidator(as_utc)]
 
 
 class JevKind(StrEnum):
@@ -56,7 +67,7 @@ class JevMessage(BaseModel):
 
     schema_version: Literal[1] = SCHEMA_VERSION
     kind: JevKind
-    scan_id: str = Field(min_length=1, description="The scan slot, e.g. 2026-10-22T10:20Z")
+    scan_id: str = Field(pattern=SCAN_ID_PATTERN, description="The UTC scan slot, e.g. 2026-10-22T10:20Z")
     session_id: str = Field(min_length=1)
     issue: int | None = Field(default=None, ge=1, description="Gitea issue index the session works on")
     reasons: tuple[Reason, ...] = ()
@@ -75,14 +86,17 @@ def idempotency_key(session_id: str, episode_id: str | None, level: str) -> str:
 class Lease(BaseModel):
     model_config = ConfigDict(extra="forbid", frozen=True)
 
-    heartbeat_at: datetime | None = None
+    heartbeat_at: UtcDatetime | None = None
     ttl_s: int = Field(default=1800, ge=1)
     released: bool = False
     epoch: int | None = None
 
 
 class SessionInfo(BaseModel):
-    """One supervised session, as the control plane (spec 001) describes it to Jev."""
+    """One supervised session, as the control plane (spec 001) describes it to Jev.
+
+    Only PSE sessions own a branch; Lead and Review sessions have none, so no branch or CI signal is read for them.
+    """
 
     model_config = ConfigDict(extra="forbid", frozen=True)
 
@@ -91,14 +105,20 @@ class SessionInfo(BaseModel):
     issue: int | None = Field(default=None, ge=1)
     owner: str
     repo: str
-    branch: str
+    branch: str | None = Field(default=None, min_length=1)
     run_id: str | None = Field(default=None, description="Folder under .specify/traces/ holding trace.jsonl")
     commands_log: str | None = Field(default=None, description="commands.jsonl written by the command-log hook")
-    started_at: datetime
+    started_at: UtcDatetime
     lease: Lease = Lease()
     waiting_on_human: bool = False
-    lead_ack_at: datetime | None = None
+    lead_ack_at: UtcDatetime | None = None
     restarts: int = Field(default=0, ge=0)
+
+    @model_validator(mode="after")
+    def _pse_has_a_branch(self) -> SessionInfo:
+        if self.role == "pse" and self.branch is None:
+            raise ValueError("a PSE session names its branch")
+        return self
 
 
 @dataclass(frozen=True)
@@ -155,6 +175,7 @@ class Evidence:
     ci_failing_streak: int = 0
     ci_never_reported: bool = False
     checkpoint_at: datetime | None = None
+    head_sha: str | None = None  # branch head seen by this scan; "" = read, nothing pushed; None = not read
     facts: tuple[str, ...] = ()
 
 
@@ -168,6 +189,7 @@ class ScanRecord:
     next_action: NextAction
     episode_id: str | None
     durable_progress: bool
+    head_sha: str | None = None
 
 
 @dataclass(frozen=True)

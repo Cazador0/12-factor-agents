@@ -17,14 +17,15 @@ from .gitea import GiteaClient, GiteaError, commit_outcome
 from .models import CommitCI, Evidence, SessionInfo, Thresholds
 
 
-def parse_ts(value: str | None) -> datetime | None:
-    if not value:
+def parse_ts(value: object) -> datetime | None:
+    """An aware UTC datetime from an ISO string; anything else (missing, a number, garbage) is ``None``."""
+    if not isinstance(value, str) or not value:
         return None
     try:
         dt = datetime.fromisoformat(value.replace("Z", "+00:00"))
     except ValueError:
         return None
-    return dt if dt.tzinfo else dt.replace(tzinfo=UTC)
+    return dt.astimezone(UTC) if dt.tzinfo else dt.replace(tzinfo=UTC)
 
 
 # ---------------------------------------------------------------- command log
@@ -123,9 +124,11 @@ def read_trace(path: Path) -> list[dict]:
     rows = []
     for line in path.read_text("utf-8", errors="replace").splitlines():
         try:
-            rows.append(json.loads(line))
+            row = json.loads(line)
         except json.JSONDecodeError:
             continue
+        if isinstance(row, dict):
+            rows.append(row)
     return rows
 
 
@@ -138,6 +141,10 @@ def read_checkpoint_at(path: Path) -> datetime | None:
         return None
     cp = data.get("session_checkpoint", data) if isinstance(data, dict) else {}
     return parse_ts(str(cp.get("written_at"))) if isinstance(cp, dict) and cp.get("written_at") else None
+
+
+def _tail(items: list, keep: int) -> list:
+    return items[-keep:] if keep > 0 else []
 
 
 # ---------------------------------------------------------------- CI
@@ -173,44 +180,68 @@ def collect(
     last_scan_at: datetime | None,
     t: Thresholds | None = None,
     commits_limit: int = 10,
+    seen_heads: dict[str, datetime] | None = None,
 ) -> Evidence:
+    """One scan's evidence.
+
+    ``last_scan_at`` is the last *observed* scan (never an unknown one). ``seen_heads`` maps each branch head that
+    earlier observed scans saw to when it was first seen: commit dates are committer dates, not push times, so once
+    there is such history a push is dated by the scan that first saw it. Only evidence from this incarnation of the
+    session (since ``started_at``) counts: a restarted session does not inherit the old command log, traces,
+    checkpoint, commits or CI.
+    """
     t = t or Thresholds()
     facts: list[str] = []
+    started = session.started_at
+    since = max(last_scan_at, started) if last_scan_at else started
 
     log_path = root / session.commands_log if session.commands_log else None
-    events = read_commands(log_path) if log_path else []
-    ends = [e for e in events if e.event == "end"][-t.loop_window_events :]
+    events = [e for e in read_commands(log_path) if e.at >= started] if log_path else []
+    ends = _tail([e for e in events if e.event == "end"], t.loop_window_events)
     trace_dir = root / ".specify" / "traces" / session.run_id if session.run_id else None
-    trace = read_trace(trace_dir / "trace.jsonl") if trace_dir else []
+    rows = read_trace(trace_dir / "trace.jsonl") if trace_dir else []
+    trace = [(r, ts) for r in rows if (ts := parse_ts(r.get("timestamp"))) and ts >= started]
     checkpoint_at = read_checkpoint_at(trace_dir / "checkpoint.yaml") if trace_dir else None
+    if checkpoint_at is not None and checkpoint_at < started:
+        checkpoint_at = None
 
     if log_path is None and trace_dir is None:
         return Evidence(session, now, observable=False, unobservable_reason="no command log or trace configured")
 
-    loop_times = [e.at for e in events] + [ts for r in trace if (ts := parse_ts(r.get("timestamp")))]
+    loop_times = [e.at for e in events] + [ts for _, ts in trace]
     last_loop = max(loop_times) if loop_times else None
     flying = in_flight(events)
 
-    durable_times = [ts for r in trace if r.get("changed_state") and (ts := parse_ts(r.get("timestamp")))]
+    durable_times = [ts for r, ts in trace if r.get("changed_state")]
     if checkpoint_at:
         durable_times.append(checkpoint_at)
+    durable_since = any(ts > since for ts in durable_times)
 
-    try:
-        commits = gitea.branch_commits(session.owner, session.repo, session.branch, commits_limit)
-        results = [commit_outcome(gitea, session.owner, session.repo, c["sha"]) for c in commits]
-    except GiteaError as exc:
-        return Evidence(session, now, observable=False, unobservable_reason=f"Gitea unavailable: {exc}")
-    pushed = [ts for c in commits if (ts := parse_ts(c.get("created")))]
-    durable_times += [ts for ts in pushed if ts >= session.started_at]
+    head: str | None = None
+    results: list[CommitCI] = []
+    if session.branch is not None:  # Lead and Review sessions own no branch: no push or CI signal
+        try:
+            commits = gitea.branch_commits(session.owner, session.repo, session.branch, commits_limit)
+            mine = [c for c in commits if (ts := parse_ts(c.get("created"))) is None or ts >= started]
+            results = [commit_outcome(gitea, session.owner, session.repo, c["sha"]) for c in mine]
+        except GiteaError as exc:
+            return Evidence(session, now, observable=False, unobservable_reason=f"Gitea unavailable: {exc}")
+        head = str(commits[0]["sha"]) if commits else ""
+        if seen_heads:  # a head not seen before was pushed since the last observed scan
+            pushed = [seen_heads.get(head, now)] if head else []
+        else:  # no observed history yet: committer dates are the best evidence (never later than now)
+            pushed = [min(ts, now) for c in mine if (ts := parse_ts(c.get("created")))]
+        durable_times += pushed
+        durable_since = durable_since or any(ts > since for ts in pushed)
     last_durable = max(durable_times) if durable_times else None
-    durable_since = bool(last_durable and (last_scan_at is None or last_durable > last_scan_at))
 
-    trailing = trailing_identical(ends)
+    # Loop rules look at the tail of completed calls, but only when that tail grew since the last observed scan.
+    fresh = bool(ends) and ends[-1].at > since
+    trailing = trailing_identical(ends) if fresh else 0
     last_ok = ends[-1].ok if ends else True
-    since = last_scan_at or session.started_at
     failing = sum(1 for e in ends if not e.ok and e.at > since)
     timeouts = 0
-    for e in reversed(ends):
+    for e in reversed(ends if fresh else []):
         if not e.timed_out:
             break
         timeouts += 1
@@ -227,13 +258,14 @@ def collect(
         in_flight_timeout_s=flying.timeout_s if flying else None,
         last_durable_progress_at=last_durable,
         durable_progress_since_last_scan=durable_since,
-        action_error_streak=trailing if (ends and not last_ok) else 0,
-        action_observation_streak=trailing if (ends and last_ok) else 0,
-        alternation_len=trailing_alternation(ends),
+        action_error_streak=trailing if not last_ok else 0,
+        action_observation_streak=trailing if last_ok else 0,
+        alternation_len=trailing_alternation(ends) if fresh else 0,
         consecutive_timeouts=timeouts,
         failing_commands_in_scan=failing,
         ci_failing_streak=streak,
         ci_never_reported=never,
         checkpoint_at=checkpoint_at,
+        head_sha=head,
         facts=tuple(facts),
     )
