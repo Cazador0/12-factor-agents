@@ -1,0 +1,107 @@
+installed:
+- agent-context
+- assess
+- bug
+- intake
+settings:
+  auto_execute_hooks: true
+hooks:
+  after_specify:
+  - extension: agent-context
+    command: speckit.agent-context.update
+    enabled: true
+    optional: true
+    priority: 10
+    prompt: Execute speckit.agent-context.update?
+    description: Refresh agent context after specification
+    condition: null
+  - extension: intake
+    command: speckit.intake.refine
+    enabled: true
+    optional: true
+    priority: 10
+    prompt: Refine what the spec decided without your backing?
+    description: Put the spec's unbacked decisions to the person
+    condition: null
+  after_plan:
+  - extension: agent-context
+    command: speckit.agent-context.update
+    enabled: true
+    optional: true
+    priority: 10
+    prompt: Execute speckit.agent-context.update?
+    description: Refresh agent context after planning
+    condition: null
+  - extension: intake
+    command: speckit.intake.refine
+    enabled: true
+    optional: true
+    priority: 10
+    prompt: Refine what the plan decided without your backing?
+    description: Put the plan's technology and design choices to the person
+    condition: null
+  before_constitution:
+  - extension: intake
+    command: speckit.intake.start
+    enabled: true
+    optional: false
+    priority: 10
+    prompt: Execute speckit.intake.start?
+    description: Settle the project's principles with the person before the constitution
+      is written
+    condition: null
+  before_specify:
+  - extension: intake
+    command: speckit.intake.start
+    enabled: true
+    optional: false
+    priority: 10
+    prompt: Execute speckit.intake.start?
+    description: Settle the feature's unknowns with the person before the spec is
+      written
+    condition: null
+  after_constitution:
+  - extension: intake
+    command: speckit.intake.refine
+    enabled: true
+    optional: true
+    priority: 10
+    prompt: Refine what the constitution decided without your backing?
+    description: Put the constitution's unbacked decisions to the person
+    condition: null
+  after_checklist:
+  - extension: intake
+    command: speckit.intake.refine
+    enabled: true
+    optional: true
+    priority: 10
+    prompt: Walk through the unchecked checklist items?
+    description: Unchecked checklist items belong to a human reviewer
+    condition: null
+  after_tasks:
+  - extension: intake
+    command: speckit.intake.refine
+    enabled: true
+    optional: true
+    priority: 10
+    prompt: Refine the task order and scope the tasks phase chose?
+    description: Put the tasks phase's ordering and scope choices to the person
+    condition: null
+  after_analyze:
+  - extension: intake
+    command: speckit.intake.refine
+    enabled: true
+    optional: true
+    priority: 10
+    prompt: Resolve the CRITICAL and HIGH analysis findings?
+    description: Each CRITICAL or HIGH finding becomes a multiple-choice question
+    condition: null
+  after_implement:
+  - extension: intake
+    command: speckit.intake.refine
+    enabled: true
+    optional: true
+    priority: 10
+    prompt: Refine the small calls implementation made that the plan never named?
+    description: Put implementation's unplanned decisions to the person
+    condition: null

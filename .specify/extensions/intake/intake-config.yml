@@ -1,0 +1,44 @@
+# Spec Intake configuration.
+# A local-config.yml beside this file wins over it (and is gitignored by Spec Kit).
+
+intakes:
+  # Where intake files live, relative to the project root.
+  dir: .specify/intakes
+
+session:
+  # Questions per multiple-choice round. A stricter limit in the constitution applies.
+  per_round: 4
+  # Send a "keep going?" card after every N rounds.
+  checkin_every: 5
+
+catalog:
+  # Skill catalog for the route command. When this path has no bin/intakespec and the
+  # project itself has one, the project root is the catalog (an intakeSpec host checkout).
+  root: ../intakeSpec
+  # Extra skill folders the local catalog indexes, relative to the project root or absolute.
+  # ~ expands to the home directory.
+  skill_dirs:
+    - .claude/skills
+    - ~/.claude/skills
+    - ~/.claude/plugins
+
+retrieval:
+  # Dense embeddings for the hybrid retriever: hashing (offline, default) | fastembed | voyage
+  embeddings: hashing
+  # Reciprocal-rank-fusion constant; higher flattens the rank curve.
+  rrf_k: 60
+  # Results returned per query.
+  top_k: 8
+
+reasoning:
+  # Durable decision traces (decision, rationale summary, evidence, next action) in git.
+  traces: true
+  # Visible step-by-step reasoning chains, kept as reviewable debug artifacts.
+  visible: true
+  dir: .specify/traces
+
+llm:
+  # Used only by the LangGraph service runtime when ANTHROPIC_API_KEY is set.
+  # Inside Claude Code the host model does the reasoning and these engines stay deterministic.
+  provider: anthropic
+  model: claude-opus-5-5
