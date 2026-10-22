@@ -1,0 +1,264 @@
+{
+  "spec": "SPEC-105",
+  "requirements": [
+    {
+      "id": "FR-001",
+      "implemented_by": [
+        "skill-lab/lab/bench.py"
+      ],
+      "verified_by": [
+        "skill-lab/tests/test_live_gate.py::TestGateRun::test_single_model_recorded"
+      ],
+      "planned": true
+    },
+    {
+      "id": "FR-002",
+      "implemented_by": [
+        "skill-lab/lab/graders.py",
+        "skill-lab/lab/jev.py"
+      ],
+      "verified_by": [
+        "skill-lab/tests/test_live_reask.py::TestReask::test_uncertain_is_reasked_once",
+        "skill-lab/tests/test_live_reask.py::TestReask::test_second_uncertain_fails_and_flags"
+      ],
+      "planned": true
+    },
+    {
+      "id": "FR-003",
+      "implemented_by": [
+        "skill-lab/lab/bench.py"
+      ],
+      "verified_by": [
+        "skill-lab/tests/test_live_gate.py::TestOutage::test_outage_marks_errored_and_not_counting"
+      ],
+      "planned": true
+    },
+    {
+      "id": "FR-004",
+      "implemented_by": [
+        "skill-lab/lab/bench.py"
+      ],
+      "verified_by": [
+        "skill-lab/tests/test_live_gate.py::TestGateRun::test_no_duration_abort"
+      ],
+      "planned": true
+    },
+    {
+      "id": "FR-005",
+      "implemented_by": [
+        "skill-lab/lab/score.py",
+        "skill-lab/lab/validate.py",
+        "skill-lab/benchmarks/criteria/_defaults.json"
+      ],
+      "verified_by": [
+        "skill-lab/tests/test_score_floor.py::TestFloor::test_lowered_gate_refused",
+        "skill-lab/tests/test_lab_core_validate.py::TestCriteria::test_below_floor_is_error"
+      ],
+      "planned": true
+    },
+    {
+      "id": "FR-006",
+      "implemented_by": [
+        "skill-lab/lab/score.py"
+      ],
+      "verified_by": [
+        "skill-lab/tests/test_score_floor.py::TestLevels::test_skill_and_catalog_gates"
+      ],
+      "planned": true
+    },
+    {
+      "id": "FR-007",
+      "implemented_by": [
+        "skill-lab/lab/validate.py",
+        "skill-lab/docs/CONVENTIONS.md"
+      ],
+      "verified_by": [
+        "skill-lab/tests/test_lab_core_validate.py::TestEvalMinimums::test_live_case_minimums"
+      ],
+      "planned": true
+    },
+    {
+      "id": "FR-008",
+      "implemented_by": [
+        "skill-lab/lab/score.py"
+      ],
+      "verified_by": [
+        "skill-lab/tests/test_score_floor.py::TestLevels::test_guardrail_cases_must_all_pass"
+      ],
+      "planned": true
+    },
+    {
+      "id": "FR-009",
+      "implemented_by": [
+        "skill-lab/lab/score.py"
+      ],
+      "verified_by": [
+        "skill-lab/tests/test_score_floor.py::TestR1Gate::test_one_counting_run_passes_and_none_is_not_run"
+      ],
+      "planned": true
+    },
+    {
+      "id": "FR-010",
+      "implemented_by": [
+        "skill-lab/lab/streak.py"
+      ],
+      "verified_by": [
+        "skill-lab/tests/test_streak.py::TestStreak::test_three_counting_runs_unlock"
+      ],
+      "planned": true
+    },
+    {
+      "id": "FR-011",
+      "implemented_by": [
+        "skill-lab/lab/streak.py"
+      ],
+      "verified_by": [
+        "skill-lab/tests/test_streak.py::TestStreak::test_non_counting_runs_are_excluded_with_reasons"
+      ],
+      "planned": true
+    },
+    {
+      "id": "FR-012",
+      "implemented_by": [
+        "skill-lab/lab/streak.py"
+      ],
+      "verified_by": [
+        "skill-lab/tests/test_streak.py::TestStreak::test_flip_breaks_streak_and_flags_unstable"
+      ],
+      "planned": true
+    },
+    {
+      "id": "FR-013",
+      "implemented_by": [
+        "skill-lab/lab/bench.py"
+      ],
+      "verified_by": [
+        "skill-lab/tests/test_live_usage.py::TestUsage::test_usage_recorded_per_case_skill_total"
+      ],
+      "planned": true
+    },
+    {
+      "id": "FR-014",
+      "implemented_by": [
+        "skill-lab/lab/bench.py"
+      ],
+      "verified_by": [
+        "skill-lab/tests/test_live_usage.py::TestUsage::test_cost_null_without_price_table"
+      ],
+      "planned": true
+    },
+    {
+      "id": "FR-015",
+      "implemented_by": [
+        ".gitignore",
+        "skill-lab/lab/bench.py"
+      ],
+      "verified_by": [
+        "skill-lab/tests/test_live_storage.py::TestStorage::test_runs_not_ignored"
+      ],
+      "planned": true
+    },
+    {
+      "id": "FR-016",
+      "implemented_by": [
+        "skill-lab/lab/bench.py"
+      ],
+      "verified_by": [
+        "skill-lab/tests/test_live_storage.py::TestBoundary::test_fixture_outside_skill_refused"
+      ],
+      "planned": true
+    },
+    {
+      "id": "FR-017",
+      "implemented_by": [
+        "skill-lab/lab/bench.py",
+        "skill-lab/lab/cassette.py"
+      ],
+      "verified_by": [
+        "skill-lab/tests/test_live_storage.py::TestStorage::test_no_secret_in_written_files"
+      ],
+      "planned": true
+    },
+    {
+      "id": "FR-018",
+      "implemented_by": [
+        "skill-lab/lab/report.py"
+      ],
+      "verified_by": [
+        "skill-lab/tests/test_live_report.py::TestReport::test_pr_comment_contents"
+      ],
+      "planned": true
+    },
+    {
+      "id": "FR-019",
+      "implemented_by": [
+        "skill-lab/lab/bench.py"
+      ],
+      "verified_by": [
+        "skill-lab/tests/test_live_monitor.py::TestRunLog::test_events_logged"
+      ],
+      "planned": true
+    },
+    {
+      "id": "FR-020",
+      "implemented_by": [
+        "skills/run-monitor/scripts/snapshot.py"
+      ],
+      "verified_by": [
+        "skills/run-monitor/tests/test_snapshot.py::TestSnapshot::test_container_api_session_sections"
+      ],
+      "planned": true
+    },
+    {
+      "id": "FR-021",
+      "implemented_by": [
+        "skill-lab/lab/bench.py"
+      ],
+      "verified_by": [
+        "skill-lab/tests/test_live_monitor.py::TestPeriodic::test_snapshot_after_each_skill"
+      ],
+      "planned": true
+    },
+    {
+      "id": "FR-022",
+      "implemented_by": [
+        "skill-lab/lab/bench.py",
+        "skill-lab/benchmarks/monitor-limits.json"
+      ],
+      "verified_by": [
+        "skill-lab/tests/test_live_monitor.py::TestPeriodic::test_limit_marks_degraded_and_continues"
+      ],
+      "planned": true
+    },
+    {
+      "id": "FR-023",
+      "implemented_by": [
+        "skills/speckit-development/scripts/review_request.py"
+      ],
+      "verified_by": [
+        "skill-lab/tests/test_live_report.py::TestReviewRequest::test_reviewer_self_report_instruction"
+      ],
+      "planned": true
+    },
+    {
+      "id": "FR-024",
+      "implemented_by": [
+        "skill-lab/tests/"
+      ],
+      "verified_by": [
+        "skill-lab/tests/test_live_gate.py"
+      ],
+      "planned": true
+    },
+    {
+      "id": "FR-025",
+      "implemented_by": [
+        "skill-lab/lab/bench.py"
+      ],
+      "verified_by": [
+        "skill-lab/tests/test_live_gate.py::TestSmoke::test_smoke_tag_selects_smoke_cases"
+      ],
+      "planned": true
+    }
+  ]
+}

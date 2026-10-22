@@ -2,7 +2,7 @@
 
 **Status**: Answered — 3 open items
 **Scope**: feature
-**Feature**: pending
+**Feature**: skill-lab/specs/105-jev-live-benchmarking
 **Slug**: jev-live-benchmarking
 **Created**: 2026-10-22
 **Idea type**: new-capability
@@ -326,13 +326,62 @@ Defaults pending the person's check (they do not count toward sufficiency until 
 | check-in | after round 5 | 14 of 16 | Person chose "Keep going" |
 | 6 | Q18–Q21 | 15 of 16 (+T5) | Monitoring records, watched targets, interval, problem handling settled |
 | 7 | Q22–Q24 | 16 of 16 (+S5) | Monitor skill, reviewer self-report, degraded limits (delegated) settled |
+| specify-refine 1 | RQ1–RQ4 | — | Agent check, streak restart, price source, re-ask context settled; 1 conflict resolved |
+| specify-refine 2 | RQ5–RQ6 | — | Guardrail bar and four defaults confirmed; specify refinement done |
 
 ## Open Items
 
-- [NEEDS CLARIFICATION: How "estimated cost" is computed (Q16 C, Q7). The harness knows token counts from Ollama and TypeSafe responses, but not their prices. If either plan is subscription-based, cost may only be reportable as token usage against the plan's limits. Planning needs the price source, or must agree to report usage only.]
+- ~~[NEEDS CLARIFICATION: How "estimated cost" is computed (Q16 C, Q7).~~ Resolved in specify refinement round 1: a price table the person maintains; usage only where no price is entered.
+  ~~Original: The harness knows token counts from Ollama and TypeSafe responses, but not their prices. If either plan is subscription-based, cost may only be reportable as token usage against the plan's limits. Planning needs the price source, or must agree to report usage only.]~~
 - [NEEDS CLARIFICATION: SPEC-201 (agent-authored, written before this intake) sets live gate thresholds of per-skill agentic ≥ 0.67, guardrail agentic = 1.0, per-skill trigger ≥ 0.83 and catalog trigger ≥ 0.90. The confirmed headline is ≥ 80% agentic and ≥ 90% routing (Q3), with one fully passing run for R1 (Q15). Planning must reconcile SPEC-201's gates with these answers, for example in a `speckit-intake-refine` pass on SPEC-201.]
 - [NEEDS CLARIFICATION: Adding run-monitor (Q22) makes 14 skills; CONVENTIONS, the catalog, SPEC-200 and SPEC-201 all say 13. Planning must assign it a spec id and a release.]
 
 ## Phase Refinements
 
-- None yet.
+### Specify · 2026-10-22
+
+Artifact: `skill-lab/specs/105-jev-live-benchmarking/spec.md` (SPEC-105). No `.specify/` scripts exist, so the
+feature folder was taken directly. Backing: this intake, the person's 2026-10-22 decisions ("More cases, both
+levels"; "All four layers in R1"), and CONVENTIONS / ADRs as the interim constitution-equivalent.
+
+| # | Decision | Where | Group | Question | Answer |
+|---|---|---|---|---|---|
+| 1 | One model for every runtime case in a gate run | FR-001 | Delegated (Q11): one model keeps the gate to one variable | — | — |
+| 2 | Re-ask once; a second unsure grade fails and is flagged | FR-002 | Backed (Q5) | — | — |
+| 3 | The re-ask adds the case's fixture contents and the skill's SKILL.md body | FR-002 | Unbacked → Backed | RQ4 | Fixtures and skill text — refinement round 1 |
+| 4 | Unsure band is 0.35 up to the pass threshold | FR-002 | Backed (Q5 wording) | — | — |
+| 5 | Outage: case errored, run continues, run not counting | FR-003 | Backed (Q6) | — | — |
+| 6 | HTTP 429 after retries counts as an outage | FR-003, Edge Cases | Unbacked → Backed | RQ6 assumption check | Kept as written — refinement round 2 |
+| 7 | No time limit; runs go to completion | FR-004 | Backed (Q17) | — | — |
+| 8 | Defaults are the floor; a skill may raise a gate, never lower it | FR-005 | Backed (gates decision, 2026-10-22) | — | — |
+| 9 | Unsure rate after re-ask strictly below 10% | FR-005 | Backed (Q16) | — | — |
+| 10 | Gates at per-skill and catalog level | FR-006 | Backed (gates decision) | — | — |
+| 11 | ≥ 5 agentic and ≥ 10 routing cases per skill | FR-007 | Backed (gates decision) | — | — |
+| 12 | ≥ 2 of the 10 routing cases expect no skill | FR-007 | Unbacked → Backed | RQ6 assumption check | Kept as written — refinement round 2 |
+| 13 | Guardrail cases must pass at 100% per skill | FR-008 | Unbacked → Backed | RQ5 | 100% for guardrails — refinement round 2 |
+| 14 | R1 gate passes on one fully passing counting run | FR-009 | Backed (Q15) | — | — |
+| 15 | A change of model or of any case (suite digest) restarts the streak | FR-010, Edge Cases | Unbacked → Backed | RQ2 | Model or case change — refinement round 1 |
+| 16 | Counting run = live, complete, not degraded, no errored case | FR-011 | Backed (D2, Q6, Q21); "complete" inferred | — | — |
+| 17 | A flip from pass to fail breaks the streak and flags the case | FR-012 | Backed (Q13) | — | — |
+| 18 | Tokens recorded in structured fields | FR-013 | Backed (Q16) | — | — |
+| 19 | Cost only from a person-maintained price table, else usage only | FR-014 | Unbacked → Backed | RQ3 | Price table you maintain — refinement round 1 |
+| 20 | Run logs and health reports are committed with the results | FR-015 | Backed (Q9, inferred: they are result files) | — | — |
+| 21 | Data boundary enforced by refusing out-of-folder fixtures | FR-016 | Backed (Q4) | — | — |
+| 22 | PR comment rendered by a new `skill-lab report` command | FR-018 | Backed (Q2); format is the agent's | — | — |
+| 23 | Health check: bench runs the snapshot script itself; an agent driving a run follows the same procedure | FR-021 | **Conflicting** → Backed | RQ1 | Script decides, agent explains: limits decide degraded, then an agent call with run-monitor writes an assessment — refinement round 1 |
+| 24 | Starting degraded limits in `monitor-limits.json` | FR-022 | Delegated (Q24) | — | — |
+| 25 | Reviewer runs the monitor in its own container | FR-023 | Backed (Q23) | — | — |
+| 26 | Smoke run = ≥ 1 agentic + ≥ 2 routing cases from ≥ 2 skills | FR-025 | Unbacked → Backed | RQ6 assumption check | Kept as written — refinement round 2 |
+| 27 | Invalid JSON after 2 repairs is a failed case, not errored | Edge Cases | Unbacked → Backed | RQ6 assumption check | Kept as written — refinement round 2 |
+| 28 | Cost is reported, never capped | FR-014 | Delegated (Q7) | — | — |
+
+- Q: For the health check after each skill, how should the agent skill call work? → A: Script decides, agent explains: the snapshot's fixed limits decide whether the run is degraded; then an agent call (the run's Ollama Cloud model with the run-monitor skill) reads the report and writes an assessment and recommendations into the run.
+- Q: What should restart the 3-in-a-row reliability streak? → A: A change of model, or editing or adding any benchmark case.
+- Q: Where should the estimated cost on every run come from? → A: A price table the person maintains (prices.json); a service without a price shows usage only.
+- Q: When Jev is re-asked about an unsure grade, what extra context should the second ask get? → A: The case's input files plus the skill's SKILL.md instructions.
+- Q: Should guardrail cases have to pass at 100% per skill, stricter than the 80% agentic bar? → A: 100% for guardrails.
+- Q: Which of these defaults should stay as written? → A: All four: a persisting rate limit is an outage; ≥ 2 no-skill routing cases per skill; smoke run of ≥ 1 agentic and ≥ 2 routing cases from ≥ 2 skills; invalid JSON after 2 repairs is a failed case.
+
+Result: 28 decisions — 25 Backed (16 at the start, 9 settled in 2 rounds, including 1 conflict), 3 Delegated, 0 open.
+
+Plan-phase items, not refined here: `run-monitor`'s skill spec number and family; the exact contract field types.
