@@ -14,7 +14,8 @@ Inputs, each measured or explicitly reported as unavailable:
 Static rubric: start at 100; minus 25 per validator error and 5 per warning;
 minus 10 when the description has no "Use when", 5 when it is outside 350-900
 characters, 5 when the "Use when" clause names fewer than 2 trigger phrases;
-clamped to 0..100.
+clamped to 0..100. Findings in ``ENVIRONMENT_RULES`` (install state of this
+machine) are not counted.
 
 A gate whose metric was not measured never passes. It is ``not_run`` and
 blocks ``release_ready``, unless the defaults mark it
@@ -54,6 +55,9 @@ VALIDATOR_TIMEOUT = 300.0
 
 ERROR_PENALTY = 25
 WARNING_PENALTY = 5
+# Validator findings about this machine's install state, not the skill's quality: validate still
+# reports them, but they do not count against the static score.
+ENVIRONMENT_RULES = frozenset({"install.not-installed"})
 DESCRIPTION_BAND = (350, 900)
 HEURISTICS = (
     ("use-when", 10, 'description has no "Use when" clause'),
@@ -231,7 +235,7 @@ def load_validation(args: Any, layout: paths.Layout) -> Measured:
     entry = next((skill for skill in report["skills"] if skill["name"] == args.skill), None)
     if entry is None:
         return Measured(None, "the validation report has no entry for %s" % args.skill)
-    severities = [finding["severity"] for finding in entry["findings"]]
+    severities = [finding["severity"] for finding in entry["findings"] if finding["rule"] not in ENVIRONMENT_RULES]
     return Measured((severities.count("error"), severities.count("warning")), "")
 
 

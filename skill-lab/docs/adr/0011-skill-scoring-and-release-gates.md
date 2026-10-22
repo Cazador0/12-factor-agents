@@ -28,7 +28,9 @@ rate can only take the values *k/n*, so a threshold means something only relativ
    the validator report, the skill's unit tests, and the latest valid benchmark run with results
    for the skill (or `--run`). It exits 0 when `release_ready` and 1 otherwise.
 2. **Static rubric**:
-   `100 − 25 × errors − 5 × warnings − description heuristics`, clamped to 0..100. The heuristics
+   `100 − 25 × errors − 5 × warnings − description heuristics`, clamped to 0..100. Findings that
+   describe the machine's install state (`install.not-installed`) are reported by `validate` but not
+   counted, because they say nothing about the skill itself. The heuristics
    cost 10 when the description has no "Use when" clause, 5 when it is outside 350–900 characters,
    and 5 when the "Use when" clause has fewer than 2 trigger phrases. The gate is
    `static.score ≥ 90`. The weights are chosen so that **one validator error fails the gate on
@@ -88,8 +90,10 @@ rate can only take the values *k/n*, so a threshold means something only relativ
 - The static heuristics are crude English-text checks, and they double-count one issue: a
   description outside 350–900 characters raises the validator warning
   `frontmatter.description-length` (−5) **and** fails the length heuristic (−5).
-- Every validator warning counts, including `install.not-installed`. A skill scored before
-  `skill-lab install` loses points it would not lose after. Score installed skills.
+- Install state is excluded from the static score (`lab.score.ENVIRONMENT_RULES`), so an uninstalled
+  skill scores the same as an installed one; install problems stay visible in `validate` output.
+  A broken install (`install.parity`, an error) still counts, because the committed discovery
+  symlinks are part of the repository.
 - Trigger accuracy routed through Jev is a proxy for what the user's model does in Zed (ADR-0007).
 
 ### Residual risks

@@ -25,6 +25,7 @@ class TestEnvironmentSecrets(unittest.TestCase):
             set(rd.SECRET_ENV_VARS),
             {
                 "GITEA_TOKEN",
+                "GITEA_WEBHOOK_SECRET",
                 "TYPESAFE_API_KEY",
                 "JEV_API_KEY",
                 "OLLAMA_API_KEY",

@@ -73,10 +73,9 @@ Authority boundaries (roles, profiles, merge) are ADR-0008. This ADR covers ever
    - Cassettes never store request headers. `doctor` reports whether a credential is set, never
      its value.
    - **Every secret the system reads must be in `SECRET_ENV_VARS`.** Today the list holds
-     `GITEA_TOKEN`, `TYPESAFE_API_KEY`, `JEV_API_KEY`, `OLLAMA_API_KEY`, `GITHUB_TOKEN`,
-     `GH_TOKEN`, `ANTHROPIC_API_KEY` and `OPENAI_API_KEY`. `GITEA_WEBHOOK_SECRET` is missing. It is
-     read by `normalize.py` from R1 (SPEC-201 FR-025), so it must be added in R1, not only in R3
-     (SPEC-203 FR-006).
+     `GITEA_TOKEN`, `GITEA_WEBHOOK_SECRET`, `TYPESAFE_API_KEY`, `JEV_API_KEY`, `OLLAMA_API_KEY`,
+     `GITHUB_TOKEN`, `GH_TOKEN`, `ANTHROPIC_API_KEY` and `OPENAI_API_KEY`. `GITEA_WEBHOOK_SECRET`
+     was added on 2026-10-22, before `normalize.py` reads it (SPEC-201 FR-025).
 5. **Paths stay inside their root.** `_skillkit.fsutil.safe_join` resolves real paths and refuses
    `..`, absolute paths, NUL bytes and symlink escapes (`PATH_TRAVERSAL`, exit 4).
    `ensure_not_inside(path, skill_root)` refuses writes into the skill's own folder
@@ -133,7 +132,6 @@ Authority boundaries (roles, profiles, merge) are ADR-0008. This ADR covers ever
 | Prompt injection still steers a model's proposal or a reviewer's prose | Model outputs cannot be made immune | `APPROVE` needs a script-computed passing gate; human merge in R1 and R2; guardrail evals |
 | `run_check` runs an interpreter that does anything the OS allows | Checks must run real test commands | Secrets removed from the child; Zed sandbox recommended (ADR-0008); evidence binds to log digests |
 | Static checks miss `shell=True` passed as a variable, or `eval` reached through an alias | The validator matches the literal forms | Code review; the lab's own sources are held to the same rule |
-| `GITEA_WEBHOOK_SECRET` is not redacted today | Missing from `SECRET_ENV_VARS` | Add it before `normalize.py` ships (open item) |
 | A replayed webhook under a fresh delivery id | Gitea does not sign the delivery id | Events as hints from R3; body-digest dedupe (open item) |
 | A third-party skill in the user's catalog injects instructions | Outside this repository's control | Zed trust prompt; skill invocation prompt; documentation |
 

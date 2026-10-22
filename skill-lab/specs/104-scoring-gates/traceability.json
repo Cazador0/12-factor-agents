@@ -33,6 +33,7 @@
         "skill-lab/tests/test_score_static.py::TestDescriptionHeuristics::test_each_heuristic",
         "skill-lab/tests/test_score_static.py::TestDescriptionHeuristics::test_trigger_phrase_counting",
         "skill-lab/tests/test_score_static.py::TestStaticRubric::test_validator_findings_drive_the_score",
+        "skill-lab/tests/test_score_static.py::TestValidatorPlumbing::test_install_state_findings_do_not_count",
         "skill-lab/tests/test_score_static.py::TestStaticRubric::test_heuristics_and_clamping",
         "skill-lab/tests/test_score_static.py::TestStaticRubric::test_without_a_validator_the_frontmatter_lint_stands_in"
       ]

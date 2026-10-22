@@ -3,6 +3,9 @@
 from __future__ import annotations
 
 import json
+import os
+import tempfile
+import types
 import unittest
 
 from tests import skillkit_support as support
@@ -121,6 +124,27 @@ class TestValidatorPlumbing(unittest.TestCase):
         report, reason = score.report_from_output(code, text, "v")
         self.assertIsNone(report)
         self.assertIn("exit 2", reason)
+
+    def test_install_state_findings_do_not_count(self):
+        report = json.loads(json.dumps(self.REPORT))
+        finding = {"severity": "warning", "message": "m", "path": "p"}
+        report["skills"] = [
+            {
+                "name": "x",
+                "ok": False,
+                "findings": [
+                    dict(finding, rule="install.not-installed"),
+                    dict(finding, rule="body.description-length"),
+                    dict(finding, rule="frontmatter.description-quoted", severity="error"),
+                ],
+            }
+        ]
+        with tempfile.TemporaryDirectory() as tmp:
+            path = os.path.join(tmp, "validation.json")
+            with open(path, "w", encoding="utf-8") as handle:
+                json.dump(report, handle)
+            measured = score.load_validation(types.SimpleNamespace(validation=path, skill="x"), None)
+        self.assertEqual(measured.value, (1, 1))
 
     def test_report_from_envelope_or_payload(self):
         env = {"schema": envelope.ENVELOPE_SCHEMA, "kind": "validation-report", "payload": self.REPORT}
