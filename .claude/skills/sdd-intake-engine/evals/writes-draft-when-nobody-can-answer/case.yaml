@@ -1,0 +1,5 @@
+schema_version: "1.1"
+name: writes-draft-when-nobody-can-answer
+expected_outcome: |
+  The engine writes the intake with Status: Draft — needs a session and the session hands back without
+  asking any question.

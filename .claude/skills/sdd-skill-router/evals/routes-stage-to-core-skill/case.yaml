@@ -1,0 +1,6 @@
+schema_version: "1.1"
+name: routes-stage-to-core-skill
+expected_outcome: |
+  The router is run (bin/intakespec find or bin/sdd route find), speckit-plan is chosen as the Core
+  skill for the plan stage, its SKILL.md is read at the absolute path, and no planning phase is
+  started.
