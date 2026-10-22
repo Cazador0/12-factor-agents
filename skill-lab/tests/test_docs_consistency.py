@@ -41,8 +41,8 @@ def lab_docs() -> List[str]:
     return sorted(set(found)) + [cfg.AGENTS_MD, cfg.SKILLS_README]
 
 
-PLANNED_COMMANDS = ("policy", "release")
-"""``skill-lab`` subcommands that SPEC-201 adds in R1."""
+PLANNED_COMMANDS = ("policy", "release", "streak", "report")
+"""``skill-lab`` subcommands that SPEC-201 adds in R1 (``streak`` and ``report`` come with SPEC-105, delivered in R1)."""
 
 PLANNED_FLAGS = (("validate", "--config"), ("validate", "--specs"), ("validate", "--rule"), ("install", "--inference"))
 """Flags that SPEC-201 adds to existing commands in R1."""

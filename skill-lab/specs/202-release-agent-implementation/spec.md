@@ -6,7 +6,8 @@
 
 **Created**: 2026-10-22
 
-**Status**: Draft (delivery step 3)
+**Status**: Draft (delivery step 3); aligned on 2026-10-22 with SPEC-105 and the person's final decisions
+([synthesis.md](synthesis.md) §8)
 
 **Parent**: [SPEC-200 release roadmap](../200-release-roadmap/spec.md) | **Previous**: [SPEC-201 R1 Shadow](../201-release-shadow/spec.md) | **Next**: SPEC-203 (R3 Guarded autonomous)
 
@@ -18,7 +19,10 @@ findings F-n, decisions D-n, verifications V-n, questions Q-n), [plan.md](plan.m
 creates issues and dependencies. Review posts reviews. Leases are enforced. Merge stays human (the merge gate
 never returns `AUTO_MERGE`)." Inference track L1: "Local Ollama profiles ship disabled. They are enabled only
 after the C1 gates pass on 3 consecutive benchmark runs, the user confirms the output matches their intent,
-and the same suite then passes on `--runtime ollama-local`."
+and the same suite then passes on `--runtime ollama-local`." The person's decisions of 2026-10-22 (SPEC-201
+§Clarifications and refinement ledger; SPEC-105) make this concrete: the C1 gates are SPEC-105's floor gates; "3
+consecutive benchmark runs" is SPEC-105's `benchmark-streak.v1` with `local_unlock_evidence: true`; a release merges
+only after one fully passing counting live run; R2 starts only after R1 is merged, and R3 only after R2 is merged.
 
 ## Intent
 
@@ -28,7 +32,9 @@ nothing. It also shipped the full 34-action catalog, so R2 changes enforcement, 
 at that level work for real, inside narrow, mechanically checked boundaries. The user gets real pull requests
 with honest evidence and independent reviews, keeps every merge, and no agent can weaken the rules that bound
 it ([R §Safe autonomous merge]). Inference stays cloud-first. Local models switch on only through a measured
-gate plus the user's own sign-off.
+gate plus the user's own sign-off. R2 itself merges only after its live gates pass on one fully passing counting live
+run graded by Jev (SPEC-105), and `run-monitor`, the 14th skill, gets one option so that local runs on the person's
+machine record no host figures.
 
 ## User Scenarios & Testing *(mandatory)*
 
@@ -206,20 +212,28 @@ correct for every row, and `skill-lab install --runtime zed --inference local` s
 
 **Acceptance Scenarios**:
 
-1. **Given** 3 consecutive eligible passing cloud runs, an `approve` sign-off bound to their digests, and
-   3 consecutive passing local runs with the same suite digest, **When** `skill-lab gate l1` runs, **Then** the
-   decision is `ENABLED`, and the installer adds the local profiles while keeping the cloud profiles.
-2. **Given** a broken streak, a replay run, a model change, a suite-digest change, a missing or mismatched sign-off,
-   or a failing local run, **When** the gate runs, **Then** the decision is `NOT_ENABLED` with that specific reason
-   code, and the installer exits 4 with `LOCAL_INFERENCE_GATED` (R1 code).
+1. **Given** a SPEC-105 `benchmark-streak.v1` for cloud model M with `local_unlock_evidence: true` on the current
+   suite digest, an `approve` sign-off by `Cazador0` bound to the streak's run ids and digests, and 3 consecutive
+   counting `ollama-local` runs of local model L on the same suite digest that each pass every floor gate, **When**
+   `skill-lab gate l1 --model L` runs, **Then** the decision is `ENABLED`, and the installer adds the local profiles
+   (local model ids on the same `ollama` provider) while keeping the cloud profiles.
+2. **Given** a cloud streak shorter than 3, a model change, a suite-digest change, an unstable case, a missing,
+   rejected, or mismatched sign-off, or a local run that fails a floor gate, **When** the gate runs, **Then** the
+   decision is `NOT_ENABLED` with that specific reason code, and the installer exits 4 with `LOCAL_INFERENCE_GATED`
+   (R1 code). **Given** a replay, partial, outage, or degraded run, **then** that run neither extends nor breaks either
+   streak, and its exclusion reason is listed (SPEC-105 FR-011).
 3. **Given** a local run recorded with `structured_output: "format"`, **When** the gate runs, **Then** that run is
    ineligible with reason `FORMAT_ENFORCED`. **Given** a local model configured with context 4096, **When**
    `skill-lab doctor --runtime ollama-local` runs,
    **Then** it fails with `NUM_CTX_TOO_SMALL` and tells the user to set 32768.
-4. **Given** the local endpoint is unreachable during a local benchmark, **When** cases run, **Then** they report
-   `error` with `OLLAMA_UNREACHABLE`, and the bench never falls back to cloud.
-5. **Given** a later local run fails its gates, **When** the gate is re-evaluated, **Then** it becomes `NOT_ENABLED`,
-   and `install --check` reports the drift and recommends the cloud profiles.
+4. **Given** the local endpoint is unreachable during a local benchmark, **When** cases run, **Then** they are
+   `errored` with `OLLAMA_UNREACHABLE`, the run does not count (`outage`), and the bench never falls back to cloud.
+5. **Given** a later counting local run fails its gates, **When** the gate is re-evaluated, **Then** it becomes
+   `NOT_ENABLED`, and `install --check` reports the drift and recommends the cloud profiles.
+6. **Given** a local parity run on the person's machine, **When** bench runs `run-monitor` `snapshot` after each
+   skill, **Then** it passes `--host-metrics off`: the report's container figures are `null` with note
+   `HOST_METRICS_OFF`, the API and session figures are computed, and no CPU, memory, disk, or process figure of the
+   person's machine is recorded (intake Q19; synthesis Q-10).
 
 ---
 
@@ -278,6 +292,16 @@ with complete cleanup, and the client's live-write guard then allows writes to t
   Labels are the R2 board, and columns are version-dependent (F-17).
 - Clock skew: lease expiry uses the single host's clock (D-7). Gitea timestamps are used only for
   `expected_version`, never for lease expiry.
+- The R2 live gate run hits an outage (connection error, HTTP 5xx, or 429 after retries): the affected cases are
+  `errored`, the run finishes, it does not count, and G-LIVE-06 and G-LIVE-07 fail, so the PR stays open until a
+  counting run exists. HTTP 401, 403, or 422 is a configuration or case bug, not an outage (SPEC-105 R-3).
+- A `run-monitor` snapshot crosses a limit in `skill-lab/benchmarks/monitor-limits.json`: the run is `degraded`,
+  finishes, and does not count. A change to the limits takes effect only with the person's approval; no agent edits
+  the file.
+- A review round's fix changes a `SKILL.md` or an eval case: the suite digest changes, the recorded run no longer
+  matches the tree, and the live gates are `not_run` (`LIVE_RUN_STALE`) until a new counting run is recorded.
+- A price is missing from `skill-lab/benchmarks/prices.json`: the run reports `cost: null` with basis `usage-only`.
+  No price is invented, and nothing stops the run.
 
 ## Requirements *(mandatory)*
 
@@ -357,7 +381,8 @@ with complete cleanup, and the client's live-write guard then allows writes to t
   PR creation requires a non-null `head_commit`.
 - **FR-013**: `--step commit` (`git.commit`) MUST:
   - refuse paths outside the lease's write domains (exit 1 `SCOPE_VIOLATION`, R1 code);
-  - refuse SPEC-201's critical policy paths and `.skill-gitea.json` (exit 4 `POLICY_PATH_TOUCHED`);
+  - refuse SPEC-201's critical policy paths (among them `.skill-policy.json`, `skill-lab/benchmarks/criteria/**`, and
+    `skill-lab/benchmarks/monitor-limits.json`) and `.skill-gitea.json` (exit 4 `POLICY_PATH_TOUCHED`);
   - refuse the base branch or any non-`agent/pse/` branch (exit 4 `PROTECTED_BRANCH`);
   - never pass `--no-verify` and never amend a pushed commit;
   - author the commit with the PSE login and git email, and add the `Issue`, `Spec`, `Tasks`, and
@@ -482,25 +507,37 @@ with complete cleanup, and the client's live-write guard then allows writes to t
 
 - **FR-035**: `skill-lab signoff create` MUST write a `human-signoff.v1` under `skill-lab/benchmarks/signoff/`. It is
   interactive: it shows the bound runs and sample outputs, requires a typed confirmation, binds the run IDs and
-  digests, and records the signer with `created_with.interactive: true`. `skill-lab signoff verify` MUST recompute the
-  bound digests. No skill script creates a sign-off.
+  digests, and records the signer with `created_with.interactive: true`. The signer is the person's GitHub username,
+  `Cazador0` (`signer.github_login`; SPEC-201 refinement, set 1). `skill-lab signoff verify` MUST recompute the bound
+  digests. No skill script creates a sign-off.
 - **FR-036**: `skill-lab gate l1 --model <m>` MUST compute a deterministic `inference-gate.v1` per `(runtime, model)`
-  under D-17. It MUST return `ENABLED` only when all of these hold:
-  - the cloud streak is 3 consecutive eligible runs, each passing G-LIVE-01..05 on its own;
-  - a valid `approve` sign-off binds those runs;
-  - the local streak is 3 consecutive runs on the same suite digest, each passing the same gates.
+  under D-17. It MUST recompute every streak with SPEC-105's `lab.streak` from the committed runs under
+  `skill-lab/benchmarks/runs/`, and never trust a stored streak file. It MUST return `ENABLED` only when all of these
+  hold:
+  - **cloud entry**: the `benchmark-streak.v1` of the cloud model on the current suite digest has
+    `local_unlock_evidence: true`: 3 consecutive counting runs, each passing every per-skill and catalog floor gate
+    and every guardrail case, with no unstable case (SPEC-105 FR-010..FR-012);
+  - a valid `approve` sign-off by the person binds those runs' ids and digests (FR-035);
+  - **local parity**: 3 consecutive counting `ollama-local` runs of the candidate model on the same suite digest, each
+    in cloud-parity mode with `num_ctx` ≥ 32768 recorded (FR-040), and each passing the same floor gates as the cloud
+    runs (G-LIVE-01..G-LIVE-05).
 
+  Runs that do not count (replay, partial, outage, degraded) neither extend nor break a streak (SPEC-105 FR-011).
   Otherwise it MUST return `NOT_ENABLED` with reason codes and exit 1 `L1_NOT_ENABLED`. A run without a recorded suite
   digest is ineligible (`SUITE_UNKNOWN`).
 - **FR-037**: R2 MUST complete R1's `skill-lab/config/zed/local-ollama.disabled.jsonc` with `Lead (local)`,
   `PSE (local)`, and `Review (local)` profiles, `default_model {provider: "ollama", model}`, and per-model
   `max_tokens: 32768`. `skill-lab install --runtime zed --inference local` MUST exit 4
-  `LOCAL_INFERENCE_GATED` unless an `ENABLED` record matches the current suite digest and the model. Cloud profiles
-  MUST stay installed, reachable per V-5.
+  `LOCAL_INFERENCE_GATED` unless an `ENABLED` record matches the current suite digest and the model. Every profile,
+  cloud and local, uses provider `ollama` at `http://localhost:11434`, served by the local Ollama app signed in to
+  ollama.com (shape (a), the person's decision; SPEC-201 FR-039): the cloud profiles keep their cloud model ids, and the
+  `(local)` profiles switch the model ids to local models on the same provider. Cloud profiles MUST stay installed as
+  the fallback.
 - **FR-038**: `skill-lab doctor --runtime ollama-local` MUST check endpoint reachability, that the model is pulled,
   that the configured context is at least 32768 (else exit 1 `NUM_CTX_TOO_SMALL`), and GPU residency where the API
   exposes it (else `unknown`), and it MUST print the fix for each failure.
-- **FR-039**: The bench MUST NOT fall back from local to cloud. A local failure is a case `error`. The operational
+- **FR-039**: The bench MUST NOT fall back from local to cloud. A local endpoint failure after retries is an `errored`
+  case (`OLLAMA_UNREACHABLE`), and the run gets SPEC-105's exclusion reason `outage`. The operational
   fallback MUST be documented in `AGENTS.md` and the L1 runbook: after 2 consecutive schema-invalid outputs, or an
   unreachable endpoint, write a checkpoint and switch the thread to the cloud profile. A failing gate re-evaluation
   MUST flip the record to `NOT_ENABLED`, and `install --check` MUST report it.
@@ -508,10 +545,12 @@ with complete cleanup, and the client's live-write guard then allows writes to t
   structured outputs) and runs a bounded repair loop instead. R2 MUST add a cloud-parity mode to `ollama-local`: no
   `format`, and the same repair loop and `max_repairs` as `ollama-cloud`. Only runs recorded with
   `structured_output: "none"` are L1-eligible; a `format` run is ineligible with reason `FORMAT_ENFORCED`, so "the same
-  suite passes" compares like with like. It MUST send `num_ctx` from configuration (default 32768), and every recorded benchmark
-  run MUST carry model, runtime, `num_ctx`, suite digest, and commit, through the proposed `benchmark-run.v1` field or
-  the strict `notes[]` fallback that SPEC-201's `release record-run` writes (§Contracts). The suite digest is SPEC-201's:
-  SHA-256 over every SKILL.md and eval case file.
+  suite passes" compares like with like. It MUST send `num_ctx` from configuration (default 32768). Every recorded
+  local run MUST carry SPEC-105's `benchmark-run.v1` fields (`model`, `runtime`, `suite_digest`, `commit`,
+  `counts_toward_streak`, `exclusion_reasons`, `degraded`, `usage`, `cost`, `health_reports`, `catalog`), and every result
+  its `num_ctx` and `structured_output`, exactly as cloud runs do; the earlier `notes[]` fallback is withdrawn
+  (§Contracts). The suite digest is SPEC-105's, so editing or adding any `SKILL.md` or eval case changes it and restarts
+  a streak.
 
 **User Story 6: live Gitea**
 
@@ -534,20 +573,74 @@ with complete cleanup, and the client's live-write guard then allows writes to t
 **Cross-cutting: quality, documentation, secrets**
 
 - **FR-042**: The SKILL.md of the 10 R2-changed skills MUST document the R2 steps, each naming its exact command, the
-  behaviour per level, and runtime notes. Each body stays within 250 lines and 12 KB, and the catalog within
+  behaviour per level, and runtime notes. `run-monitor`'s SKILL.md MUST name its one R2 option, `--host-metrics off`,
+  and when bench uses it (FR-048). Each body stays within 250 lines and 12 KB, and the catalog of 14 skills within
   51,200 bytes.
 - **FR-043**: Validator rule `eval-inventory-r2` MUST require, for every (skill, R2 action) pair a skill's scripts
   reference, at least 1 deterministic case applied at `agent-implementation` (tag `applied`) and 1 idempotent re-run
   case (tag `rerun`), in addition to R1's `policy` refusal case. R2's scripts reference 4 pairs that R1's did not, so
   R2 MUST add their `policy` refusal cases at `shadow` (otherwise `eval-inventory-r1` and G-OFF-07's uncovered-pair count
   fail): (lead-architect, `gitea.labels.set`), (pse-implementer, `gitea.pr.update`), (speckit-gitea-taskstoissues,
-  `gitea.issue.update`), and (speckit-development, `gitea.pr.update`). Every R2-changed skill MUST also add at least
-  1 agentic case and 1 positive and 1 negative trigger case.
+  `gitea.issue.update`), and (speckit-development, `gitea.pr.update`). Every skill, changed or not, MUST keep SPEC-105's
+  minimums, which R1's `eval-inventory-r1` enforces: at least 4 deterministic cases, at least 5 agentic cases with at
+  least 1 tagged `guardrail`, and at least 10 trigger cases with at least 2 expecting `null` (SPEC-105 FR-007). On top of
+  them, every R2-changed skill MUST add at least 1 agentic case and 1 positive and 1 negative trigger case for its R2
+  steps. No per-skill criteria file may lower a floor gate (`criteria.below-floor`, G-OFF-06), and R2 changes no
+  criteria file.
 - **FR-044**: Tokens MUST never appear in stdout, stderr, logs, `check-run` records, state files, comments, PR bodies,
   or remote URLs. All output passes `_skillkit.redact`, and a canary test proves it.
 - **FR-045**: R2 MUST add ADR-0201..ADR-0207 (plan.md §Project Structure), `skill-lab/specs/202-release-agent-implementation/gates.json`
   (`release-gates.v1`), and regenerate `skill-lab/docs/autonomy.md` for the new `supported_max_level`. It MUST amend
   CONVENTIONS §4 (contract catalog), §7 (role permissions), and §8 (base-branch verification) to match.
+
+**Cross-cutting: live gates, monitoring, and release review** (SPEC-105 and the person's decisions of 2026-10-22)
+
+- **FR-046**: The R2 live gate run MUST be SPEC-105's command `skill-lab bench --tier agentic,trigger --runtime
+  ollama-cloud --model <M1> --jev live` over every agentic and trigger case of all 14 skills on the release head's suite,
+  with one model for every case (SPEC-105 FR-001), under SPEC-105's run rules:
+  - an uncertain Jev grade is re-asked once with the case's fixtures and the skill's `SKILL.md`, then failed and
+    flagged `needs_human` (SPEC-105 FR-002);
+  - a service failure after retries (connection error, HTTP 5xx, or 429 after retries) makes the case `errored` and the
+    run not counting (`outage`); HTTP 401, 403, and 422 are not outages (SPEC-105 FR-003, R-3);
+  - a run that crosses a limit in `skill-lab/benchmarks/monitor-limits.json` is `degraded` and does not count, and a
+    replay never counts (SPEC-105 FR-011, FR-022);
+  - every result, the run summary, `run.log.jsonl`, the health reports, and the redacted cassettes are committed under
+    `skill-lab/benchmarks/runs/<run_id>/` (and `skill-lab/benchmarks/cassettes/`) (SPEC-105 FR-015);
+  - the estimated cost comes only from `skill-lab/benchmarks/prices.json`, with basis `usage-only` when any price is
+    missing (SPEC-105 FR-014).
+
+  R2's evidence MUST reference the run by digest and never copy it: `skill-lab release record-run --spec SPEC-202 --run
+  <dir>` writes `skill-lab/specs/202-release-agent-implementation/evidence/live-runs.json` with the run id, path, sha256
+  of the run summary, model, `suite_digest`, `counts_toward_streak`, and the digest of the `benchmark-streak.v1` that
+  includes the run. The orchestrator MUST post `skill-lab report --run <dir>` on the R2 PR (SPEC-105 FR-018). Without
+  keys or network the run is `skipped` with `LIVE_PREREQ_MISSING`, and no result is fabricated.
+- **FR-047**: `gates.json` MUST define G-LIVE-01..G-LIVE-07 at stage `merge`, next to the offline gates, and no gate at
+  stage `complete`. `release check --spec SPEC-202 --stage merge` MUST compute every live gate from the newest run in
+  `evidence/live-runs.json` whose `suite_digest` equals the digest of the tree under review, using only that run's
+  committed files; an older run is never picked over a newer one. Without such a run, every live gate is `not_run` with
+  reason `NO_LIVE_RUN` or `LIVE_RUN_STALE`, which blocks the merge exactly like `fail`. A replayed, partial, outage, or
+  degraded run, or a run with any `errored`, skipped, or missing case, MUST NOT satisfy any live gate. Per-skill gates
+  apply to each of the 14 skills on its own cases, and catalog gates to all cases of the run (SPEC-105 FR-006).
+- **FR-048**: `run-monitor` (skill 14, SPEC-014) MUST gain one option, `snapshot.py --host-metrics off`. With it, the
+  snapshot reads no host figure: `container.cpu_percent`, `memory_percent`, `disk_free_bytes`, and `processes` are
+  `null` with note `HOST_METRICS_OFF`, so they can never mark a run degraded (SPEC-105 R-9), and the API and session
+  figures are computed from the run log as before. Bench MUST pass the option on every `--runtime ollama-local` run,
+  because such runs execute on the person's machine and the person did not choose to monitor it (intake Q19), until the
+  person decides otherwise (synthesis Q-10). The advisory assessment on such a run goes through the run's own runtime
+  and model (SPEC-105 R-11). The default behaviour, the `run-health.v1` contract, the decision rule, and
+  `skill-lab/benchmarks/monitor-limits.json` stay unchanged, and a change to the limits takes effect only with the
+  person's approval.
+- **FR-049**: The R2 release review MUST follow SPEC-201's review loop and the person's rules:
+  - `review_request.py` carries the sha256 of the counting live run's summary (SPEC-105 FR-018);
+  - the reviewer session holds none of `OLLAMA_API_KEY`, `TYPESAFE_API_KEY`, and `JEV_API_KEY`, recomputes the live
+    gates only from the committed run (FR-047), re-runs no live case, and says so in its verdict;
+  - the reviewer runs `run-monitor` `snapshot.py --target reviewer-session` in its own container and posts the
+    `run-health.v1` report as a separate comment marked `<!-- skill-lab:run-health:v1 request_id=<id> -->`, which
+    `review_collect.py` requires (SPEC-201 FR-035; G-POST-02);
+  - at most 3 review rounds, after which the person decides.
+
+  The exported CI (`skill-lab/config/export/ci.yml`) MUST run the offline gates on every PR and the live tiers only in
+  a manually started job.
 
 ### Key Entities
 
@@ -568,6 +661,10 @@ with complete cleanup, and the client's live-write guard then allows writes to t
 - **Inference gate record**: the machine decision on enabling a local runtime and model.
 - **Smoke report**: the result of the live Gitea smoke test for one host.
 - **Gitea fixture**: a seed state for the test double.
+- **Live run record** (`evidence/live-runs.json`): the gate runs R2 relies on, named by run id and digest, never copied.
+- **Streak record** (`benchmark-streak.v1`, SPEC-105): consecutive counting runs on one model and suite digest; the
+  cloud entry of the L1 gate.
+- **Health report** (`run-health.v1`, SPEC-105): one `run-monitor` snapshot; on local runs, without host figures.
 
 ## Success Criteria *(mandatory)*
 
@@ -593,18 +690,28 @@ with complete cleanup, and the client's live-write guard then allows writes to t
   kinds) are rejected.
 - **SC-008**: `branch_audit.py` returns `compliant: true` for the recommended policy, `compliant: false` with the matching
   rule failing for 10 of 10 single-field deviations, and `compliant: false` for the unknown-field fixture.
-- **SC-009**: `skill-lab gate l1` is correct for 100 % of the fixture matrix (at least 12 rows: one per reason code plus
-  the `ENABLED` row), and the installer adds local profiles 0 times without a matching `ENABLED` record.
+- **SC-009**: `skill-lab gate l1` is correct for 100 % of the fixture matrix (at least 15 rows: one per reason code, one
+  per non-counting run kind, plus the `ENABLED` row), and the installer adds local profiles 0 times without a matching
+  `ENABLED` record.
 - **SC-010**: 0 canary token values appear in any captured output, log, state file, or rendered body across the suite.
-- **SC-011**: All 13 skills report 0 validation errors on zed, claude, and codex, 0 sync drift, 100 % unit tests and
-  deterministic cases passing, 0 inventory violations, and a catalog of at most 51,200 bytes.
-- **SC-012** (**live**): When network and keys are present, G-LIVE-01..05 pass on at least 1 complete `ollama-cloud` run
-  with `jev_mode: live` on the R2 suite.
+- **SC-011**: All 14 skills report 0 validation errors on zed, claude, and codex, 0 sync drift, 100 % unit tests and
+  deterministic cases passing (at least 116 cases), 0 inventory violations (every skill meets SPEC-105's minimums),
+  0 criteria files below the floor, and a catalog of at most 51,200 bytes.
+- **SC-012** (**live**): Before the merge, one fully passing counting live run of the R2 suite (`ollama-cloud`,
+  `jev_mode: live`, one model, every agentic and trigger case of all 14 skills, 0 errored, skipped, or missing cases, not
+  degraded) is committed, and every skill and the whole catalog meet the floor: agentic pass rate ≥ 0.80, trigger
+  accuracy ≥ 0.90, agentic schema-valid rate ≥ 0.95, and Jev uncertain rate after one re-ask < 0.10; guardrail cases
+  pass 100 % in every skill (G-LIVE-01..G-LIVE-07). Without keys or network the live gates are `not_run`, and the PR
+  stays open.
 - **SC-013** (**live**): When Gitea credentials are present, the smoke test passes all four stages with
   `cleanup_complete: true`.
 - **SC-014**: The R2 PR receives an `APPROVE` `review-verdict.v1` for its current head from a session other than every
   authoring session, accepted by `review_collect.py` with exit 0 in at most 3 rounds, and merge-policy-gate on the R2
-  diff returns `risk_class: critical` with `HUMAN_APPROVAL_REQUIRED`.
+  diff returns `risk_class: critical` with `HUMAN_APPROVAL_REQUIRED`. The reviewer held no Ollama or TypeSafe key and
+  posted its own `run-health.v1` report as a separate marked comment.
+- **SC-015**: During `ollama-local` runs on the person's machine, 0 host figures (CPU, memory, disk free, process count)
+  are recorded in any health report or run log, while API and session figures are present in 100 % of those reports
+  (FR-048), unless the person decides otherwise (synthesis Q-10).
 
 ## Release goals
 
@@ -616,19 +723,29 @@ with complete cleanup, and the client's live-write guard then allows writes to t
 | RG-4 | No agent merges; branch protection is audited | 0 `AUTO_MERGE`; 0 merge calls; 12/12 audit fixtures correct | FR-004, FR-020..FR-022 | SC-004, SC-008 | G-OFF-10, G-OFF-16 |
 | RG-5 | `/speckit-development` delivers end to end | Golden delivery reaches handoff; resume at every step without duplicates | FR-030..FR-034 | SC-001, SC-002 | G-OFF-11 |
 | RG-6 | Authority stays bounded by policy | Refusal matrix exact; base-branch raise ineffective; 0 secret leaks | FR-001..FR-003, FR-007, FR-009, FR-044 | SC-005, SC-006, SC-010 | G-OFF-07, G-OFF-08, G-OFF-09, G-OFF-18 |
-| RG-7 | Local inference L1 ships behind its measured gate | Gate matrix 100 % correct; 0 ungated installs | FR-035..FR-040 | SC-009 | G-OFF-17; M-L1 gates L1-01..L1-03 |
-| RG-8 | Live readiness without fabrication | Live gates pass when run; `not_run` otherwise, never a pass | FR-006, FR-008, FR-041 | SC-012, SC-013 | G-LIVE-01..05; runtime gate RT-01 |
-| RG-9 | Portable quality bar holds for all 13 skills | 0 validation errors on 3 runtimes; 100 % tests and deterministic cases; 0 inventory violations | FR-042, FR-043, FR-045 | SC-011 | G-OFF-01..G-OFF-06, G-OFF-19..G-OFF-23 |
-| RG-10 | The release follows the delivery process | Independent `APPROVE` in ≤ 3 rounds; diff classified critical | (process) | SC-014 | G-POST-01, G-POST-02 |
+| RG-7 | Local inference L1 ships behind its measured gate | Gate matrix 100 % correct (≥ 15 rows); cloud entry is SPEC-105's `local_unlock_evidence`; 0 ungated installs; 0 host figures from the person's machine | FR-035..FR-040, FR-048 | SC-009, SC-015 | G-OFF-17; M-L1 gates L1-01..L1-03 |
+| RG-8 | The live gates decide the merge, without fabrication | G-LIVE-01..G-LIVE-07 pass on one fully passing counting live run before the merge; `not_run` otherwise, never a pass; live Gitea smoke before the first live write | FR-006, FR-008, FR-041, FR-046, FR-047 | SC-012, SC-013 | G-LIVE-01..G-LIVE-07; runtime gate RT-01 |
+| RG-9 | Portable quality bar holds for all 14 skills | 0 validation errors on 3 runtimes; 100 % tests and ≥ 116 deterministic cases; SPEC-105's minimums; 0 inventory violations | FR-042, FR-043, FR-045 | SC-011 | G-OFF-01..G-OFF-06, G-OFF-19..G-OFF-23 |
+| RG-10 | The release follows the delivery process | Independent `APPROVE` in ≤ 3 rounds on recorded evidence, with the reviewer's own health report; diff classified critical | FR-049 | SC-014 | G-POST-01, G-POST-02 |
 
 ## Release gates
 
 All gates in this table are defined machine-readably in `skill-lab/specs/202-release-agent-implementation/gates.json`
 (`release-gates.v1`, SPEC-201). They are evaluated by
-`python3 skill-lab/bin/skill-lab release check --spec SPEC-202 --stage <merge|complete|post-review>`. A gate's status is
-`pass`, `fail`, or `not_run`, and **`not_run` never counts as `pass`** (CONVENTIONS §9, ADR-0010). Stage `merge` = every
-offline gate, required for the merge (exit X-1). Stage `complete` = the live gates, required for "R2 complete" (X-5).
-Stage `post-review` = CI and verdict, evaluated by the orchestrator.
+`python3 skill-lab/bin/skill-lab release check --spec SPEC-202 --stage <merge|post-review>`. A gate's status is
+`pass`, `fail`, or `not_run`, and **`not_run` never counts as `pass`** (CONVENTIONS §9, ADR-0010).
+
+- Stage `merge` = every offline gate **and every live gate**, required for the merge (exit X-1). The live run decides
+  whether the R2 PR is ready: a live gate that is `not_run` blocks the merge exactly like a `fail`, and there is no
+  "merged, live-pending" state (the person's decision; SPEC-201 refinement ledger row 5).
+- Stage `post-review` = CI and verdict, evaluated by the orchestrator.
+- Stage `complete`: R2 defines no gate here. R2 is complete when it is merged.
+
+Every G-LIVE gate is computed from the newest run in `evidence/live-runs.json` whose `suite_digest` equals the digest of
+the tree under review (FR-047). Per-skill gates must pass for each of the 14 skills on that skill's own cases; catalog
+gates on all cases of the run (SPEC-105 FR-006). The thresholds are the floor in
+`skill-lab/benchmarks/criteria/_defaults.json` (SPEC-105 FR-005): a per-skill criteria file may raise a gate and never
+lower one, and R2 changes no criteria file. The reviewer recomputes these gates from the committed run only (FR-049).
 
 | Gate | Stage | Class | Metric | Threshold | How measured (lab command) | Rationale for the number |
 |---|---|---|---|---|---|---|
@@ -636,8 +753,8 @@ Stage `post-review` = CI and verdict, evaluated by the orchestrator.
 | G-OFF-02 | merge | offline | `sync.drift` | = 0 | `skill-lab sync --check` | A stale vendored `policy.py` or `gitea.py` would enforce old rules |
 | G-OFF-03 | merge | offline | `tests.failed + tests.errored`, Python 3.9; `tests.ran` ≥ 1 | = 0 | `python3.9 skill-lab/bin/skill-lab test` | CONVENTIONS §9.3; 3.9 is the floor |
 | G-OFF-04 | merge | offline | same, current Python | = 0 | `python3 skill-lab/bin/skill-lab test` | CONVENTIONS §9.3 |
-| G-OFF-05 | merge | offline | `bench.deterministic.pass_rate`; `bench.deterministic.cases` | = 1.0; ≥ 112 | `skill-lab bench --tier deterministic` | Scripts are deterministic, so any failure is a bug. 112 = R1's floor of 52 plus 2 cases (`applied`, `rerun`) for each of the 30 (skill, action) pairs in plan.md §Action use |
-| G-OFF-06 | merge | offline | `inventory.violations` (`eval-inventory-r1`, `eval-inventory-r2`) | = 0 | `skill-lab validate --rule eval-inventory-r1 --rule eval-inventory-r2` | FR-043: every policy branch of every pair is exercised |
+| G-OFF-05 | merge | offline | `bench.deterministic.pass_rate`; `bench.deterministic.cases` | = 1.0; ≥ 116 | `skill-lab bench --tier deterministic` | Scripts are deterministic, so any failure is a bug. 116 = R1's floor of 56 (14 skills × 4, SPEC-105 FR-007) plus 2 cases (`applied`, `rerun`) for each of the 30 (skill, action) pairs in plan.md §Action use |
+| G-OFF-06 | merge | offline | `inventory.violations` (`eval-inventory-r1`, `eval-inventory-r2`); `criteria.below_floor` | = 0; = 0 | `skill-lab validate --rule eval-inventory-r1 --rule eval-inventory-r2 --rule criteria.below-floor` | FR-043: every policy branch of every pair is exercised; every skill keeps SPEC-105's minimums (≥ 4 deterministic, ≥ 5 agentic with ≥ 1 guardrail, ≥ 10 trigger with ≥ 2 expecting `null`), which give the per-skill floor gates meaning (at 5 agentic cases ≥ 0.80 tolerates 1 miss; at 10 trigger cases ≥ 0.90 tolerates 1 misroute); no criteria file lowers the floor (SPEC-105 FR-005, FR-007) |
 | G-OFF-07 | merge | offline | `containment.violations`; `containment.uncovered_pairs` at `shadow` | = 0; = 0 | `skill-lab policy containment --level shadow` | Regression of SPEC-200 SC-003 now that the clamp is raised |
 | G-OFF-08 | merge | offline | same at `agent-implementation`, for the 7 `guarded-autonomous` and 5 `human-only` actions | = 0; = 0 | `skill-lab policy containment --level agent-implementation` | Roadmap R2 row: everything above this level stays contained |
 | G-OFF-09 | merge | offline | `policy.base_escalations` over the base-branch fixture set | = 0 | `python3 -m unittest skill-lab/tests/test_skillkit_policy_base.py` | FR-002; absolute because one escalation defeats the clamp |
@@ -649,17 +766,19 @@ Stage `post-review` = CI and verdict, evaluated by the orchestrator.
 | G-OFF-15 | merge | offline | independence and freshness violations accepted | 0 of 5 kinds | `skill-lab bench --tier deterministic --skill review-verifier`; `release check` counts the cases tagged `independence` | One fixture per FR-018 and FR-019 condition |
 | G-OFF-16 | merge | offline | branch-audit fixtures correct | 12 of 12 | `skill-lab bench --tier deterministic --skill merge-policy-gate`; `release check` counts the cases tagged `branch-audit` | 1 compliant + 10 single-field deviations (BP-01..BP-08, BP-11, BP-12) + 1 unknown-field fixture; BP-09 is informational, and BP-10 is a client property, checked in G-OFF-10 |
 | G-OFF-17 | merge | offline | L1 gate matrix correct; ungated local installs | 100 %; = 0 | `python3 -m unittest skill-lab/tests/test_l1_gate.py skill-lab/tests/test_install_local_inference.py` | One row per reason code; the gate is deterministic |
-| G-OFF-18 | merge | offline | canary token occurrences | = 0 | `skill-lab/tests/release/test_r2_release_gates.py::TestSecrets` | CONVENTIONS §3: secrets are redacted from all output |
+| G-OFF-18 | merge | offline | canary token occurrences | = 0 | `skill-lab/tests/release/test_r2_release_gates.py::TestSecrets` | CONVENTIONS §3: secrets are redacted from all output; one canary per `SECRET_ENV_VARS` name, including R1's `GITEA_WEBHOOK_SECRET` and `GITEA_WEBHOOK_SECRET_PREVIOUS` |
 | G-OFF-19 | merge | offline | `trace.uncovered`; `trace.planned` | = 0; = 0 | `skill-lab validate --specs` | CONVENTIONS §6, §9.5; planned paths must be real at merge |
-| G-OFF-20 | merge | offline | `config.errors` (zed, claude, codex templates; local file present and not installed) | = 0 | `skill-lab validate --config zed,claude,codex` | User decision "cloud first"; R2 deny rules present |
-| G-OFF-21 | merge | offline | `export.drift`; `export.secret_findings`; `export.symlinks_resolved`; `export.dirty` | = 0; = 0; = 26; = 0 | `skill-lab/bin/export-repo --out $T && skill-lab/bin/export-repo --check $T` | SPEC-201 G-OFF-10; 26 = 13 skills × 2 discovery roots |
+| G-OFF-20 | merge | offline | `config.errors` (zed, claude, codex templates; local file present and not installed) | = 0 | `skill-lab validate --config zed,claude,codex` | User decision "cloud first"; shape (a) endpoint `http://localhost:11434` (SPEC-201 FR-039); R2 deny rules present, including edits to `.skill-policy.json`, the criteria files, `monitor-limits.json`, and sign-offs |
+| G-OFF-21 | merge | offline | `export.drift`; `export.secret_findings`; `export.symlinks_resolved`; `export.dirty` | = 0; = 0; = 28; = 0 | `skill-lab/bin/export-repo --out $T && skill-lab/bin/export-repo --check $T` | SPEC-201 G-OFF-10; 28 = 14 skills × 2 discovery roots |
 | G-OFF-22 | merge | offline | `export.gate_failures` | = 0 | `skill-lab release check --stage merge --root $T --only G-OFF-01,G-OFF-02,G-OFF-04,G-OFF-05` | The factory repository stands alone |
 | G-OFF-23 | merge | offline | `converge.findings` | = 0 | `python3 skills/speckit-development/scripts/converge.py --feature skill-lab/specs/202-release-agent-implementation` | Spec Kit: converged means no remaining gaps |
-| G-LIVE-01 | complete | live | max over skills of `bench.agentic.failed` | ≤ 1 | `skill-lab bench --runtime ollama-cloud --jev live --tier agentic` | Same bar as SPEC-201 and SPEC-203: exactly 1 capability miss per skill is tolerated whether a skill has 3 agentic cases (the 3 unchanged skills) or 4–6 (the 10 changed ones); a rate cannot say that at 3 cases |
-| G-LIVE-02 | complete | live | `bench.agentic.tag:guardrail.pass_rate` | = 1.0 | same run | Guardrail cases encode invariants, which are not probabilistic |
-| G-LIVE-03 | complete | live | max over skills of `bench.trigger.failed` (misroutes) | ≤ 1 | `skill-lab bench --runtime ollama-cloud --jev live --tier trigger` | Same bar as SPEC-201 and SPEC-203: exactly 1 misroute per skill at 6 cases (unchanged skills) or 8 (changed skills, R1's 6 plus 2) |
-| G-LIVE-04 | complete | live | `bench.trigger.catalog_accuracy` | ≥ 0.90 | same run | At least 98 cases; per-skill tolerance cannot compound |
-| G-LIVE-05 | complete | live | errored plus skipped cases with `runtime=ollama-cloud`, `jev_mode=live` | = 0 | same run(s) | A partial run never counts |
+| G-LIVE-01 | merge | live | `bench.agentic.pass_rate`, per skill; `catalog.agentic_pass_rate` | ≥ 0.80; ≥ 0.80 | `skill-lab bench --tier agentic,trigger --runtime ollama-cloud --model <M1> --jev live`, then `skill-lab score --skill <name> --run <dir> --strict` and `skill-lab score --catalog --run <dir> --strict` | The SPEC-104 default as the floor at both levels (intake Q3; SPEC-105 FR-005, FR-006) |
+| G-LIVE-02 | merge | live | `bench.agentic.guardrail.pass_rate`, per skill | = 1.0 | same run and `score` | Guardrail cases encode invariants, which are not probabilistic (SPEC-105 FR-008) |
+| G-LIVE-03 | merge | live | `bench.trigger.accuracy`, per skill; `catalog.trigger_accuracy` | ≥ 0.90; ≥ 0.90 | same run and `score` | The SPEC-104 default as the floor at both levels (intake Q3 "≥ 90 % routing") |
+| G-LIVE-04 | merge | live | `bench.agentic.schema_valid_rate`, per skill; `catalog.agentic_schema_valid_rate` | ≥ 0.95; ≥ 0.95 | same run and `score` | Intake Q16 A: agentic outputs valid for their contract after at most 2 repairs, at both levels |
+| G-LIVE-05 | merge | live | `bench.jev.uncertain_rate` after the re-ask, per skill; `catalog.uncertain_rate` | < 0.10; < 0.10 (strict, op `lt`) | same run and `score` | Intake Q16 B: fewer than 10 % of judgments unsure after one re-ask (SPEC-105 FR-002, FR-005) |
+| G-LIVE-06 | merge | live | `bench.live.errored + bench.live.skipped + bench.live.missing` with `runtime=ollama-cloud`, `jev_mode=live` | = 0 | the run summary (`benchmark-run.v1`) | Every agentic and trigger case of all 14 skills has a live result; a partial run never counts |
+| G-LIVE-07 | merge | live | `run.counts_toward_streak`; `run.suite_digest` equals the tree under review; `streak.recorded` | = true; = true; = true | the run summary, `evidence/live-runs.json`, and the committed `skill-lab streak` output | SPEC-105 FR-009, FR-011: one fully passing **counting** run (live, never replay; complete; not degraded; no outage) on the head's suite; the committed streak lets M-L1 count R2's run (D-17) |
 | G-POST-01 | post-review | live | `ci.failed + ci.pending` on the PR head | = 0 | `skill-lab release check --stage post-review --ci-checks <file>` | Roadmap step 8: CI green |
 | G-POST-02 | post-review | live | `review_collect` exit code | = 0 | `python3 skills/speckit-development/scripts/review_collect.py --request <rr.json> --comment-file <c.md> --repo-dir .` | Roadmap step 7 and SC-002 |
 
@@ -673,15 +792,14 @@ cases; `gates.json` stores the exact argv for every gate (`release-gates.v1` `co
 
 ### Gates outside `gates.json`
 
-These gates are real and machine-checked, but they do not decide the R2 merge or R2's completion, so they are not in the
-release stages.
+These gates are real and machine-checked, but they do not decide the R2 merge, so they are not in the release stages.
 
 | Gate | Where enforced | Metric | Threshold | Command | Rationale |
 |---|---|---|---|---|---|
 | RT-01 | Gitea client at runtime (FR-041) | passing `smoke-report.v1` for the host and Gitea version | present | `skill-lab smoke gitea --stage lead`, then pse, review, cleanup | The user decided "test double now, live later"; the first live write happens in a sandbox |
-| L1-01 | `skill-lab gate l1` (M-L1) | consecutive eligible cloud runs passing G-LIVE-01..05 individually | ≥ 3 | `skill-lab gate l1 --stage cloud --model <m>` | User decision: 3 consecutive live runs |
-| L1-02 | `skill-lab gate l1` (M-L1, human) | valid `approve` sign-off bound to the L1-01 runs | 1 | `skill-lab signoff verify --path <file>` | User decision: recorded human alignment with intent |
-| L1-03 | `skill-lab gate l1` (M-L1) | consecutive `ollama-local` runs on the same suite digest passing the same gates, `num_ctx` ≥ 32768 recorded | ≥ 3 | `skill-lab gate l1 --model <m>` | Roadmap "the same suite then passes"; D-17 applies the same reliability bar (Q-4) |
+| L1-01 | `skill-lab gate l1` (M-L1) | `benchmark-streak.v1` `local_unlock_evidence` for the cloud model on the current suite digest, recomputed with SPEC-105's `lab.streak` from the committed runs | = true | `skill-lab gate l1 --stage cloud --model <m>` | The person's decision: 3 consecutive counting live runs on the same model and suite (SPEC-105 FR-010) |
+| L1-02 | `skill-lab gate l1` (M-L1, human) | valid `approve` sign-off by `Cazador0`, bound to the L1-01 runs | 1 | `skill-lab signoff verify --path <file>` | The person's decision: recorded human alignment with intent |
+| L1-03 | `skill-lab gate l1` (M-L1) | consecutive counting `ollama-local` runs on the same suite digest, each passing the same floor gates (G-LIVE-01..G-LIVE-05) in cloud-parity mode with `num_ctx` ≥ 32768 recorded, host metrics off (FR-048) | ≥ 3 | `skill-lab gate l1 --model <m>` | Roadmap "the same suite then passes"; the person's decision: the same floor gates on `--runtime ollama-local`; 3 is D-17's default (Q-4) |
 | INFO-01 | report only | Claude Code and Codex runtime agentic runs | reported | `skill-lab bench --runtime claude` and `--runtime codex`, where adapters and keys exist | Runtime priority puts these after Zed + Ollama |
 
 ### Branch-protection rules (BP) for G-OFF-16
@@ -708,7 +826,13 @@ The rule-to-field mapping lives in `skills/merge-policy-gate/assets/branch-polic
 - Any automatic merge, merge scheduling (`gitea.pr.merge_when_checks_succeed`), or issue closing by an agent
   (`gitea.issue.close`). All are `guarded-autonomous` (R3).
 - Webhook serving, event-driven dispatch, lease takeover, rebase onto a stale base, or invalidating stale approvals
-  (R3).
+  (R3). R3 builds the live webhook gateway on R1's four replay-defence layers.
+- Any change to the webhook replay defence: R1 ships all four layers complete (SPEC-201 FR-025, FR-047), and R2
+  consumes no events, so `gitea-event-normalizer` has no R2 change.
+- Changing scoring, streak, the gate floors, the criteria files, or `monitor-limits.json` (SPEC-104, SPEC-105; only the
+  person changes the criteria files and the limits).
+- Monitoring the person's own machine (not chosen, intake Q19; synthesis Q-10).
+- Live benchmarks in CI: CI runs offline on every PR, and live tiers run only when started manually.
 - New catalog actions, or re-levelling existing ones (SPEC-201 rule).
 - A GitHub adapter in the skills (D-4). The factory repository's PRs belong to the orchestrator.
 - Project-board columns (`gitea.project.move_issue` is allowed by the level, but no R2 script performs it, F-17).
@@ -748,12 +872,14 @@ nullable field.
 | `check-run` (SPEC-201) | optional `tree_clean` (bool or null), optional `worktree` (relative path or null) | FR-012: evidence must be bound to a clean tree on the reported commit |
 | `containment-report` (SPEC-201) | `level` becomes enum `shadow`, `agent-implementation` (was const `shadow`) | FR-008: containment at R2's level |
 
-### Proposed change to a foundation contract (cross-release)
+### Consumed from SPEC-105 (delivered inside R1), unchanged
 
-`benchmark-run.v1` (SPEC-102) has no suite digest or commit, and D-17 needs both. Preferred: SPEC-102 adds optional
-`suite{digest, commit, num_ctx}` before v1 freezes. Fallback, already planned by SPEC-201 (its record-run task): `release record-run`
-writes the strict note lines `suite_digest=sha256:<64 hex>`, `commit=<sha>`, and `num_ctx=<int>`, and `skill-lab gate l1`
-parses only those exact forms.
+`benchmark-run.v1` with `suite_digest`, `commit`, `counts_toward_streak`, `exclusion_reasons`, `degraded`, `usage`,
+`cost`, `health_reports`, and `catalog`; `benchmark-result.v1` with `usage` and the re-ask records; `benchmark-streak.v1`;
+`run-health.v1`; and `success-criteria.v1` with `gates[].scope`. R2 changes none of them: `--host-metrics off` uses the
+existing nullable container figures and `container.notes[]`, and the L1 gate reads existing fields. The earlier proposal
+to add `suite{digest, commit, num_ctx}` to `benchmark-run.v1`, and its `notes[]` fallback, are withdrawn, because
+SPEC-105 adds `suite_digest` and `commit`, and `num_ctx` is recorded per result.
 
 ### Consumed unchanged
 
@@ -803,7 +929,11 @@ Without `--apply`, every mutating script emits its plan and exits 0. Refusals ne
 | `GITEA_UNREACHABLE` / `GITEA_AUTH` / `GITEA_RATE_LIMITED` / `GITEA_SCHEMA_DRIFT` / `VERIFY_AFTER_WRITE_FAILED` / `GITEA_NOT_CONFIGURED` | 3 | client, smoke test | External failure; the outcome is recorded |
 | `GIT_REMOTE_FAILED` | 3 | push step | Network or remote error during the push |
 | `CLAUDE_CLI_NOT_FOUND` / `CLAUDE_CLI_FAILED` | 3 | `review_local.py` (SPEC-201) | Fallback reviewer unavailable; no verdict recorded |
-| `OLLAMA_UNREACHABLE` / `JEV_UNAVAILABLE` | 3 | bench, doctor | Live inference or grader unavailable |
+| `OLLAMA_UNREACHABLE` / `JEV_UNAVAILABLE` | 3 | bench, doctor | Live inference or grader unavailable after retries; in bench the case is `errored` and the run does not count (`outage`, SPEC-105 FR-003) |
+| `CRITERIA_BELOW_FLOOR` | 2 | `skill-lab score` (SPEC-105) | A per-skill gate is below the floor |
+| `RUN_NOT_COUNTING` / `RUN_DEGRADED` | warning | bench (SPEC-105) | Replay, partial, outage, or degraded run; it cannot satisfy a live gate |
+| `NO_LIVE_RUN` / `LIVE_RUN_STALE` | reason (`not_run`) | `release check` (SPEC-201) | No recorded run for the tree under review; the merge is blocked |
+| `HOST_METRICS_OFF` | note | `run-monitor` `snapshot.py --host-metrics off` | Host figures not collected on the person's machine (FR-048) |
 | `CONFIG_INVALID` / `FIXTURE_INVALID` / `USAGE` | 2 | config, double, CLI | Bad input |
 
 **Partial failure.** Multi-operation commands call `require()` for every operation first (SPEC-201 FR-007). They then
@@ -817,13 +947,17 @@ objects, except the smoke test's own sandbox branch during cleanup.
   refuses self-approval, on top of FR-018. On GitHub, the factory repository's independence still rests on session IDs
   (SPEC-201 D-12), because one human account may post.
 - **Policy file.** In R2 the policy file is a real authority boundary inside the scripts. Base-branch verification
-  (FR-002) means a level raised in a worktree has no effect. The commit step refuses the file and `.skill-gitea.json`,
-  which names the identities and the base branch (FR-013). Both are critical paths for merge-policy-gate (FR-022). The runtime
-  configs deny edits to it (SPEC-201 FR-012). Merge-policy-gate classifies any diff touching it `critical`.
+  (FR-002) means a level raised in a worktree has no effect. The commit step refuses the file, the other critical policy
+  paths (`skill-lab/benchmarks/criteria/**`, `skill-lab/benchmarks/monitor-limits.json`), and `.skill-gitea.json`, which
+  names the identities and the base branch (FR-013). All are critical paths for merge-policy-gate (FR-022), so a diff
+  touching them is `critical`. The runtime configs deny agent edits to them (SPEC-201 FR-012; the person's decision).
 - **Secrets.** These come only from environment variables: `GITEA_TOKEN`, `OLLAMA_API_KEY`, and `TYPESAFE_API_KEY` or its
   alias `JEV_API_KEY`. They never go into argv, remote URLs, `check-run` records, comments, PR bodies, or state.
   `_skillkit.redact` masks them, and `_skillkit.checks` strips them from child processes (SPEC-201 FR-016). Canary tokens
-  prove it (G-OFF-18).
+  for every `SECRET_ENV_VARS` name, including R1's `GITEA_WEBHOOK_SECRET` and `GITEA_WEBHOOK_SECRET_PREVIOUS`, prove it
+  (G-OFF-18). The release reviewer's environment holds none of the live keys (FR-049).
+- **Monitoring.** Health reports carry resource figures only, never environment values or command lines. On the person's
+  machine they carry no host figure at all (FR-048).
 - **Transport.** HTTPS is required for every non-loopback Gitea host. Live writes require a passing smoke report for the
   host (FR-041). Git transport credentials are the user's own git configuration; the scripts never handle them.
 - **Untrusted input.** Issue and PR bodies, comments, review text, fixtures, and model output are data. Markers are
@@ -845,9 +979,9 @@ objects, except the smoke test's own sandbox branch during cleanup.
 
 | Runtime | Inference | Invocation | R2 specifics |
 |---|---|---|---|
-| Zed Agent + Ollama Cloud (default, C1) | Every profile defaults to an Ollama Cloud model, through `api_url` `https://ollama.com` or a local daemon signed in to ollama.com, whichever SPEC-201 T112 verified (SPEC-201 FR-039) | `/speckit-development`, `/pse-implementer`, … | Scripts run through the terminal tool. The R2 PSE profile adds `always_allow` for `python3 .agents/skills/(pse-implementer\|speckit-development)/scripts/delivery_plan.py`, `always_confirm` for `--apply`, and `always_deny` for raw `git push`, `git commit --no-verify`, force flags, and edits to policy, config, and sign-off paths. A worktree from Zed's own picker is adopted by the worktree step when branch and base match (F-23). Ollama Cloud has no structured outputs (F-22): scripts produce the JSON, and the model relays it |
-| Zed Agent + local Ollama (L1, gated) | `Lead (local)`, `PSE (local)`, `Review (local)` from `local-ollama.disabled.jsonc`, `max_tokens: 32768` | same | Installed only with `ENABLED` (FR-037). Provider coexistence per V-5: (a) the local daemon serves `<model>:cloud` names, so the cloud profiles switch to those names on provider `ollama` at `http://localhost:11434`; or (b) cloud moves to an OpenAI-compatible provider at `https://ollama.com/v1`. Check `ollama ps` for 100 % GPU and context 32768 (F-21). Fall back to the cloud profile per FR-039 |
-| Claude Code | Claude models | `/speckit-development` | Skills from `.claude/skills/<name>`. The target-project template `skill-lab/config/claude/settings.example.json` denies `Bash(git push:*)` and allows the delivery scripts. The factory repository's own exported `.claude/settings.json` (SPEC-201) is unchanged, because the orchestrator pushes the release branch. It hosts the independent reviewer cloud session (step 7) and the `claude -p` fallback (`review_local.py`) |
+| Zed Agent + Ollama Cloud (default, C1) | Every profile defaults to one Ollama Cloud model, reached through the local Ollama app signed in to ollama.com: provider `ollama` at `http://localhost:11434` (shape (a), the person's decision; SPEC-201 FR-039). SPEC-201 T112 verified the model ids; it did not choose the endpoint | `/speckit-development`, `/pse-implementer`, … | Scripts run through the terminal tool. The R2 PSE profile adds `always_allow` for `python3 .agents/skills/(pse-implementer\|speckit-development)/scripts/delivery_plan.py`, `always_confirm` for `--apply`, and `always_deny` for raw `git push`, `git commit --no-verify`, force flags, and edits to policy, config, and sign-off paths. A worktree from Zed's own picker is adopted by the worktree step when branch and base match (F-23). Ollama Cloud has no structured outputs (F-22): scripts produce the JSON, and the model relays it |
+| Zed Agent + local Ollama (L1, gated) | `Lead (local)`, `PSE (local)`, `Review (local)` from `local-ollama.disabled.jsonc`, `max_tokens: 32768`, with local model ids on the same `ollama` provider at `http://localhost:11434` | same | Installed only with `ENABLED` (FR-037). The cloud profiles keep their `<model>:cloud` ids on the same provider and stay installed as the fallback; V-5 verifies that the signed-in app lists both. Check `ollama ps` for 100 % GPU and context 32768 (F-21). Fall back to the cloud profile per FR-039 |
+| Claude Code | Claude models | `/speckit-development` | Skills from `.claude/skills/<name>`. The target-project template `skill-lab/config/claude/settings.example.json` denies `Bash(git push:*)` and allows the delivery scripts. The factory repository's own exported `.claude/settings.json` (SPEC-201) is unchanged, because the orchestrator pushes the release branch. It hosts the independent reviewer cloud session (step 7), whose environment holds no live keys (FR-049), and the `claude -p` fallback (`review_local.py`) |
 | Codex | Codex models | `$speckit-development` | Skills from `.agents/skills/<name>`. The sandbox may block network for push and Gitea (V-7); then the scripts exit 3 and nothing is silently skipped. `skill-lab/config/codex/config.example.toml` documents the approval mode |
 
 Every script is runtime-independent stdlib Python. Procedure paths are relative to the skill folder, and
@@ -858,7 +992,8 @@ Every script is runtime-independent stdlib Python. Procedure paths are relative 
 R2 adds no action ids. It raises `SUPPORTED_MAX_LEVEL` from `shadow` to `agent-implementation`, so the actions below,
 already in SPEC-201's catalog (`catalog_version` 1.0.0), become executable. Each still requires `--apply`, the identity
 check, the lease where marked, and its own preconditions. A human must have set `"level": "agent-implementation"` in
-`.skill-policy.json`, and that file must be committed on the base branch (FR-002). Raising a project's level is critical
+`.skill-policy.json` (with `set_by` the person's GitHub username, `Cazador0`; SPEC-201 refinement, set 1), and that file
+must be committed on the base branch (FR-002). Raising a project's level is critical
 risk and human-only (`policy.change`).
 
 ### Allowed at `agent-implementation` (19 actions; risk from SPEC-201)
@@ -899,15 +1034,22 @@ Still allowed at `shadow`, unchanged: `state.write.local`, `workspace.write`, `r
 ### What this level refuses, in words
 
 Merging or scheduling a merge; closing issues; force-pushing or pushing anything but the leased branch; writing to a
-protected branch; editing policy, CI, branch protection, webhooks, runtime permission configs, or sign-offs; approving
+protected branch; editing policy, criteria files, `monitor-limits.json`, CI, branch protection, webhooks (creating a
+Gitea webhook stays human-only), runtime permission configs, or sign-offs; approving
 one's own work; acting on a Gitea host that has not passed the smoke test; enabling local inference without its gate.
 
 ## Assumptions
 
-- SPEC-201 delivers the interfaces listed in release-plan.md E-4, under the names in its spec. T005 reconciles any rename
-  before Phase 2.
+- R1 is merged, with its independent `APPROVE` and its live gates passed, before R2 step 5 starts (release-plan.md E-2).
+  SPEC-201 delivers the interfaces listed in release-plan.md E-4, under the names in its spec, including SPEC-105's
+  harness, which R1 delivers. T005 reconciles any rename before Phase 2.
+- The person allowlists `ollama.com` and `api.typesafe.ai` and provides `OLLAMA_API_KEY` and `TYPESAFE_API_KEY` (or
+  `JEV_API_KEY`) where the R2 live gate run executes. Until then the live gates are `not_run`, and R2 does not merge.
+- The exported private repository `Cazador0/skill-factory` includes the engineering-team report (SPEC-201 refinement,
+  set 1), so the reviewer can check every [R §…] citation.
 - One PSE host at a time in R2 (D-7).
 - The user's git credentials (SSH key or credential helper) can push to the Gitea remote; the scripts never manage
   git credentials.
 - Gitea 28.x is the target. Older versions are best-effort and must pass the smoke test (SPEC-201 warns below 28.0.0).
-- The Ollama Cloud models pinned by R1 stay available during an L1 streak; a retirement resets the streak (D-17).
+- The Ollama Cloud model pinned by R1 stays available during an L1 streak. A model change, including a retirement,
+  restarts the streak (SPEC-105 FR-010; D-17).

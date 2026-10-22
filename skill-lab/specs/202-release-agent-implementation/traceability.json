@@ -457,7 +457,8 @@
         "skill-lab/contracts/schemas/inference-gate.v1.schema.json"
       ],
       "verified_by": [
-        "skill-lab/tests/test_l1_gate.py::TestL1Matrix::test_all_rows"
+        "skill-lab/tests/test_l1_gate.py::TestL1Matrix::test_all_rows",
+        "skill-lab/tests/test_l1_gate.py::TestL1Matrix::test_streak_recomputed_with_lab_streak"
       ],
       "planned": true
     },
@@ -469,7 +470,8 @@
       ],
       "verified_by": [
         "skill-lab/tests/test_install_local_inference.py::TestInstall::test_gated_without_enabled",
-        "skill-lab/tests/test_install_local_inference.py::TestInstall::test_cloud_profiles_kept"
+        "skill-lab/tests/test_install_local_inference.py::TestInstall::test_cloud_profiles_kept",
+        "skill-lab/tests/test_validate_r2.py::TestValidateR2::test_local_profiles_same_ollama_provider"
       ],
       "planned": true
     },
@@ -506,7 +508,8 @@
       ],
       "verified_by": [
         "skill-lab/tests/test_runtime_ollama_local.py::TestOllamaLocal::test_no_format_and_num_ctx",
-        "skill-lab/tests/test_runtime_ollama_local.py::TestOllamaLocal::test_run_metadata_recorded"
+        "skill-lab/tests/test_runtime_ollama_local.py::TestOllamaLocal::test_run_metadata_recorded",
+        "skill-lab/tests/test_runtime_ollama_local.py::TestOllamaLocal::test_spec105_run_fields_recorded"
       ],
       "planned": true
     },
@@ -536,6 +539,7 @@
         "skills/lead-architect/SKILL.md",
         "skills/session-checkpoint/SKILL.md",
         "skills/speckit-development/SKILL.md",
+        "skills/run-monitor/SKILL.md",
         "skills/CATALOG.json"
       ],
       "verified_by": [
@@ -555,7 +559,8 @@
         "skills/pse-implementer/evals/cases/pr-update-refused-at-shadow.json",
         "skills/speckit-gitea-taskstoissues/evals/cases/issue-update-refused-at-shadow.json",
         "skills/lead-architect/evals/cases/labels-set-refused-at-shadow.json",
-        "skills/speckit-development/evals/cases/pr-update-refused-at-shadow.json"
+        "skills/speckit-development/evals/cases/pr-update-refused-at-shadow.json",
+        "skill-lab/tests/test_validate_r2.py::TestValidateR2::test_spec105_minimums_hold"
       ],
       "planned": true
     },
@@ -568,7 +573,8 @@
         "skill-lab/config/zed/settings.example.jsonc"
       ],
       "verified_by": [
-        "skill-lab/tests/release/test_r2_release_gates.py::TestSecrets::test_no_canary_leaks"
+        "skill-lab/tests/release/test_r2_release_gates.py::TestSecrets::test_no_canary_leaks",
+        "skill-lab/tests/release/test_r2_release_gates.py::TestSecrets::test_every_secret_env_var_has_a_canary"
       ],
       "planned": true
     },
@@ -589,6 +595,59 @@
       "verified_by": [
         "skill-lab/tests/test_validate_r2.py::TestValidateR2::test_adr_references_hold",
         "skill-lab/tests/test_contracts_r2.py::TestCatalogRows::test_conventions_lists_r2_contracts"
+      ],
+      "planned": true
+    },
+    {
+      "id": "FR-046",
+      "implemented_by": [
+        "skill-lab/lab/record_run.py",
+        "skill-lab/specs/202-release-agent-implementation/gates.json"
+      ],
+      "verified_by": [
+        "skill-lab/tests/release/test_r2_live_gates.py::TestRecordRun::test_live_runs_json_names_run_by_digest",
+        "skill-lab/tests/release/test_r2_live_gates.py::TestRecordRun::test_no_copy_of_run_files"
+      ],
+      "planned": true
+    },
+    {
+      "id": "FR-047",
+      "implemented_by": [
+        "skill-lab/specs/202-release-agent-implementation/gates.json"
+      ],
+      "verified_by": [
+        "skill-lab/tests/release/test_r2_live_gates.py::TestLiveGates::test_counting_run_passes",
+        "skill-lab/tests/release/test_r2_live_gates.py::TestLiveGates::test_floor_per_skill_and_catalog",
+        "skill-lab/tests/release/test_r2_live_gates.py::TestLiveGates::test_non_counting_runs_never_pass",
+        "skill-lab/tests/release/test_r2_live_gates.py::TestLiveGates::test_not_run_blocks_merge"
+      ],
+      "planned": true
+    },
+    {
+      "id": "FR-048",
+      "implemented_by": [
+        "skills/run-monitor/scripts/snapshot.py",
+        "skill-lab/lab/bench.py",
+        "skills/run-monitor/SKILL.md"
+      ],
+      "verified_by": [
+        "skills/run-monitor/tests/test_snapshot_host_metrics_off.py::TestHostMetricsOff::test_no_host_figures",
+        "skills/run-monitor/tests/test_snapshot_host_metrics_off.py::TestHostMetricsOff::test_api_and_session_figures_kept",
+        "skill-lab/tests/test_bench_local_monitoring.py::TestLocalMonitoring::test_option_passed_on_ollama_local_only",
+        "skills/run-monitor/evals/cases/host-metrics-off.json"
+      ],
+      "planned": true
+    },
+    {
+      "id": "FR-049",
+      "implemented_by": [
+        "skill-lab/config/export/ci.yml",
+        "skill-lab/specs/202-release-agent-implementation/gates.json"
+      ],
+      "verified_by": [
+        "skill-lab/tests/release/test_r2_release_gates.py::TestReleaseReview::test_review_request_carries_live_run_digest",
+        "skill-lab/tests/release/test_r2_release_gates.py::TestReleaseReview::test_reviewer_run_health_required",
+        "skill-lab/tests/release/test_r2_release_gates.py::TestCI::test_live_tiers_manual_only"
       ],
       "planned": true
     }

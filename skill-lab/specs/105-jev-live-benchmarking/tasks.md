@@ -88,7 +88,7 @@
 - [ ] T037 Live (network and keys): choose the one cloud model per research R-14 and record it in skill-lab/config/zed/cloud-models.json and skill-lab/docs/research/SOURCES.md
 - [ ] T038 Live: run `skill-lab bench --tag smoke --runtime ollama-cloud --model <model> --jev live --record skill-lab/benchmarks/cassettes` and render its report for the person (depends on T037, T032, T029)
 - [ ] T039 Propose a change to skill-lab/benchmarks/monitor-limits.json only if the smoke run's measured normal levels require it, with the measurements, and apply it only after the person approves (depends on T038)
-- [ ] T040 Live: run the R1 gate run `skill-lab bench --tier agentic,trigger --runtime ollama-cloud --model <model> --jev live`, then `score --strict` per skill and `--catalog`, `streak` and `report`, and commit the run (depends on T039, T036)
+- [ ] T040 Live: run the R1 gate run `skill-lab bench --tier agentic,trigger --runtime ollama-cloud --model <model> --jev live`, then `score --strict` per skill and `--catalog`, `streak` and `report`, and commit the run under skill-lab/benchmarks/runs/<run_id>/ (depends on T039, T036)
 
 ---
 

@@ -1,12 +1,16 @@
 # Open questions for the user: R1, R2, R3
 
-**Roadmap**: [SPEC-200](spec.md) | **Created**: 2026-10-22 | **Status**: Open
+**Roadmap**: [SPEC-200](spec.md) | **Created**: 2026-10-22 | **Status**: Partly answered (2026-10-22)
 
 This is the single list to answer. It merges the questions in the three release syntheses
 ([SPEC-201 §5](../201-release-shadow/synthesis.md), [SPEC-202 §7](../202-release-agent-implementation/synthesis.md),
 [SPEC-203 §7](../203-release-guarded-autonomous/synthesis.md)), drops duplicates, and orders them by what they block.
 Every question has a default. Work proceeds on the default until you answer, except where "Blocks" says otherwise.
 No default ever turns a gate that did not run into a pass.
+
+On 2026-10-22 you answered the intake `intakes/jev-live-benchmarking/intake.md` (cited as "intake Qn"), SPEC-105, and
+the refinement of R1 (SPEC-201 §Clarifications, cited as "round 1", "set 1", "set 2"). Questions those answers settle are
+marked **Resolved** with their source; where an answer differs from the earlier default, the answer applies.
 
 Priority:
 
@@ -19,42 +23,45 @@ Priority:
 
 | ID | Priority | Question (short) | Blocks | Default | Merges |
 |---|---|---|---|---|---|
-| OQ-01 | P1 | When are `ollama.com` and `api.typesafe.ai` reachable, with keys set? | R1, R2, R3 **complete**; M-L1; M-PROMO. No merge | Merge as "live-pending"; run live as soon as reachable | R1 Q1 |
+| OQ-01 | P1 | When are `ollama.com` and `api.typesafe.ai` reachable, with keys set? | **Resolved**: you allowlist both hosts and set both keys (intake A7, D5). The live run is now the R1 merge gate (intake Q1, Q15), so it blocks the **R1 merge** until it passes | — ("merged, live-pending" withdrawn) | R1 Q1 |
 | OQ-02 | P1 | Create `Cazador0/skill-factory` and grant push access | **R1 step 6** (T140), so every PR after it | Wait; T140 stays open | R1 Q3 |
-| OQ-03 | P1 | Are GitHub Actions allowed on the private repo? | **Every release merge** if "no" (G-POST-01) | Offline-only CI; live bench manual | R1 Q5 |
-| OQ-04 | P1 | Is the live-run volume within your Ollama and TypeSafe plans? Cost cap? | Live gates if "no" | Proceed; report cost, do not gate on it | R1 Q8, R3 Q-9 |
-| OQ-05 | P2 | Confirm one sequencing rule for every release pair | Nothing with the default; **R3 step 5** if you choose the stricter rule | Roadmap rule: next release starts at the previous `APPROVE` | R2 Q-3, Q-5; R3 Q-4 |
+| OQ-03 | P1 | Are GitHub Actions allowed on the private repo? | **Resolved**: offline CI on every PR; live benchmarks only when started manually (round 1) | — | R1 Q5 |
+| OQ-04 | P1 | Is the live-run volume within your Ollama and TypeSafe plans? Cost cap? | **Resolved**: report cost only, no cap (intake Q7); cost from your price table, usage only when a price is missing (SPEC-105 FR-014) | — | R1 Q8, R3 Q-9 |
+| OQ-05 | P2 | Confirm one sequencing rule for every release pair | **Resolved**: R1 merges only after one fully passing counting live run; R2 entry = R1 merged with `APPROVE` and live gates passed; R3 entry = R2 merged (your decisions, 2026-10-22) | — | R2 Q-3, Q-5 (sequencing part); R3 Q-4 |
 | OQ-06 | P2 | Live Gitea: URL, sandbox, bot accounts, webhook, branch protection, tracking issue | RT-01 (live writes, R2), RT-02 (live auto-merge, R3), P-7 (promotion) | Test double only; live writes refused | R2 Q-2, R3 Q-2 |
 | OQ-07 | P2 | Which local model(s), and how much VRAM? | **M-L1** only | None | R2 Q-1 |
 | OQ-08 | P2 | Accept the promotion thresholds and the 7-day observation lag? | **M-PROMO** only | The listed values | R3 Q-1, Q-11 |
 | OQ-09 | P2 | May role runners start headless `claude -p` sessions with edit rights? | The `claude-cli` runner only | No (outbox; human-started sessions) | R3 Q-7 |
-| OQ-10 | P3 | Which Ollama Cloud model, and which Zed endpoint shape? | Nothing | One model for all roles; endpoint shape per T112 | R1 Q2 |
+| OQ-10 | P3 | Which Ollama Cloud model, and which Zed endpoint shape? | **Resolved**: one model for all roles, chosen by SPEC-105 research R-14 at SPEC-201 T112 (intake Q11); endpoint: the local Ollama app signed in to ollama.com (round 1) | — | R1 Q2 |
 | OQ-11 | P3 | Local parity: 3 consecutive local runs, or 1? | Nothing | 3 | R2 Q-4 |
 | OQ-12 | P3 | Enable L1 early on the R1 suite? | Nothing | Evaluate on the installed suite | R2 Q-9 |
 | OQ-13 | P3 | Dispatch limits and merge-schedule TTL | Nothing | 1 PSE (max 2), 10/day (max 20), 30 min | R3 Q-3 |
-| OQ-14 | P3 | Which identity string names you in human-owned records? | Nothing | Forge username `Cazador0` | R1 Q6, R2 Q-7 |
-| OQ-15 | P3 | May the reviewer session hold the live keys for a spot check? | Nothing | No | R1 Q4 |
-| OQ-16 | P3 | Include your research report in the factory repo? | Nothing | Yes | R1 Q7 |
+| OQ-14 | P3 | Which identity string names you in human-owned records? | **Resolved** for `set_by`: `Cazador0` (set 1). `signer` in `human-signoff.v1` keeps its default | `signer.name` from `git config user.name` plus `github_login: Cazador0` | R1 Q6, R2 Q-7 |
+| OQ-15 | P3 | May the reviewer session hold the live keys for a spot check? | **Resolved**: no; recorded evidence only (round 1) | — | R1 Q4 |
+| OQ-16 | P3 | Include your research report in the factory repo? | **Resolved**: include it (set 1) | — | R1 Q7 |
 | OQ-17 | P3 | Low-risk paths for auto-merge | Nothing | `docs/**` and Markdown outside agent and policy paths, ≤ 400 lines | R3 Q-5 |
 | OQ-18 | P3 | Demotion triggers and escaped-defect labelling | Nothing | Keep all 5 triggers; `Caused-by: #<pr>`; unattributed also demotes | R3 Q-6, Q-10 |
 | OQ-19 | P3 | Auto-merge style | Nothing | Merge commit | R3 Q-8 |
 | OQ-20 | P3 | One Gitea issue per task, or grouped issues? | Nothing | One per task | R2 Q-6 |
-| OQ-21 | P3 | Live benchmark artefacts in PR bodies? | Nothing | Digests and request IDs only | R2 Q-8 |
+| OQ-21 | P3 | Live benchmark artefacts in PR bodies? | **Resolved**: the release PR carries the live run's report (per-skill and catalog results, unsure and flagged cases, tokens and cost basis, suite digest), and every result file is committed in the private repo (intake Q2, Q9, Q16; SPEC-105 FR-018) | — | R2 Q-8 |
+| OQ-22 | P3 | Should run monitoring watch your own machine during R2's local parity runs? | Nothing with the default (concerns M-L1's local runs only) | No: the monitoring you chose watches the benchmark container, the model sessions under test, and the reviewer session (intake Q19) | R2 Q-10 |
+| OQ-23 | P3 | May L1 (local enablement) run alongside R3? | Nothing | Yes: L1 blocks neither the R2 merge nor R3 | R2 Q-5 (open part) |
+| OQ-24 | P2 | How many counting live runs before R3 may merge: 3 in a row, or 1 as for R1? | Nothing with the default (it sets how many live runs the R3 PR waits for) | 3 consecutive counting runs on one model and the R3 suite | R3 Q-12 |
+| OQ-25 | P3 | Should run monitoring watch the R3 webhook gateway host (possibly your machine)? | Nothing | No (intake Q19) | R3 Q-13 |
+| OQ-26 | P2 | Promotion criterion P-8: streak on the profiles' model, and demotion on a later failing run? | **M-PROMO** only | (a) The installed profiles' model; (b) no new demotion trigger, hold re-promotion only | R3 Q-14 |
 
 ## P1: blocks a release step or a release's "complete" state
 
-### OQ-01 Network and keys for live runs
+### OQ-01 Network and keys for live runs (resolved)
 
 - **Question**: When will `ollama.com` and `api.typesafe.ai` be reachable from the session that runs benchmarks, with
   `OLLAMA_API_KEY` and `TYPESAFE_API_KEY` (or its alias `JEV_API_KEY`) set?
-- **Why it matters**: every live gate (G-LIVE-*) needs both services. Without them the gates are `not_run`, and
-  `not_run` never counts as `pass` (CONVENTIONS §9, ADR-0010). Nothing is fabricated or replayed in their place.
-- **Blocks**: R1 complete (1 complete run), R2 complete (1 run of the R2 suite), R3 complete (3 consecutive runs,
-  G-LIVE-07), milestone M-L1 (3 cloud runs before local), and M-PROMO (promotion criterion P-8 needs R3 complete). It
-  blocks no merge.
-- **Recommended default**: merge each release as "merged, live-pending". Run the live benchmark as soon as both hosts
-  answer. Evidence from a run after a merge lands through a follow-up evidence-only PR (for R1:
-  `release/r1-live-evidence` → `main`), reviewed the same way.
+- **Answer**: you allowlist both hosts and add both keys as environment secrets (intake A7). There is no calendar
+  deadline: the first live gate run happens as soon as they are in place (intake D5, confirmed by Q17).
+- **Consequence**: the first live run decides whether the R1 PR is ready (intake Q1), and one fully passing,
+  counting run is enough for R1 (intake Q15). The live gates therefore block the **R1 merge** until they pass, and
+  the earlier default ("merge as merged, live-pending; follow-up evidence PR") is withdrawn. `not_run` still never
+  counts as `pass`, and nothing is fabricated or replayed in its place.
 
 ### OQ-02 The factory repository
 
@@ -62,59 +69,40 @@ Priority:
   and attach it to the build session with push access. Alternatively, authorize the orchestrator to push a bootstrap
   commit to an empty `main`. If this is already done, confirm that the session can push; T140 checks with
   `git ls-remote` before it pushes.
-- **Why it matters**: every release PR targets this repository. R2 stacks on `release/r1-shadow` and R3 on
-  `release/r2-agent-implementation`, so all three PRs wait on it.
+- **Why it matters**: every release PR targets `main` of this repository. R2 branches from `main` after R1 is merged,
+  and R3 after R2 is merged, so all three PRs wait on it.
 - **Blocks**: R1 step 6 (T140), and therefore R1 steps 7 and 8 and the PR steps of R2 and R3.
 - **Recommended default**: wait. T140 stays open, and steps 1–5 continue.
 
-### OQ-03 GitHub Actions on the private repository
+### OQ-03 GitHub Actions on the private repository (resolved)
 
 - **Question**: Are GitHub Actions allowed on `Cazador0/skill-factory`, within your minutes budget?
-- **Why it matters**: G-POST-01 requires CI to be green on the PR head before a human merge. The planned workflow runs
-  only offline gates (validate, sync, unit tests, deterministic bench, containment, export check) on Python 3.9 and the
-  current Python for every push and PR. Its targets are about 10 minutes per Python version for R1 and about 20 minutes
-  for R2's offline release check (SPEC-201 and SPEC-202 plan.md). The live-bench job runs only on manual dispatch with
-  secrets, and the workflow holds no merge step.
-- **Blocks**: the merge of every release if the answer is "no". Without CI, G-POST-01 is `not_run`, which blocks.
-- **Recommended default**: enable the offline-only workflow; keep the live job manual. If Actions cannot be used, the
-  alternative is a human-recorded run of the same commands accepted as CI evidence. That changes a gate, so it needs an
-  ADR and your explicit choice.
+- **Answer** (round 1): offline CI on every PR (validate, tests on Python 3.9 and the current Python, deterministic
+  benchmarks); live benchmarks only when started manually. The workflow holds no merge step. G-POST-01 requires this
+  CI to be green on the PR head before the human merge.
 
-### OQ-04 Live-run volume and cost
+### OQ-04 Live-run volume and cost (resolved)
 
-- **Question**: Is this volume within your Ollama and TypeSafe plans? Should a cost cap apply once a runner reports
-  usage?
-  - One R1 run: about 39 agentic model calls (plus at most 39 repair turns), at least 78 routing calls, and about 39 Jev
-    requests.
-  - One R2 run: about 52 agentic calls (R2 adds 13 agentic cases), at least 98 routing calls, about 52 Jev requests.
-  - One R3 run: at least 76 agentic calls (plus at most one repair turn each), at least 118 routing calls, and at least
-    76 Jev requests.
-  - Minimum runs: R1 1, R2 1, R3 3 consecutive. M-L1 needs 3 consecutive cloud runs on one suite (R2's or R3's runs
-    count when the suite digest matches) plus 3 local runs, which cost only Jev requests.
-- **Why it matters**: the live gates and L1 cannot pass without these runs, and a failed or partial run restarts a
-  3-run streak.
-- **Blocks**: the live gates, if the answer is "no".
-- **Recommended default**: proceed. Each recorded run reports Jev token usage and case durations; cost is reported, not
-  gated, because no runtime reports cost reliably yet.
+- **Question**: Is the live-run volume within your Ollama and TypeSafe plans? Should a cost cap apply?
+- **Answer**: report cost only, with no spending cap (intake Q7, delegated). Cost comes from a price table you maintain
+  (`skill-lab/benchmarks/prices.json`); a run with any missing price reports token usage only (SPEC-105 FR-014 and its
+  plan refinement). Live runs happen on demand and once per release PR (intake Q8).
+- **Volume for reference**: one R1 gate run covers at least 70 agentic cases (14 skills × 5, at most 2 repair turns
+  each), at least 140 routing cases (14 × 10), about one Jev request per agentic case plus at most one re-ask per
+  uncertain judgment, and 14 advisory health assessments. R1 needs one counting run; L1 needs 3 consecutive counting
+  runs on the same model and suite. R2 and R3 volumes are in their specs.
 
 ## P2: blocks a milestone or a live capability, or changes sequencing
 
-### OQ-05 One sequencing rule for every release pair
+### OQ-05 One sequencing rule for every release pair (resolved)
 
-- **Question**: Do you confirm this rule, which the three plans now share?
-  1. A release merges on its offline gates while its live gates are pending ("merged, live-pending").
-  2. The next release's step 5 starts once this release's PR has an independent `APPROVE` with every `merge`-stage gate
-     passing. Its merge waits for this release's merge, and its "complete" waits for this release's "complete".
-  3. A live gate that ran and **failed** stops the next release from starting; a live gate that has not run does not.
-  4. No project is promoted to `guarded-autonomous` before R3 is complete. L1 runs in parallel with R3 and blocks
-     neither the R2 merge nor R3.
-- **Why it matters**: the drafts disagreed. SPEC-201 let R2 start at R1's `APPROVE`, while SPEC-202 made R3 wait for R2
-  "complete". With the stricter rule, R3 cannot start until the network allowlist (OQ-01) lands. The roadmap says "R3
-  starts only after the R2 PR has an APPROVE verdict", which is rule 2. Promotion still waits for every live gate, so the
-  lenient start rule adds no autonomy risk.
-- **Blocks**: nothing with the default. If you choose the stricter rule ("R3 waits for R2 complete"), R3 step 5 waits
-  for OQ-01.
-- **Recommended default**: the rule above.
+- **Question**: Which sequencing rule applies between releases?
+- **Answer** (your decisions, 2026-10-22): R1 merges only after one fully passing, counting live run, with the live
+  gates at the merge stage; there is no "merged, live-pending" state. R2's entry is R1 merged with an independent
+  `APPROVE` and its live gates passed. R3's entry is R2 merged. A live gate that has not run blocks like a failed one.
+  No project is promoted to `guarded-autonomous` before R3 is merged.
+- **Consequence**: the earlier rule 1 ("merge on offline gates while live gates are pending") and the lenient start at
+  the previous release's `APPROVE` are withdrawn.
 
 ### OQ-06 Live Gitea
 
@@ -173,20 +161,39 @@ Priority:
 - **Blocks**: the `claude-cli` runner only.
 - **Recommended default**: no. Runner `none`, human-started sessions.
 
+### OQ-24 Live runs before the R3 merge
+
+- **Question**: Must R3 pass 3 consecutive counting live runs on one model and the R3 suite before it merges
+  (`benchmark-streak.v1` length ≥ 3, SPEC-203 G-LIVE-08), or one fully passing counting run, as for R1?
+- **Why it matters**: you settled one fully passing run for R1 (intake Q15) and said the 3-run streak gates the
+  local-inference unlock. R3 is the first release where model output can lead to an unattended merge, so its plan
+  keeps the stricter reading until you decide.
+- **Blocks**: nothing with the default; it sets how many live runs the R3 PR waits for.
+- **Recommended default**: 3 consecutive counting runs (SPEC-203 Q-12, D-24).
+
+### OQ-26 Promotion evidence from the benchmark streak
+
+- **Question**: (a) Must the streak behind promotion criterion P-8 be on the model the project's installed profiles
+  use, or is the factory's gate model enough? (b) Should a failing counting run or an unstable case after a promotion
+  demote the project automatically, instead of only holding re-promotion?
+- **Why it matters**: P-8 reads SPEC-105's `benchmark-streak.v1` (SPEC-203 D-30); a streak on another model says little
+  about the model the project actually runs.
+- **Blocks**: **M-PROMO** only.
+- **Recommended default**: (a) the installed profiles' model; (b) no new demotion trigger: report it and hold
+  re-promotion (SPEC-203 Q-14).
+
 ## P3: safe defaults, nothing blocked
 
-### OQ-10 Cloud model and Zed endpoint shape
+### OQ-10 Cloud model and Zed endpoint shape (resolved)
 
-- **Question**: (a) Which Ollama Cloud model(s) should the Lead, PSE, and Review profiles default to? (b) Do you run the
-  Ollama app signed in to ollama.com, so Zed reaches cloud models through `http://localhost:11434` (shape a, what the
-  foundation template ships), or should Zed call `https://ollama.com` directly with `OLLAMA_API_KEY` (shape b)?
-- **Why it matters**: one model for all three roles keeps the 3-run streaks cheaper and makes cloud and local runs
-  comparable. Cloud model IDs are not in SOURCES.md, and a retired model resets a streak. Both endpoint shapes keep
-  inference on Ollama Cloud; shape (a) also lets L1 add local models later on Zed's single Ollama provider (SPEC-202 V-5).
-- **Blocks**: nothing.
-- **Recommended default**: (a) one model for all three roles: the largest tool-capable general model the live service
-  lists at SPEC-201 T112, recorded with its date in SOURCES.md and `cloud-models.json` (the foundation template's example
-  is `gpt-oss:120b-cloud`, unverified). (b) The shape T112 verifies; shape (a) if both work.
+- **Question**: (a) Which Ollama Cloud model(s) should the Lead, PSE, and Review profiles default to? (b) Which Zed
+  endpoint shape?
+- **Answer**: (a) one model for all profiles (intake Q11, delegated), chosen when the network is allowlisted by SPEC-105
+  research R-14: the largest general model whose Ollama page lists tool support, from `https://ollama.com/api/tags`,
+  recorded with its date in SOURCES.md and `cloud-models.json` at SPEC-201 T112. (b) The local Ollama app signed in to
+  ollama.com (`http://localhost:11434`) serves cloud models in R1 (round 1: "one provider setting serves cloud now and
+  local later"). T112 verifies the model ids only; it does not choose the endpoint. L1 later switches the profile model
+  ids to local models on the same provider.
 
 ### OQ-11 Local parity runs
 
@@ -214,32 +221,25 @@ Priority:
 - **Blocks**: nothing.
 - **Recommended default**: these values.
 
-### OQ-14 Your identity in human-owned records
+### OQ-14 Your identity in human-owned records (resolved for `set_by`)
 
 - **Question**: Which identity string should name you in `.skill-policy.json` (`set_by`) and in `human-signoff.v1`
-  (`signer`): the GitHub login `Cazador0`, another name, or both?
-- **Why it matters**: the records are attestations, not authentication; a consistent identity keeps the audit trail
-  readable.
-- **Blocks**: nothing.
-- **Recommended default**: `set_by: Cazador0`; `signer.name` from `git config user.name` plus `github_login: Cazador0`.
+  (`signer`)?
+- **Answer** (set 1): `set_by: Cazador0`. The `signer` default stands until you say otherwise: `signer.name` from
+  `git config user.name` plus `github_login: Cazador0`.
 
-### OQ-15 Live keys in the reviewer session
+### OQ-15 Live keys in the reviewer session (resolved)
 
-- **Question**: May the reviewer cloud session's environment hold `OLLAMA_API_KEY` and `TYPESAFE_API_KEY`, so it can
-  re-run one skill's live cases as a spot check?
-- **Why it matters**: it would let the reviewer reproduce a live result instead of reading recorded evidence, at the
-  cost of exposing two more secrets to another session.
-- **Blocks**: nothing.
-- **Recommended default**: no. The reviewer checks live evidence from recorded runs and cassettes, and says so in
-  `non_blocking_findings`.
+- **Question**: May the reviewer cloud session's environment hold `OLLAMA_API_KEY` and `TYPESAFE_API_KEY`?
+- **Answer** (round 1): no. The reviewer checks committed live-run results and recordings only, does not re-run live
+  cases, holds no keys, and says so in its verdict. It also posts its own `run-health.v1` report as a separate marked
+  PR comment (intake Q23).
 
-### OQ-16 Research report in the factory repository
+### OQ-16 Research report in the factory repository (resolved)
 
 - **Question**: Should `skill-lab/docs/research/engineering-team-report.md` be exported into the private factory
   repository?
-- **Why it matters**: every release spec cites it by section; without it the citations do not resolve in the factory.
-- **Blocks**: nothing.
-- **Recommended default**: include it.
+- **Answer** (set 1): include it.
 
 ### OQ-17 Low-risk paths for auto-merge
 
@@ -276,17 +276,50 @@ Priority:
 - **Blocks**: nothing in R2, which only applies R1's plans.
 - **Recommended default**: one issue per task.
 
-### OQ-21 Live artefacts in PR bodies
+### OQ-21 Live artefacts in PR bodies (resolved)
 
 - **Question**: Should PR bodies include live benchmark artefacts (Jev request IDs, token usage), or digests only?
-- **Why it matters**: prompts and outputs may contain repository content that should not leave the repository.
+- **Answer**: scores are posted on the release PR for you and the reviewer (intake Q2), every result file is committed
+  in the private repository (intake Q9), and tokens and cost are reported on every run (intake Q16). The release PR
+  therefore carries the live run's report (per-skill and catalog results, unsure and flagged cases, unstable cases,
+  tokens and cost basis, degraded or outage status, suite digest; SPEC-105 FR-018), and the full results stay in the
+  repository, referenced by digest. Only skill-factory's own fixtures, skill instructions, and model outputs are ever
+  sent to the live services (intake Q4).
+
+### OQ-22 Monitoring your own machine during local parity runs
+
+- **Question**: If R2's local parity runs (L1, `--runtime ollama-local`) happen on your machine, should `run-monitor`
+  also record that machine's CPU, memory, disk, and processes?
+- **Why it matters**: the monitoring you chose watches the benchmark container, the model sessions under test, and the
+  reviewer session (intake Q19); you did not choose your own machine. Local parity runs may run where the local models
+  are, which could be your machine.
+- **Blocks**: nothing with the default; it concerns M-L1's local runs only, never a release PR.
+- **Recommended default**: no machine monitoring. Local runs record no host figures from your machine unless you decide
+  otherwise (SPEC-202 Q-10, D-27: `snapshot.py --host-metrics off`).
+
+### OQ-23 L1 alongside R3
+
+- **Question**: May L1 (local inference enablement, milestone M-L1) run alongside R3, blocking neither the R2 merge nor
+  R3?
+- **Why it matters**: L1's entry is settled (SPEC-105's `local_unlock_evidence` for the cloud model plus your sign-off,
+  then the floor gates on `--runtime ollama-local`), and R3 now starts only after R2 is merged; only the overlap with R3
+  is open.
 - **Blocks**: nothing.
-- **Recommended default**: digests and Jev request IDs only; no prompts or outputs.
+- **Recommended default**: yes (SPEC-202 Q-5).
+
+### OQ-25 Monitoring the R3 webhook gateway host
+
+- **Question**: R3's live webhook gateway is a service you run, possibly on your machine. Should `run-monitor` watch
+  the gateway host?
+- **Why it matters**: the monitoring you chose watches the benchmark container, the model sessions under test, and the
+  reviewer session (intake Q19), not your machine.
+- **Blocks**: nothing.
+- **Recommended default**: no; `run-monitor` gets no R3 change (SPEC-203 Q-13, D-29).
 
 ## Source mapping
 
 | Release question | Consolidated as |
 |---|---|
 | SPEC-201 Q1, Q2, Q3, Q4, Q5, Q6, Q7, Q8 | OQ-01, OQ-10, OQ-02, OQ-15, OQ-03, OQ-14, OQ-16, OQ-04 |
-| SPEC-202 Q-1, Q-2, Q-3, Q-4, Q-5, Q-6, Q-7, Q-8, Q-9 | OQ-07, OQ-06, OQ-05, OQ-11, OQ-05, OQ-20, OQ-14, OQ-21, OQ-12 |
-| SPEC-203 Q-1, Q-2, Q-3, Q-4, Q-5, Q-6, Q-7, Q-8, Q-9, Q-10, Q-11 | OQ-08, OQ-06, OQ-13, OQ-05, OQ-17, OQ-18, OQ-09, OQ-19, OQ-04, OQ-18, OQ-08 |
+| SPEC-202 Q-1, Q-2, Q-3, Q-4, Q-5, Q-6, Q-7, Q-8, Q-9, Q-10 | OQ-07, OQ-06, OQ-05, OQ-11, OQ-05 (sequencing) and OQ-23 (L1 alongside R3), OQ-20, OQ-14, OQ-21, OQ-12, OQ-22 |
+| SPEC-203 Q-1, Q-2, Q-3, Q-4, Q-5, Q-6, Q-7, Q-8, Q-9, Q-10, Q-11, Q-12, Q-13, Q-14 | OQ-08, OQ-06, OQ-13, OQ-05, OQ-17, OQ-18, OQ-09, OQ-19, OQ-04, OQ-18, OQ-08, OQ-24, OQ-25, OQ-26 |

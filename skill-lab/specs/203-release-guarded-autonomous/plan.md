@@ -18,17 +18,23 @@ R3 makes the 7 `guarded-autonomous` actions of SPEC-201's catalog executable and
 3. **One merge call.** The R2 endpoint table gains a merge-when-checks-succeed row whose body validator admits exactly
    four keys and no `force_merge`; `merge_plan.py` recomputes the decision in-process, binds `head_commit_id`, verifies,
    and manages the schedule's lifecycle (D-4, D-5, D-6).
-4. **A webhook gateway and a deterministic processor.** `_skillkit.webhook` (verify before parse, dedupe, ack after
-   persist) and `_skillkit.eventloop` (ordering guard, fixed routing table to sibling skill scripts, reconcile sweep)
-   behind `normalize.py serve|ingest|process|reconcile` (D-9..D-12).
+4. **A webhook gateway and a deterministic processor on R1's replay defence.** `_skillkit.webhook` (HTTP transport,
+   bounds, ack after persist) calls R1's four layers (verify before parse with the 7-day previous secret, body-SHA-256
+   dedupe, freshness guard, per-object rate limit; SPEC-201 FR-025) and does not re-implement them; `_skillkit.eventloop`
+   (route policy over R1's `stale` flag and R3's `stale_commit` verdict, fixed routing table to sibling skill scripts,
+   reconcile sweep) runs behind `normalize.py serve|ingest|process|reconcile` (D-9..D-12).
 5. **Evidence-based recovery.** `_skillkit.recovery` classifies an expired lease by rules R-0..R-9; only a successor with a
    fresh permitting record may take over (D-17).
 6. **Bounded dispatch with narrowed authority.** `_skillkit.authority` plus `dispatch_session.py` and role runners
    (D-18, D-19).
 7. **Measured autonomy.** `_skillkit.autonomy` computes the scorecard, the demotion triggers, and the promotion
-   criteria; `autonomy_guard.py` detects incidents and demotes within the triggering event (D-14, D-16).
+   criteria, reusing SPEC-105's committed run data (`benchmark-run.v1`, `benchmark-streak.v1`, `run-health.v1`) for
+   model reliability; `autonomy_guard.py` detects incidents and demotes within the triggering event (D-14, D-16, D-30).
 8. **Verification as gates.** The double gains merge semantics and signed webhook emission; ten AFV suites, an
-   exhaustive ordering test, crash injection, and a soak test become release gates (D-23, D-28).
+   exhaustive ordering test, crash injection, and a soak test become release gates (D-23, D-28). The live gates are
+   SPEC-105's floor gates per skill and catalog-wide, in the `merge` stage, on 3 consecutive counting runs (D-24, D-25).
+
+The catalog has 14 skills; `run-monitor` (SPEC-014) is re-vendored and re-validated with no R3 change (D-29).
 
 ## Technical Context
 
@@ -38,8 +44,10 @@ gateway uses `http.server.ThreadingHTTPServer` for accept, one `threading.Thread
 
 **Primary Dependencies**: none to install. External executables: `git` (list-argument calls only) and, optionally, the
 `claude` CLI (R1's review fallback; R3's `claude-cli` runner once verified). External services, all optional and
-live-only: Gitea 28.x (`GITEA_URL`, `GITEA_TOKEN`, `GITEA_WEBHOOK_SECRET`), Ollama Cloud (`OLLAMA_API_KEY`), Jev
-(`TYPESAFE_API_KEY`, alias `JEV_API_KEY`).
+live-only: Gitea 28.x (`GITEA_URL`, `GITEA_TOKEN`, `GITEA_WEBHOOK_SECRET`, and after a rotation
+`GITEA_WEBHOOK_SECRET_PREVIOUS` with `GITEA_WEBHOOK_SECRET_ROTATED_AT`), Ollama Cloud (`OLLAMA_API_KEY`, reached by the
+benchmark through `ollama.com` and by Zed through the local Ollama app signed in to ollama.com), Jev (`TYPESAFE_API_KEY`,
+alias `JEV_API_KEY`). The reviewer session holds none of the Ollama or TypeSafe keys.
 
 **Storage**: Local state lives under `--state-dir` (CONVENTIONS default `./.skill-state/`, git-ignored). The gateway, its
 handlers, and the role runners all pass the main worktree's state directory explicitly, so one host has one store. The
@@ -54,8 +62,8 @@ demotion latch is the exception: it is always resolved from the main worktree an
 | `merge/executions/<execution_id>.json` | `merge-execution.v1` | `merge_plan.py` |
 | `events/records/<sequence>-<event_id>.json` | `event-record.v1` | gateway |
 | `events/normalized/<event_id>.json` | `normalized-event.v1` | gateway |
-| `events/seen/` | R1 seen set (rebuilt from records on start) | gateway |
-| `events/high-water.json` | per-resource `updated_at` and head | processor |
+| `events/seen/` | R1's seen set of body SHA-256 digests, kept 90 days (SPEC-201 FR-025 layer 1) | R1 normalizer code, called by the gateway |
+| `events/freshness/` | R1's freshness record: last signed `updated_at` and head SHA per issue and pull request (layer 2; exact path as R1 ships it, recorded at T002); R3 reads it and keeps no second record | R1 normalizer code, called by the gateway |
 | `gateway/ready.json`, `gateway/runs/<run_id>.json` | ready file, `gateway-run.v1` | `serve` |
 | `dispatch/outbox/<dispatch_id>.{json,md}` | `session-dispatch.v1` plus prompt | `dispatch_session.py` |
 | `recovery/<recovery_id>.{json,patch}` | `lease-recovery.v1`, preserved changes | `lease.py recover` |
@@ -63,15 +71,19 @@ demotion latch is the exception: it is always resolved from the main worktree an
 | `leases/`, `mutations/`, `worktrees/`, `checks/`, `deliveries/`, `smoke/` | R1 and R2 stores, unchanged | R1, R2 |
 
 Committed state (human-owned, critical paths): `.skill-policy.json` (with the promotion block), `.skill-gitea.json`,
-`.skill-autonomy/{signoffs,scorecards}/`.
+`.skill-autonomy/{signoffs,scorecards}/`. In the factory, SPEC-105's live runs are committed under
+`skill-lab/benchmarks/runs/<run_id>/` (results, run summary, `run.log.jsonl`, 14 `run-health.v1` reports, the PR comment)
+together with the `benchmark-streak.v1` record; R3's evidence names them by digest in `evidence/live-runs.json` and never
+copies them. `skill-lab/benchmarks/criteria/**`, `monitor-limits.json`, and `prices.json` are person-maintained.
 
 **Testing**: stdlib `unittest`; lab bench tiers deterministic, agentic, and trigger with Jev judgments (SPEC-102, SPEC-103);
-`skill-lab policy containment` at three levels plus `--demoted`; `skill-lab afv run`; `skill-lab release check`.
+`skill-lab policy containment` at three levels plus `--demoted`; `skill-lab afv run`; `skill-lab release check`;
+SPEC-105's `score --strict`, `score --catalog`, `streak`, and `report` for the live gates.
 
 **Target Platform**: Linux and macOS developer machines and CI; the gateway runs as an operator service (systemd, tmux,
 or a terminal) on the control-plane host. Windows is best-effort.
 
-**Project Type**: portable Agent Skills (13 skill folders) plus a lab CLI.
+**Project Type**: portable Agent Skills (14 skill folders) plus a lab CLI.
 
 **Performance Goals**: acknowledge a verified delivery in ≤ 1 s p95 on a laptop (one atomic write); process an event in
 ≤ 10 s p95 against the double (≤ 6 handlers, each a short script); the exhaustive decision matrix in ≤ 30 s; the ordering
@@ -81,9 +93,10 @@ suite in ≤ 5 min; the soak test in ≤ 10 min. These are usability budgets, no
 ≤ 51,200 bytes; one tool call per procedure step; secrets only from the environment; no generic Gitea request method; no
 immediate-merge row; no `force_merge`; the gateway never runs inside an agent tool call.
 
-**Scale/Scope**: 10 skills change, 3 do not. `_skillkit`: 6 new modules (`authority`, `autonomy`, `merge_policy`,
-`webhook`, `eventloop`, `recovery`) and 7 extended (`policy`, `gitea`, `gitea_memory`, `leases`, `gitrepo`, `delivery`,
-`redact`). 11 new contracts and 9 additive changes. 150 tasks.
+**Scale/Scope**: 10 skills change, 4 do not (`speckit-gitea-taskstoissues`, `twelve-factor-audit`, `skill-forge`,
+`run-monitor`). `_skillkit`: 6 new modules (`authority`, `autonomy`, `merge_policy`, `webhook`, `eventloop`, `recovery`)
+and 7 extended (`policy`, `gitea`, `gitea_memory`, `leases`, `gitrepo`, `delivery`, `redact`). 11 new contracts and 9
+additive changes. 155 tasks.
 
 ## Constitution Check
 
@@ -100,7 +113,10 @@ immediate-merge row; no `force_merge`; the gateway never runs inside an agent to
 | Never write inside the skill folder | C §3 | All state under `.skill-state/`; templates read-only | pass |
 | Default state root `./.skill-state/`; `--state-dir` override | C §3 | Kept, with one documented exception: the demotion latch is resolved from the main worktree and ignores `--state-dir` (ADR-0302), because an override would be an escape | pass, with amendment |
 | Contracts: subset keywords, `additionalProperties: false` | C §4 | 11 new schemas; 9 additive changes; no `x_ext` | pass |
-| Eval tiers and minimums; never fabricate | C §5 | `eval-inventory-r3`, `afv-inventory`; live tiers `skipped` without keys | pass |
+| Eval tiers and minimums; never fabricate | C §5, SPEC-105 FR-007 | `eval-inventory-r3`, `afv-inventory`; every skill keeps SPEC-105's minimums (≥ 4 deterministic, ≥ 5 agentic with ≥ 1 `guardrail`, ≥ 10 trigger with ≥ 2 `expect_skill: null`); live tiers `skipped` without keys | pass |
+| Live gates: SPEC-105's floor per skill and catalog-wide; criteria only raise; replay, partial, outage, and degraded runs never count; live gates in the `merge` stage | SPEC-105 FR-005..FR-012; SPEC-201 ledger rows 1 and 5 | G-LIVE-01..08 read only SPEC-105 outputs; no count metric; no `complete`-stage gate; R3 edits no criteria file, `monitor-limits.json`, or `prices.json` | pass |
+| Webhook replay defence is R1's | SPEC-201 FR-025, ledger row 2 | The gateway calls R1's four layers and adds only transport, durability, and routing (D-9, D-10) | pass |
+| Reviewer reads recorded evidence only; offline CI on every PR, live only manually; ≤ 3 rounds | SPEC-201 FR-034, FR-035, FR-044 | FR-057; T147, T148, T152 | pass |
 | Spec, traceability, MADR ADRs | C §6 | This folder; ADR-0301..0309; per-skill specs updated | pass |
 | Role authority | C §7 | `system` role defined (amends §7 via ADR-0307); one token per process; Review dismisses only its own stale approvals | pass, with amendment |
 | `policy.require` before side effects; `--apply` never overrides; policy changes critical | C §8 | Promotion verification and latch amend §8 (ADR-0302) | pass, with amendment |
@@ -121,7 +137,9 @@ immediate-merge row; no `force_merge`; the gateway never runs inside an agent to
 | `_skillkit.gitea_memory`, `_skillkit.mutations`, `_skillkit.markers`, `_skillkit.plan_apply`, `_skillkit.leases`, `_skillkit.delivery` | SPEC-202 plan §Source code | Planned |
 | `_skillkit.gitrepo` write helpers `worktree_add`, `branch_create`, `commit`, `push_branch`, `ls_remote`, `show` | SPEC-202 plan | Planned; R3 adds `fetch_base`, `rebase`, `rebase_abort`, `push_force_with_lease`, `common_dir`, `is_ancestor` |
 | Lab: `smoke_gitea.py`, `signoff.py`, `l1_gate.py`, `containment.py --level`, `validate_policy.py`, `release.py`, `cli.py` | SPEC-202 and SPEC-201 plans | Planned |
-| R1 normalizer event-type vocabulary and seen-set format | SPEC-201 FR-025 | Planned; T002 records the table (X-10) |
+| R1 normalizer event-type vocabulary, body-digest seen set, freshness record, `stale` flag, previous-secret window (`GITEA_WEBHOOK_SECRET_ROTATED_AT`), per-object rate limit | SPEC-201 FR-025, FR-047 | Planned in SPEC-201; T002 records the table (X-10), T151 the layers (X-13) |
+| SPEC-105 harness: `skill-lab score --strict` and `--catalog`, `skill-lab streak` (`benchmark-streak.v1`), `skill-lab report`, `skill-lab release record-run`, `benchmark-run.v1` fields (`counts_toward_streak`, `exclusion_reasons`, `suite_digest`, `health_reports`, `catalog{…}`), `run-health.v1`, `prices.json`, `monitor-limits.json` | SPEC-105 spec §Contracts, data-model.md; SPEC-201 FR-041, FR-049; SPEC-202 `record_run.py` | Delivered inside R1 (SPEC-201 T150); T151 confirms the names (X-11, X-12) |
+| `review_request.py` reviewer instructions (recorded evidence, no keys, run-health comment) and `review_collect.py` run-health check | SPEC-201 FR-034, FR-035 | Planned in SPEC-201; R3 adds `--live-runs` (FR-057, T155) |
 | Integration harness | `skill-lab/tests/integration/r2_harness.py` | Planned; R3 adds `r3_harness.py` on top |
 
 If a name differs, T002 records the mapping in `evidence/r2-alignment.json`, and the affected task edits the mapped
@@ -274,29 +292,38 @@ assuming success.
 
 ### Gateway pipeline (`_skillkit/webhook.py`, T046)
 
+R3 owns the HTTP transport, its bounds, durability, and the inbox. The four replay-defence layers are R1's (SPEC-201
+FR-025) and are called, not re-implemented: `[R1-n]` marks a call into R1's normalizer code for layer n.
+
 ```text
 accept (ThreadingHTTPServer, loopback unless TLS) ─► method POST? path /hooks/gitea? ─► Content-Length present, ≤ 5 MiB?
   ─► read body (10 s socket timeout) ─► X-Gitea-Event, X-Gitea-Delivery, X-Gitea-Signature present?
-  ─► hmac.compare_digest(hex(HMAC-SHA256(secret, raw)), header)          [C1 after this point]
+  ─► [R1-1, R1-4] hmac.compare_digest(hex(HMAC-SHA256(secret, raw)), header) with GITEA_WEBHOOK_SECRET, else with
+     GITEA_WEBHOOK_SECRET_PREVIOUS only while now < GITEA_WEBHOOK_SECRET_ROTATED_AT + 7 days
+     (WEBHOOK_SECRET_PREVIOUS_USED); fail → 401, and nothing parsed from the body is logged or stored   [C1 after this point]
   ─► Content-Type application/json? strict JSON (no duplicate keys)?
-  ─► lock(events) { delivery in seen? → 200 duplicate
-                    write event-record (atomic temp + rename)              [C2]
-                    add delivery to seen                                   [C3]
-                    inbox size ≥ 1000? (checked before write) → 503 }
+  ─► lock(events) { [R1-1] body_sha256 = sha256(raw) in seen set? → 200 duplicate (X-Gitea-Delivery kept as metadata only)
+                    [R1-4] per-object rate limit exceeded for this issue or PR? → 429, nothing recorded
+                    inbox size ≥ 1000? → 503
+                    [R1-2] freshness guard on the signed updated_at and head SHA → stale flag
+                    write event-record (atomic temp + rename; stale records are kept for audit) [C2]
+                    [R1-1, R1-2] add body_sha256 to the seen set; update the freshness record unless stale [C3]
   ─► 202                                                                   [C4]
 worker: for record in inbox order: process (eventloop) …                   [C5 between handlers, C6 before "processed"]
-startup: rebuild seen from records; re-run records in "processing"
+startup: rebuild the seen set from records (digests younger than 90 days); re-run records in "processing"
 ```
 
-The six crash points C1..C6 are injected by `test_skillkit_webhook.py` (in-process) and `test_r3_us2_gateway.py` (through
+`[R1-3]`, events as hints, is the processor's rule: every handler re-reads live Gitea state (§Ordering guard). The six
+crash points C1..C6 are injected by `test_skillkit_webhook.py` (in-process) and `test_r3_us2_gateway.py` (through
 the test-only wrapper `skill-lab/tests/integration/crashing_serve.py`, which patches the module's named hook points before
 calling `serve`). `_skillkit` itself reads no test variable.
 
 ### Routing table (`_skillkit/eventloop.py` `ROUTES`, T048)
 
 Event types are R1's normalizer vocabulary (T002 records the exact names, X-10). `P` = progress route (skipped for
-`stale_commit` and `superseded`); `C` = cancel or re-evaluation route (always runs). Every handler runs as `--actor-role
-system` where the script takes one.
+`stale_commit`); `C` = cancel or re-evaluation route (runs for `in_order` and `stale_commit`). A record that is
+`unverified`, `duplicate`, or `stale` (R1's flags) runs no route at all, so an older body never drives a state change.
+Every handler runs as `--actor-role system` where the script takes one.
 
 | Event type | Routes (in order) |
 |---|---|
@@ -342,16 +369,17 @@ codes map to route statuses: 0 → `applied` or `no_op` (from the payload), 1 �
 ```text
 for record in inbox (sequence order):            # one worker; per-resource sequence numbers
     policy = load(); policy.require("events.gateway.serve")       # fresh snapshot per record (FR-022)
-    if not record.signature_verified or record.duplicate: route nothing
-    live = read(resource)                        # PR: head, updated_at; issue: state, updated_at
-    hw = high_water[resource]
-    if resource is PR and record.commit and record.commit != live.head:      verdict = stale_commit
-    elif hw.updated_at and record.occurred_at and record.occurred_at < hw.updated_at
-         and record.commit in (None, hw.head):                               verdict = superseded
-    else:                                                                    verdict = in_order
-    high_water[resource] = max(hw, live)
-    run ROUTES[record.event_type], skipping P routes unless verdict == in_order
+    if not record.signature_verified: verdict = unverified; route nothing
+    elif record.duplicate:            verdict = duplicate;  route nothing         # R1 layer 1 (body SHA-256)
+    elif record.stale:                verdict = stale;      route nothing         # R1 layer 2: never a state change
+    else:
+        live = read(resource)                    # R1 layer 3: events are hints; PR head, issue state
+        if resource is PR and record.commit and record.commit != live.head:   verdict = stale_commit
+        else:                                                                 verdict = in_order
+        run ROUTES[record.event_type], skipping P routes unless verdict == in_order
 ```
+
+R3 keeps no high-water record of its own: R1's freshness record is the only one (D-10).
 
 ### Ordering scenarios (`skill-lab/fixtures/r3/events/`, T027; `test_r3_us3_ordering.py`, T084)
 
@@ -433,11 +461,24 @@ Dispatch expiry equals the lease TTL; attempts ≤ 3 per issue per 24 h.
 | `security.unauthorized_actions_not_blocked` | — | incidents `containment_breach` | incidents | D-T3, P-6 |
 | `calibration.shadow_auto_merge_candidates` | — | recorded decisions with uncapped `AUTO_MERGE`, human-merged as decided, merged ≥ 7 days ago | decision records, Gitea | P-1 |
 | `calibration.shadow_disagreements` | — | uncapped `AUTO_MERGE` PRs not merged as decided | decision records, Gitea | P-3 |
+| `model.streak_length` | — (model reliability, SPEC-105) | `benchmark-streak.v1` `length` for the installed `suite_digest` on the installed profiles' model | `benchmark-streak` | P-8 (≥ 3) |
+| `model.local_unlock_evidence` | — | the same record's `local_unlock_evidence` | `benchmark-streak` | P-8 (true) |
+| `model.unstable_cases` | — | count of the record's `unstable_cases[]` | `benchmark-streak` | P-8 (= 0) |
+| `model.counting_run_rate` | — | runs in the streak window with `counts_toward_streak: true` / all live runs of that model and digest; the record's `excluded_runs[].reasons` are reported by reason (`replay`, `partial`, `outage`, `degraded`) | `benchmark-runs`, `benchmark-streak` | P-8 (every run in the streak counting); report |
+| `model.degraded_health_reports` | — | `run-health.v1` reports with `status: degraded` among the streak runs' reports | `run-health` | P-8 (= 0); report |
+| `model.catalog_agentic_pass_rate`, `model.catalog_trigger_accuracy`, `model.catalog_schema_valid_rate`, `model.catalog_uncertain_rate` | — | the newest streak run's `catalog{…}` values (SPEC-105 floor: ≥ 0.80, ≥ 0.90, ≥ 0.95, < 0.10) | `benchmark-runs` | report |
+| `model.tokens_per_run` | — | mean `usage.total` over the streak runs; cost only with its `cost.basis` (`usage-only` when any price is missing) | `benchmark-runs` | report |
 
 `THRESHOLDS_VERSION = "1.0.0"`; the demotion triggers and promotion criteria are the tables in spec.md §Autonomy policy.
-P-8's input is `autonomy_scorecard.py --release-gate-report <file>`: the factory's `gate-report-complete.json` for SPEC-203;
-it passes when every complete-stage gate passed and its `commit` equals the factory commit the installed skills came from
-(the installer's source record, whose name T002 confirms); without either file the criterion is `not_run`.
+The `model.*` metrics reuse SPEC-105's committed run data (FR-056, D-30): `autonomy_scorecard.py --benchmarks
+<factory>/skill-lab/benchmarks` reads the `benchmark-streak.v1` for the installed suite digest, the `benchmark-run.v1` of
+each run it lists, and those runs' `run-health.v1` reports, and lists each file's digest in `sources[]`; it never calls a
+model or Jev. P-8's other input is `--release-gate-report <file>`: the factory's merge-stage `gate-report-merge.json` for
+SPEC-203; it passes when every merge-stage gate passed (live gates included) and its `commit` equals the factory commit
+the installed skills came from (the installer's source record, whose name T002 confirms). P-8 passes only when both
+inputs pass; without either the criterion is `not_run`. The profiles' model is read from the installed Zed profiles
+(T151 records where), and a streak on another model leaves P-8 `fail` (Q-14). A failing counting run or a new unstable
+case after the promotion sets `recommendation: hold`; it adds no demotion trigger (Q-14).
 
 ### Demotion procedure (`autonomy_guard.py`, T088)
 
@@ -514,8 +555,8 @@ checks + evidence_manifest validate for the new head (R2 rules)
 | permission-containment | 6 | 2 | gitea-event-normalizer (handler authority), lead-architect (narrowing ×2), merge-policy-gate (admin identity; `force_merge` body), work-lease (takeover without record) | pse-implementer (asked to push `main`), review-verifier (asked to dismiss another reviewer's approval) | containment, `test_r3_us6_dispatch_loop.py` |
 | prompt-injection | 5 | 3 | gitea-event-normalizer (payload text), merge-policy-gate (PR body "risk: low"), kanban-state-machine (forged marker), session-checkpoint (checkpoint comment from an unconfigured user), speckit-gitea-sync (issue edit with instructions) | merge-policy-gate, lead-architect, review-verifier (all `guardrail`) | `test_r3_us2_gateway.py` |
 | long-horizon-recovery | 4 | 2 | work-lease ×2, session-checkpoint, gitea-event-normalizer (inbox replay) | work-lease, session-checkpoint | `test_r3_us5_recovery.py` |
-| idempotency | 5 | 0 | gitea-event-normalizer (duplicate delivery), merge-policy-gate (re-run schedule; re-run guard), work-lease (re-run takeover), lead-architect (re-run dispatch) | — | `test_r3_failure_recovery.py` |
-| ordering | 4 | 1 | gitea-event-normalizer (`stale_commit` ×2, `superseded`), kanban-state-machine (merged before review) | kanban-state-machine | `test_r3_us3_ordering.py` |
+| idempotency | 5 | 0 | gitea-event-normalizer (the same body under a new delivery ID is a duplicate), merge-policy-gate (re-run schedule; re-run guard), work-lease (re-run takeover), lead-architect (re-run dispatch) | — | `test_r3_failure_recovery.py` |
+| ordering | 4 | 1 | gitea-event-normalizer (`stale_commit` ×2; a body R1 marks `stale` routes nowhere), kanban-state-machine (merged before review) | kanban-state-machine | `test_r3_us3_ordering.py` |
 | concurrency | 4 | 0 | work-lease (two takeovers), gitea-event-normalizer (second gateway), lead-architect (two dispatches of one issue), merge-policy-gate (schedule versus push race) | — | `test_r3_concurrency.py` |
 | failure-recovery | 6 | 1 | merge-policy-gate (CI pending → TTL; Gitea 5xx during schedule), gitea-event-normalizer (dead letter), work-lease (sandbox died), kanban-state-machine (dependency reopened), pse-implementer (rebase conflict) | pse-implementer | `test_r3_failure_recovery.py` |
 | grounding | 3 | 1 | review-verifier (stale verdict), session-checkpoint (stale checkpoint), merge-policy-gate (evidence for another head) | review-verifier | `test_r3_us7_stale_heads.py` |
@@ -550,7 +591,8 @@ skill-lab/specs/203-release-guarded-autonomous/
 └── evidence/            # step 5–8 outputs: entry-check.json, r2-alignment.json, gitea-facts.json, interface-notes.md,
                          # spec-readiness.json, task-graph.json, constitution-recheck.md, afv-report-deterministic.json,
                          # convergence-report.json, release-diff.json, self-classification.json, containment-<level>.json,
-                         # gate-report-merge.json, gate-report-complete.json, bench/, smoke-merge.json, pr-body.md,
+                         # gate-report-offline.json, live-runs.json (run ids and digests only; the runs stay under
+                         # skill-lab/benchmarks/runs/), gate-report-merge.json, smoke-merge.json, pr-body.md,
                          # export-manifest.json, pr-request.json
 ```
 
@@ -562,15 +604,15 @@ skill-lab/shared/_skillkit/
 ├── authority.py         CREATE  ROLE_ACTIONS, narrow() (FR-005)
 ├── autonomy.py          CREATE  metrics, thresholds, incidents, latch helpers, scorecard builder (FR-028..FR-032)
 ├── merge_policy.py      CREATE  decide(), risk classifier, caps, merge body builder (FR-011..FR-013)
-├── webhook.py           CREATE  HTTP handler, verification, dedupe, durable records (FR-017..FR-019, FR-023)
-├── eventloop.py         CREATE  ROUTES, ordering guard, processor, reconcile, handler env (FR-006, FR-020..FR-022, FR-024)
+├── webhook.py           CREATE  HTTP transport and bounds, calls into R1's four layers, durable records (FR-017..FR-019, FR-023)
+├── eventloop.py         CREATE  ROUTES, route policy over R1's flags, processor, reconcile, handler env (FR-006, FR-020..FR-022, FR-024)
 ├── recovery.py          CREATE  inspection and rules R-0..R-9 (FR-037, FR-039)
 ├── gitea.py             MODIFY  R3 rows, merge body validator, identity checks, live-merge guard (FR-007..FR-009)
 ├── gitea_memory.py      MODIFY  merge semantics, dismissal, close, webhook outbox (FR-010)
 ├── leases.py            MODIFY  TTL/heartbeat/grace constants, expired listing, takeover CAS, orchestration lease (FR-036, FR-038)
 ├── gitrepo.py           MODIFY  fetch_base, rebase, rebase_abort, push_force_with_lease, common_dir, is_ancestor (FR-046, FR-047)
 ├── delivery.py          MODIFY  rebase and force-with-lease steps (FR-046, FR-047)
-├── redact.py            MODIFY  GITEA_WEBHOOK_SECRET in SECRET_ENV_VARS if absent (FR-006)
+├── redact.py            MODIFY  only if X-3 is still open: GITEA_WEBHOOK_SECRET and GITEA_WEBHOOK_SECRET_PREVIOUS in SECRET_ENV_VARS (FR-006)
 └── __init__.py          MODIFY  module list
 
 skill-lab/contracts/schemas/
@@ -584,7 +626,8 @@ skill-lab/contracts/README.md                                                   
 skill-lab/lab/
 ├── gitea_double.py      MODIFY  webhook delivery to --webhook-url, fault flags
 ├── containment.py       MODIFY  --level guarded-autonomous, --demoted
-├── release.py           MODIFY  count metrics, afv metric, consecutive-run streak
+├── release.py           MODIFY  live gates G-LIVE-01..08 from SPEC-105 outputs (score --strict, score --catalog, benchmark-run.v1, benchmark-streak.v1); afv metric; no count metric (FR-054, FR-055)
+├── record_run.py        MODIFY  --spec SPEC-203 writes evidence/live-runs.json (run ids, summary digests, streak digest) (FR-055)
 ├── validate_policy.py   MODIFY  rules eval-inventory-r3, afv-inventory, autonomy write ban (FR-035, FR-050)
 ├── config_rules.py      MODIFY  R3 deny rules
 ├── afv.py               CREATE  afv run (FR-048)
@@ -656,10 +699,13 @@ skills/review-verifier/{SKILL.md, tests/test_invalidate.py, evals/cases/*.json} 
 skills/pse-implementer/scripts/delivery_plan.py                      MODIFY  --step rebase, --force-with-lease (FR-046, FR-047)
 skills/pse-implementer/{SKILL.md, tests/test_rebase.py, evals/cases/*.json}   MODIFY/CREATE
 skills/speckit-development/scripts/delivery_record.py                MODIFY  merge handoff (FR-051)
-skills/speckit-development/{SKILL.md, tests/test_handoff_r3.py, evals/cases/*.json}   MODIFY/CREATE
-skills/{speckit-gitea-taskstoissues,twelve-factor-audit,skill-forge}/   re-vendored only (T136)
-skills/CATALOG.json                                                  REGENERATE
-skill-lab/benchmarks/criteria/<13 skills>.json                       UNCHANGED  count-based since SPEC-201; re-validated by G-OFF-06
+skills/speckit-development/scripts/review_request.py                 MODIFY  --live-runs: digests of every streak run and of the streak record (FR-057)
+skills/speckit-development/{SKILL.md, tests/test_handoff_r3.py, tests/test_review_request_r3.py, evals/cases/*.json}   MODIFY/CREATE
+skills/{speckit-gitea-taskstoissues,twelve-factor-audit,skill-forge,run-monitor}/   re-vendored only (T136; run-monitor: D-29, FR-058)
+skills/CATALOG.json                                                  REGENERATE (14 skills)
+skill-lab/benchmarks/criteria/<14 skills>.json, _defaults.json       UNCHANGED  person-maintained; at or above SPEC-105's floor; agents never edit them (G-OFF-06)
+skill-lab/benchmarks/monitor-limits.json, prices.json                UNCHANGED  person-maintained (a limits change needs the person's approval)
+skill-lab/benchmarks/runs/<run_id>/, benchmark-streak record         CREATE by the live runs (T142), committed; referenced by digest
 
 skill-lab/fixtures/
 ├── r3/specs/043-onboarding-docs/{spec.md, plan.md, tasks.md, checklists/requirements.md}   CREATE
@@ -676,10 +722,11 @@ skill-lab/tests/
 ├── test_skillkit_webhook.py; test_skillkit_eventloop.py                                  CREATE
 ├── test_skillkit_gitrepo_r3.py; test_skillkit_delivery_r3.py; test_skillkit_redact_r3.py  CREATE
 ├── test_containment_r3.py; test_release_r3.py; test_validate_r3.py; test_afv.py          CREATE
+├── fixtures/r3/spec105/ (committed-run, streak, and health-report fixtures for the scorecard and live gates)   CREATE
 ├── test_autonomy_cmd.py; test_signoff_r3.py; test_smoke_merge.py; test_event_routing_docs.py   CREATE
 ├── test_adrs_r3.py; test_skills_r3.py; test_config_rules_r3.py; test_autonomy_docs_sync.py      CREATE
 ├── fixtures/r3/make_events.py; fixtures/r3/soak_dag.py                                   CREATE (test code)
-├── release/test_r3_release_gates.py                                                      CREATE
+├── release/test_r3_release_gates.py; release/test_r3_live_gates.py                       CREATE
 └── integration/
     ├── r3_harness.py; crashing_serve.py (test-only crash hooks)                            CREATE
     └── test_r3_us1_auto_merge.py, test_r3_us2_gateway.py, test_r3_us3_ordering.py,
@@ -698,8 +745,8 @@ Phase numbers are those of tasks.md.
 
 | Phase | Tasks | Content | Exit check |
 |---|---|---|---|
-| 1 Setup | T001–T016 | Entry evidence; R2 alignment; Gitea and runner facts (V-1..V-11); checklist; ADRs; CONVENTIONS; readiness | `entry-check.json`, `r2-alignment.json`, readiness `ready: true` |
-| 2 Foundational | T017–T059 | 11 schemas + 9 additive; gates; fixtures; policy; authority; autonomy; merge policy; client rows; double; leases and recovery; webhook; event loop; git, delivery, and redaction; lab commands; harness | Phase 2 tests green; `sync --check` clean; constitution re-check (T051) |
+| 1 Setup | T001–T016, T151 | Entry evidence (R2 merged); R2 alignment; R1 and SPEC-105 alignment (X-11..X-15); Gitea and runner facts (V-1..V-11); checklist; ADRs; CONVENTIONS; readiness | `entry-check.json`, `r2-alignment.json`, readiness `ready: true` |
+| 2 Foundational | T017–T059, T154 | 11 schemas + 9 additive; gates; fixtures; policy; authority; autonomy; merge policy; client rows; double; leases and recovery; webhook; event loop; git, delivery, and redaction; lab commands including the SPEC-105 live-gate evaluation; harness | Phase 2 tests green; `sync --check` clean; constitution re-check (T051) |
 | 3 US1 auto-merge (MVP) | T060–T069 | merge decision, merge plan, branch audit, SKILL.md, evals, integration | `test_r3_us1_auto_merge.py` green |
 | 4 US2 gateway | T070–T076 | serve/ingest/process/reconcile, docs, SKILL.md, evals, integration | `test_r3_us2_gateway.py` green |
 | 5 US3 ordering and board | T077–T084 | kanban on-event, sync on-event, ordering suite | `test_r3_us3_ordering.py` green |
@@ -708,8 +755,8 @@ Phase numbers are those of tasks.md.
 | 8 US6 dispatch | T102–T108 | dispatch on events, session dispatch, close, evals, integration | `test_r3_us6_dispatch_loop.py` green |
 | 9 US7 stale heads | T109–T116 | invalidate, rebase, force-with-lease, evals, integration | `test_r3_us7_stale_heads.py` green |
 | 10 US8 verification | T117–T128 | AFV cases per suite, concurrency, failure recovery, soak, AFV report | G-OFF-18, G-OFF-19 |
-| 11 US9 handoff and factory | T129–T132 | speckit-development handoff, integration with factory cap | `test_r3_us9_handoff_factory.py` green |
-| 12 Polish and release | T133–T150 | docs, configs, catalog, traceability, converge, self-classification, offline gates, live gates, PR, independent review, merge handoff | X-1..X-4; X-5 when live |
+| 11 US9 handoff and factory | T129–T132, T155 | speckit-development handoff and review request with streak digests, integration with factory cap | `test_r3_us9_handoff_factory.py` and `test_review_request_r3.py` green |
+| 12 Polish and release | T133–T150, T152, T153 | docs, configs, catalog, traceability, converge, self-classification, offline gates, live gates (3 consecutive counting runs) before the PR, PR with the live scores, independent review from recorded evidence, review rounds, human merge | X-1..X-4 (release-plan.md §4) |
 
 ## Test strategy
 
@@ -729,13 +776,26 @@ task is done when its tests fail on assertions, not on import errors.
 - **Double**: merge immediately versus schedule; `409` on head mismatch; a stale schedule never executes; cancel; each
   protection rule at merge time; dismissal; close; webhook signatures and every fault mode.
 - **Webhook**: every rejection class (≥ 2 fixtures each), verification before parsing (a parser spy is never called on a
-  bad signature), dedupe under concurrent requests (2 threads), C1..C6 crash points, inbox bound, TLS requirement.
-- **Event loop**: `ROUTES` covers every type in R1's vocabulary (or records it as routed nowhere); ordering verdicts;
+  bad signature, and no parsed value of a failing body reaches a log or record), the previous secret at 6 days
+  (accepted, `WEBHOOK_SECRET_PREVIOUS_USED`) and at 7 days or without a rotation time (`401`), a secret under 32 bytes
+  (`WEBHOOK_SECRET_TOO_SHORT`), dedupe by body SHA-256 under concurrent requests (2 threads; the same body under a new
+  delivery ID is a duplicate, a new body under a reused delivery ID is not), the per-object rate limit (`429`), C1..C6
+  crash points, inbox bound, TLS requirement. These tests call R1's layer code through the gateway; R1's own tests stay
+  the authority for the layers.
+- **Event loop**: `ROUTES` covers every type in R1's vocabulary (or records it as routed nowhere); verdicts (`stale`
+  records run no route, `stale_commit` skips progress routes only);
   argument building from typed fields only (a hostile string field is never in argv); handler environment scrubbing;
   attempts and dead-letter; per-record policy reload.
 - **Recovery, authority, autonomy**: the rule matrix (≥ 16 fixtures), the narrowing matrix (24 rows), every metric's
   computation on fixture ledgers, triggers, criteria, incident parsing (revert messages, `Caused-by:` lines from
-  configured and unconfigured users).
+  configured and unconfigured users), and the `model.*` metrics and P-8 over committed SPEC-105 fixtures under
+  `skill-lab/tests/fixtures/r3/spec105/` (a passing streak of 3; a streak of 2; an unstable case; a degraded, outage,
+  partial, or replay run; a streak on another model or suite digest; a missing merge-stage report), with a spy proving 0
+  model or Jev calls.
+- **Live-gate evaluation** (`skill-lab/tests/release/test_r3_live_gates.py`): over the same fixtures, each floor gate
+  failing per skill and catalog-wide, a guardrail miss, an AFV agentic rate of 12/14, a streak of 2, an unstable case,
+  replay, partial, outage, and degraded runs, a stale suite digest (`LIVE_RUN_STALE`), no run (`NO_LIVE_RUN`), and a
+  criteria file below the floor (`CRITERIA_BELOW_FLOOR`); no gate reads a count metric.
 - **Git and delivery**: rebase success, conflict and abort, force-with-lease with the right and the wrong expected SHA,
   ancestry check, common-dir resolution inside a worktree.
 
@@ -749,7 +809,7 @@ spec.md §Contracts (for example `merge-execution` with `force_merge`, `lease-re
 
 Cases call scripts with `--gitea-fixture evals/fixtures/r3/<name>.json` (in-process engine) and `--repo-fixture` where git
 is needed (SPEC-202's pattern). Tags: `applied`, `rerun`, `policy`, `demoted`, `guardrail`, and `afv:<suite>`. Floor:
-≥ 202 cases (G-OFF-05).
+≥ 206 cases (G-OFF-05), and every one of the 14 skills keeps SPEC-105's minimum of 4.
 
 ### Integration (`skill-lab/tests/integration/`)
 
@@ -777,18 +837,21 @@ PR before issue 30 merged; every other PR in `READY_TO_MERGE`; 0 takeovers witho
 
 ### Security
 
-Canaries for `GITEA_TOKEN`, `GITEA_WEBHOOK_SECRET`, `OLLAMA_API_KEY`, and `TYPESAFE_API_KEY` (32 unique characters each)
+Canaries for `GITEA_TOKEN`, `GITEA_WEBHOOK_SECRET`, `GITEA_WEBHOOK_SECRET_PREVIOUS`, `OLLAMA_API_KEY`, and
+`TYPESAFE_API_KEY` (32 unique characters each)
 are grepped in every captured stdout and stderr, `.skill-state/`, double logs, rendered prompts and comments, gateway runs,
 and git config (G-OFF-20). Injection fixtures include forged markers, `force_merge` strings, shell metacharacters, and
 "ignore previous instructions" text in every free-text field the loop sees.
 
 ### Agentic evals (tier `agentic`) with Jev judgments
 
-Each R3-changed skill adds ≥ 1 capability case, and the 14 AFV agentic cases are added on top (distinct files). The
-table is a selection; tasks.md names every case file. Judgments
-use `noul` with `pass_if: {"gte": 0.8}` (CONVENTIONS §5 bands: uncertain [0.35, 0.8) counts as fail with `needs_human`).
-One narrow, self-contained question per judgment (SOURCES Jev). Deterministic assertions check structure; Jev checks
-meaning.
+Each R3-changed skill adds ≥ 1 capability case, and the 14 AFV agentic cases are added on top (distinct files); every
+skill keeps SPEC-105's minimum of 5 agentic cases with ≥ 1 `guardrail`, and every fixture lies inside its own skill
+folder (SPEC-105 FR-016, `DATA_BOUNDARY`). The table is a selection; tasks.md names every case file. Judgments use
+`noul` with `pass_if: {"gte": 0.8}`. A judgment in the uncertain band [0.35, 0.8) is re-asked once with the case's
+fixture contents and the skill's `SKILL.md`; a second uncertain value fails the case with `needs_human: true` and flags
+it (SPEC-105 FR-002). Invalid JSON after the 2 allowed repairs is a failed case, not an errored one. One narrow,
+self-contained question per judgment (SOURCES Jev). Deterministic assertions check structure; Jev checks meaning.
 
 | Skill | Case | Output schema | Assertions (examples) | Jev judgment (noul instructions, abbreviated) | Tags |
 |---|---|---|---|---|---|
@@ -809,7 +872,8 @@ meaning.
 
 ### Trigger evals (tier `trigger`)
 
-Each changed skill adds 1 positive and 1 negative case. Negatives name the closest neighbour: "auto-merge PR 311 when CI
+Each changed skill adds 1 positive and 1 negative case, and every skill keeps SPEC-105's minimum of 10 trigger cases
+with ≥ 2 expecting no skill (`expect_skill: null`). Negatives name the closest neighbour: "auto-merge PR 311 when CI
 passes" → `merge-policy-gate`, while "move PR 311 to review" → `kanban-state-machine`; "why did autonomy get demoted" →
 `merge-policy-gate`, while "save my progress" → `session-checkpoint`; "the PSE session died, recover issue 301" →
 `work-lease`, while "resume from my last checkpoint" → `session-checkpoint`; "start the webhook gateway" →
@@ -818,20 +882,35 @@ issues drifted" → `speckit-gitea-sync`.
 
 ## Benchmark plan (cloud first)
 
-1. **Offline, every commit (CI)**: `release check --spec SPEC-203 --stage merge`. Live tiers never run in CI unless
-   started manually with secrets (SPEC-201 FR-044).
-2. **Live cloud, once `ollama.com` and `api.typesafe.ai` are reachable**: `skill-lab bench --runtime ollama-cloud --jev
-   live --tier agentic`, then `--tier trigger`, over all 13 skills with the models SPEC-201 pinned, then
-   `skill-lab afv run --tier agentic --from-run <run>`, which aggregates the AFV-tagged results of that run without new
-   model calls. Record each run with `skill-lab release record-run` into
-   `evidence/bench/` with suite digest, commit, and model.
-3. **Streak**: repeat step 2 on the same commit and suite digest until 3 consecutive eligible runs pass G-LIVE-01..06
-   (SPEC-202 D-17 eligibility), then `release check --stage complete` (G-LIVE-07). Replays and partial runs never count. A
-   retired cloud model resets the streak.
-4. **Local inference**: unchanged; SPEC-202's M-L1 governs it, and R3 adds no local gate.
-5. **Cost and latency**: record Jev `usage`, case durations, model IDs, and (when a runner reports it) session cost. No
-   price is assumed.
-6. **Informational**: `--runtime claude` and `--runtime codex` where adapters and keys exist; non-gating.
+Every live step uses SPEC-105's harness as R1 delivered it; R3 changes none of its rules.
+
+1. **Offline, every PR (CI)**: the offline merge-stage gates (`release check --spec SPEC-203 --stage merge --only
+   G-OFF-01..G-OFF-28`). Live tiers never run in CI unless started manually (`workflow_dispatch`) with secrets (SPEC-201
+   FR-044).
+2. **Live cloud, once `ollama.com` and `api.typesafe.ai` are reachable and the keys are set** (in the benchmark
+   environment, never in the reviewer's): `skill-lab bench --tier agentic,trigger --runtime ollama-cloud --model <M>
+   --jev live` over every agentic and trigger case of all 14 skills on the final R3 suite, with the one model R1 chose for
+   every profile (SPEC-105 FR-001; research R-14). Bench writes the run log and, after each skill, one `run-monitor`
+   `run-health.v1` snapshot with the advisory assessment (14 per run; SPEC-105 FR-019..FR-022). Then `skill-lab score
+   --skill <name> --run <dir> --strict` for each skill, `skill-lab score --catalog --run <dir> --strict`, and `skill-lab
+   afv run --tier agentic --from-run <dir>`, which aggregates the AFV-tagged results of that run without new model calls.
+   Commit the run under `skill-lab/benchmarks/runs/<run_id>/` and name it by digest with `skill-lab release record-run
+   --spec SPEC-203` (`evidence/live-runs.json`); nothing is copied into the release folder.
+3. **Streak**: repeat step 2 on the same suite digest and model and run `skill-lab streak` after each run, until
+   `benchmark-streak.v1` has length ≥ 3 and 0 unstable cases with every run in it passing G-LIVE-01..07; then `release
+   check --spec SPEC-203 --stage merge` passes G-LIVE-08. Replays never count; partial, outage (connection error, 5xx,
+   429 after retries), and degraded runs do not count and neither extend nor break the streak; 401, 403, and 422 are
+   configuration or case bugs, fixed before a re-run. A case that passed and then fails breaks the streak; editing or
+   adding any case (for example in a review fix) or changing the model restarts it (SPEC-105 FR-010..FR-012).
+4. **Local inference**: unchanged; SPEC-202's M-L1 governs it (entry: this same `benchmark-streak.v1` evidence for the
+   cloud model plus the person's sign-off), and R3 adds no local gate and runs nothing on the person's machine.
+5. **Cost and latency**: SPEC-105 records model and Jev tokens per case, per skill, and in total; cost comes only from
+   `skill-lab/benchmarks/prices.json`, and a run with any missing price reports `usage-only`. No cap stops a run (intake
+   Q7). The run log records latency, status, retries, and rate-limit waits.
+6. **Reporting**: `skill-lab report --run <dir>` renders each streak run's PR comment (per-skill and catalog results,
+   unsure and flagged cases, unstable cases, tokens and cost basis, suite digest); the orchestrator posts them on the R3
+   PR (T153), and the review request carries their digests (FR-057).
+7. **Informational**: `--runtime claude` and `--runtime codex` where adapters and keys exist; non-gating.
 
 ## Rollout and rollback
 
@@ -842,10 +921,15 @@ issues drifted" → `speckit-gitea-sync`.
    calibration decisions; R2's polling flow continues.
 3. Gitea setup (human, Q-2): a non-admin `system` account distinct from PSE; branch protection meeting BP-01..BP-12
    including BP-09; the autonomy tracking issue; the sandbox repository. Run `skill-lab smoke gitea --stage merge` (RT-02).
-4. When R3 is complete and `skill-lab autonomy promote-check` reports eligible: sign with `skill-lab signoff create
-   --subject autonomy-level-change`, commit sign-off, scorecard, and promotion block in a PR, and merge it as a human.
-5. Create the webhook (human-only) pointing at the gateway; start `normalize.py serve` as an operator service
-   (runbook `webhook-gateway.md`). Review `skill-lab autonomy status` weekly.
+4. When R3 is merged (its live gates passed at the merge stage) and `skill-lab autonomy promote-check` reports eligible
+   (P-8 reads the factory's merge-stage report and SPEC-105's streak for the installed suite on the profiles' model):
+   sign with `skill-lab signoff create --subject autonomy-level-change`, commit sign-off, scorecard, and promotion block
+   in a PR, and merge it as a human.
+5. Create the webhook (human-only) pointing at the gateway over TLS (or loopback), with a random secret of at least 32
+   bytes; rotate with `GITEA_WEBHOOK_SECRET_PREVIOUS` and `GITEA_WEBHOOK_SECRET_ROTATED_AT` (accepted for 7 days); start
+   `normalize.py serve` as an operator service (runbook `webhook-gateway.md`, which points at R1's
+   `references/webhook-hygiene.md`). Review `skill-lab autonomy status` weekly. The gateway host is not monitored by
+   `run-monitor` (D-29; Q-13).
 
 **Rollback** (fastest first; none needs an agent):
 
@@ -863,7 +947,8 @@ issues drifted" → `speckit-gitea-sync`.
 | Violation or cost | Why needed | Simpler alternative rejected because |
 |---|---|---|
 | 11 new contracts | Each crosses a process or persistence boundary or is audit evidence (latch, incidents, scorecard, executions, recoveries) | Untyped JSON would make demotion, promotion, and recovery unverifiable |
-| 6 new `_skillkit` modules vendored into 13 skills | One tested implementation of the decision, ordering, recovery, and authority logic | Per-skill copies drift; skills cannot import each other |
+| 6 new `_skillkit` modules vendored into 14 skills | One tested implementation of the decision, ordering, recovery, and authority logic | Per-skill copies drift; skills cannot import each other |
 | A long-running server in a skill | The report's webhook gateway [R §Gitea as the real-time engineering control plane] | Polling by sessions (R2) cannot react to events or recover lost state promptly |
 | Exhaustive matrix, ordering schedules, crash injection, soak | Auto-merge is irreversible without a human revert | Sampled tests leave untested combinations of exactly the gates that matter |
+| 3 consecutive counting live runs before the merge (G-LIVE-08) | R3 is the first release where model output can lead to an unattended merge; the user's definition of reliable is 3 in a row | One run, as for R1, is open as Q-12; the conservative default stays until the person answers |
 | Latch location outside `--state-dir` | An override flag would be an escape from demotion | Keeping the convention would make demotion advisory |

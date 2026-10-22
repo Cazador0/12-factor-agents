@@ -73,7 +73,7 @@
       ],
       "verified_by": [
         "skill-lab/tests/test_skillkit_eventloop.py::TestHandlerEnvironment::test_secrets_removed",
-        "skill-lab/tests/test_skillkit_redact_r3.py::TestRedactR3::test_webhook_secret_masked",
+        "skill-lab/tests/test_skillkit_redact_r3.py::TestRedactR3::test_webhook_secrets_masked",
         "skill-lab/tests/release/test_r3_release_gates.py::TestSecrets::test_no_canary_in_outputs"
       ],
       "planned": true
@@ -216,6 +216,8 @@
       "verified_by": [
         "skill-lab/tests/test_skillkit_webhook.py::TestRejections::test_every_rejection_class",
         "skill-lab/tests/test_skillkit_webhook.py::TestVerification::test_parser_not_called_on_bad_signature",
+        "skill-lab/tests/test_skillkit_webhook.py::TestVerification::test_previous_secret_only_within_7_days",
+        "skill-lab/tests/test_skillkit_webhook.py::TestVerification::test_failing_body_never_logged",
         "skills/gitea-event-normalizer/tests/test_serve.py::TestServe::test_tls_and_secret_required"
       ],
       "planned": true
@@ -227,6 +229,8 @@
       ],
       "verified_by": [
         "skill-lab/tests/test_skillkit_webhook.py::TestDedupe::test_concurrent_duplicate_processed_once",
+        "skill-lab/tests/test_skillkit_webhook.py::TestDedupe::test_same_body_new_delivery_id_is_duplicate",
+        "skill-lab/tests/test_skillkit_webhook.py::TestDedupe::test_rate_limit_429_nothing_persisted",
         "skills/gitea-event-normalizer/evals/cases/afv-duplicate-delivery-once.json"
       ],
       "planned": true
@@ -303,8 +307,9 @@
       ],
       "verified_by": [
         "skill-lab/tests/test_skillkit_eventloop.py::TestOrderingGuard::test_verdicts",
+        "skill-lab/tests/test_skillkit_eventloop.py::TestOrderingGuard::test_stale_body_routes_nowhere",
         "skills/gitea-event-normalizer/evals/cases/afv-stale-commit-approval.json",
-        "skills/gitea-event-normalizer/evals/cases/afv-superseded-event.json"
+        "skills/gitea-event-normalizer/evals/cases/afv-stale-body-no-route.json"
       ],
       "planned": true
     },
@@ -626,7 +631,8 @@
       ],
       "verified_by": [
         "skill-lab/tests/test_validate_r3.py::TestEvalInventoryR3::test_pair_tags_required",
-        "skill-lab/tests/test_skills_r3.py::TestSkillsR3::test_inventory_and_catalog"
+        "skill-lab/tests/test_skills_r3.py::TestSkillsR3::test_inventory_and_catalog",
+        "skill-lab/tests/test_skills_r3.py::TestSkillsR3::test_spec105_minimums_every_skill"
       ],
       "planned": true
     },
@@ -663,7 +669,8 @@
         "skill-lab/docs/autonomy.md",
         "skill-lab/docs/runbooks/webhook-gateway.md",
         "skill-lab/config/zed/settings.example.jsonc",
-        "skills/merge-policy-gate/SKILL.md"
+        "skills/merge-policy-gate/SKILL.md",
+        "skill-lab/config/claude/settings.example.json"
       ],
       "verified_by": [
         "skill-lab/tests/test_adrs_r3.py::TestAdrsR3::test_madr_sections_and_citations",
@@ -681,7 +688,60 @@
       ],
       "verified_by": [
         "skill-lab/tests/test_contracts_r3.py::TestGatesJson::test_gates_match_spec",
-        "skill-lab/tests/test_release_r3.py::TestReleaseR3::test_count_metrics_and_streak"
+        "skill-lab/tests/test_release_r3.py::TestReleaseR3::test_live_gates_in_merge_stage_no_count_metric"
+      ],
+      "planned": true
+    },
+    {
+      "id": "FR-055",
+      "implemented_by": [
+        "skill-lab/lab/release.py",
+        "skill-lab/lab/record_run.py",
+        "skill-lab/specs/203-release-guarded-autonomous/gates.json"
+      ],
+      "verified_by": [
+        "skill-lab/tests/release/test_r3_live_gates.py::TestLiveGatesR3::test_floor_per_skill_and_catalog",
+        "skill-lab/tests/release/test_r3_live_gates.py::TestLiveGatesR3::test_streak_of_three_counting_runs",
+        "skill-lab/tests/release/test_r3_live_gates.py::TestLiveGatesR3::test_non_counting_runs_never_pass",
+        "skill-lab/tests/test_release_r3.py::TestReleaseR3::test_live_gates_in_merge_stage_no_count_metric"
+      ],
+      "planned": true
+    },
+    {
+      "id": "FR-056",
+      "implemented_by": [
+        "skill-lab/shared/_skillkit/autonomy.py",
+        "skills/merge-policy-gate/scripts/autonomy_scorecard.py",
+        "skill-lab/contracts/schemas/autonomy-scorecard.v1.schema.json"
+      ],
+      "verified_by": [
+        "skill-lab/tests/test_skillkit_autonomy.py::TestModelMetrics::test_spec105_run_data_reused",
+        "skill-lab/tests/test_skillkit_autonomy.py::TestCriteria::test_p8_streak_and_merge_report",
+        "skill-lab/tests/test_skillkit_autonomy.py::TestModelMetrics::test_no_model_or_jev_call"
+      ],
+      "planned": true
+    },
+    {
+      "id": "FR-057",
+      "implemented_by": [
+        "skills/speckit-development/scripts/review_request.py"
+      ],
+      "verified_by": [
+        "skills/speckit-development/tests/test_review_request_r3.py::TestReviewRequestR3::test_streak_digests_in_evidence",
+        "skills/speckit-development/tests/test_review_request_r3.py::TestReviewRequestR3::test_recorded_evidence_instructions_kept",
+        "skills/speckit-development/tests/test_review_request_r3.py::TestReviewRequestR3::test_round_four_refused"
+      ],
+      "planned": true
+    },
+    {
+      "id": "FR-058",
+      "implemented_by": [
+        "skills/CATALOG.json",
+        "skills/run-monitor/scripts/_skillkit/__init__.py"
+      ],
+      "verified_by": [
+        "skill-lab/tests/test_skills_r3.py::TestSkillsR3::test_fourteen_skills_and_28_symlinks",
+        "skill-lab/tests/test_skills_r3.py::TestSkillsR3::test_run_monitor_unchanged"
       ],
       "planned": true
     }

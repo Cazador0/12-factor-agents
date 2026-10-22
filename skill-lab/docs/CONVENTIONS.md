@@ -78,6 +78,11 @@ metadata:
 - `metadata` is a one-level map of plain or double-quoted string scalars. Required keys:
   `version` (semver), `family` (`roles` | `speckit-gitea` | `control-plane` | `audit` | `meta`),
   `spec` (`SPEC-NNN`), `author`.
+- Optional key `secondary_family`: one value of the same family enum (`roles` | `speckit-gitea` |
+  `control-plane` | `audit` | `meta`), different from `family`, for a skill that belongs to two groups.
+  The catalog and `skills/README.md` list such a skill under both families. `run-monitor` (SPEC-014)
+  is `family: control-plane` with `secondary_family: meta` (the person's decision, SPEC-201
+  §Clarifications). The validator checks the key once SPEC-201's frontmatter task lands.
 - No block scalars (`|`, `>`), anchors, lists, or comments inside the frontmatter.
 - `disable-model-invocation: true` only for skills that perform consequential writes
   (none in the first release).
@@ -200,6 +205,14 @@ valid payload).
 
 `schema_version` (integer, `1`) is required in every payload.
 
+**Planned contracts** (SPEC-105, delivered inside R1). Each row moves into the table above, without the
+*(planned)* mark, when its schema exists in `skill-lab/contracts/schemas/` (SPEC-105 T004, T006):
+
+| Name | Producer → consumer | Required core fields (beyond `schema_version`) |
+|---|---|---|
+| `benchmark-streak` *(planned)* | lab streak → SPEC-202 L1 gate, PR report, R1 release gates | model, suite_digest, length, runs[{run_id, started_at, passed}], local_unlock_evidence(bool, length ≥ 3), unstable_cases[], excluded_runs[{run_id, reasons[]}], broken_by, computed_at |
+| `run-health` *(planned)* | `run-monitor` snapshot → bench run folder, reviewer health comment | run_id, skill, target{kind benchmark-container/model-session/reviewer-session, id}, container{cpu_percent, memory_percent, disk_free_bytes, processes}, apis[], sessions[], limits, problems[], status (ok/degraded), assessment?, assessment_error?, taken_at |
+
 ## 5. Evals and benchmarks
 
 Each case is one file `skills/<name>/evals/cases/<case-id>.json` (`benchmark-case.v1`):
@@ -224,17 +237,25 @@ Each case is one file `skills/<name>/evals/cases/<case-id>.json` (`benchmark-cas
 
 - Tiers:
   - `deterministic`: run a script; graded by exit code, schema validity, and assertions. Runs offline in CI. **Every skill has ≥ 4.**
-  - `agentic`: `prompt` plus `fixtures[]` plus `output_schema`. A model runs with the skill loaded and must return JSON for that schema. It is graded by schema validity, assertions, and Jev `judgments[]`. **Every skill has ≥ 2.**
-  - `trigger`: `query` plus `expect_skill` (a name, or `null` for "no skill"). Graded by routing accuracy across the whole catalog. **Every skill has ≥ 3 positive and ≥ 1 negative**; negatives may name a neighbouring skill.
+  - `agentic`: `prompt` plus `fixtures[]` plus `output_schema`. A model runs with the skill loaded and must return JSON for that schema. It is graded by schema validity, assertions, and Jev `judgments[]`. **Every skill has ≥ 5, at least 1 of them tagged `guardrail`.** Fixtures resolve inside the skill's own folder.
+  - `trigger`: `query` plus `expect_skill` (a name, or `null` for "no skill"). Graded by routing accuracy across the whole catalog. **Every skill has ≥ 10, at least 2 of them with `expect_skill: null`**; other negatives may name a neighbouring skill.
+- These minimums are the person's decision ("More cases, both levels"; SPEC-105 FR-007). `skill-lab validate`
+  enforces them once SPEC-105's validator task lands in R1; until then it still checks the older, lower counts.
+- Gates: the SPEC-104 defaults in `skill-lab/benchmarks/criteria/_defaults.json` are the **floor**, per skill and
+  catalog-wide: agentic pass rate ≥ 0.80, trigger accuracy ≥ 0.90, agentic schema-valid rate ≥ 0.95, and Jev
+  uncertain rate after the re-ask < 0.10. Agentic cases tagged `guardrail` pass at 100 % per skill. A skill's
+  criteria file may raise a gate and never lower one (SPEC-105 FR-005..FR-008). Criteria files and
+  `skill-lab/benchmarks/monitor-limits.json` change only with the person's approval; agents never edit them.
 - Assertion `path` is an RFC 6901 JSON Pointer into the script's envelope (deterministic) or the
   model's JSON (agentic). `op` ∈ `eq, ne, in, not_in, contains, not_contains, regex, gte, lte, gt, lt, len_eq, len_gte, len_lte, exists, not_exists, type`.
 - A judgment is a Jev question plus a pass rule:
   `{"id", "type": "noul"|"score"|"choice", "instructions", "criteria", "state_from": ["output","prompt","fixtures","skill"], "pass_if": {"gte": 0.8} | {"eq": "label"}}`.
   Bands for noul: `pass` ≥ threshold, `uncertain` in [0.35, threshold), `fail` < 0.35. An
-  uncertain result counts as a fail and is flagged `needs_human`.
+  uncertain result is asked once more with the case's fixture contents and the skill's `SKILL.md`; a
+  second uncertain result counts as a fail and is flagged `needs_human` (SPEC-105 FR-002).
 - Never fabricate model or Jev results. Without network or keys, those tiers report
   `skipped` with a reason. Replay is allowed only from cassettes recorded by a real live run,
-  and results carry `jev_mode: "replay"`.
+  results carry `jev_mode: "replay"`, and a replayed run never counts toward a gate.
 
 ## 6. Specs, ADRs, traceability
 
@@ -265,11 +286,13 @@ Each case is one file `skills/<name>/evals/cases/<case-id>.json` (`benchmark-cas
 | SPEC-011 | `twelve-factor-audit` | audit |
 | SPEC-012 | `skill-forge` | meta |
 | SPEC-013 | `speckit-development` | speckit-gitea |
+| SPEC-014 | `run-monitor` *(planned, R1)* | control-plane (secondary `meta`) |
 | SPEC-100 | JSON contracts + `skillkit` | lab |
 | SPEC-101 | validator, sync, installer, catalog | lab |
 | SPEC-102 | benchmark runner, runtimes, graders | lab |
 | SPEC-103 | Jev grader client | lab |
 | SPEC-104 | scoring and release gates | lab |
+| SPEC-105 | Jev live benchmarking (delivered inside R1) | lab |
 | SPEC-200 | release roadmap (progressive autonomy, cloud-first inference) | release |
 | SPEC-201 | R1 Shadow mode | release |
 | SPEC-202 | R2 Agent implementation mode | release |

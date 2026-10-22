@@ -26,8 +26,10 @@ Medium/high-risk work still requires human approval" (report §Progressive auton
   (`Cazador0/skill-factory`) is always human-merged.
 - **Event-driven control plane.** `gitea-event-normalizer serve` is the live webhook gateway, built on the four
   replay-defence layers R1 already ships (SPEC-201 FR-025, refinement ledger row 2): body-SHA-256 dedupe, a freshness
-  guard on the signed `updated_at` and head SHA, events treated as hints that are re-read before any decision, and secret
-  hygiene (`GITEA_WEBHOOK_SECRET_PREVIOUS` accepted for 7 days after a rotation, digests kept 90 days). R3 adds the HTTP
+  guard on the signed `updated_at` and head SHA (an older body is `stale` and never drives a state change), events
+  treated as hints that are re-read before any decision, and secret hygiene (a random secret of at least 32 bytes,
+  TLS-only endpoint guidance, `GITEA_WEBHOOK_SECRET_PREVIOUS` accepted for 7 days after a rotation, a per-object rate
+  limit, no logging of a body that fails its signature; digests kept 90 days; the delivery ID is metadata only). R3 adds the HTTP
   transport and its bounds, acknowledgement only after a durable write, a bounded inbox, and a deterministic processor
   that routes each event to the kanban state machine, Lead dispatch, the merge gate, review invalidation, lease
   recovery, and the drift check. R3's route policy over R1's freshness verdicts makes out-of-order events (a
@@ -77,16 +79,16 @@ R3 step 5 (execute) does not start until all of these hold. T001 records each on
 
 | ID | Criterion | Evidence |
 |---|---|---|
-| E-1 | The R2 PR (SPEC-202) has an `APPROVE` `review-verdict.v1` from the independent reviewer session, accepted by `review_collect.py` (roadmap: "R3 starts only after the R2 PR does") | PR comment URL, request ID, verdict digest from R2's post-review evidence |
-| E-2 | Branch `release/r2-agent-implementation` exists on `Cazador0/skill-factory`, and its head is the reviewed commit | `git ls-remote` output |
-| E-3 | `release check --spec SPEC-202 --stage merge` reports every gate `pass` on that head. Under the person's decision that a release merges only when its live gates pass (intake Q1, Q15; SPEC-201 refinement ledger row 5), SPEC-202's live gates are merge-stage gates, so E-3 includes them | `release-gate-report.v1` |
-| E-4 | SPEC-202's live gates passed on recorded SPEC-105 runs: the run ids and `benchmark-run.v1` digests under `skill-lab/benchmarks/runs/` that the R2 reviewer read are recorded, and none of R2's live gates is `fail` or `not_run`. This replaces the earlier "pass or `not_run`" rule, because "merged, live-pending" no longer exists. If SPEC-202 as built still separates a `complete` stage, T001 records it and requires that stage to pass too | `release-gate-report.v1`; run digests |
-| E-5 | R2 deliverables R3 builds on exist under SPEC-202's names: `_skillkit.policy` (base-branch verification), `_skillkit.gitea` (endpoint table, `GiteaClient.send`), `_skillkit.gitea_memory`, `_skillkit.mutations`, `_skillkit.markers`, `_skillkit.plan_apply`, `_skillkit.leases`, `_skillkit.delivery`, `gitea-project.v1`, `review-post.v1`, `branch-protection-audit.v1`, `delivery-record.v1`, `human-signoff.v1`, `skill-lab smoke gitea`, `skill-lab signoff`, `skill-lab gate l1`, `skill-lab policy containment --level` | T002 writes `evidence/r2-alignment.json` |
+| E-1 | The R2 PR (SPEC-202) has an `APPROVE` `review-verdict.v1` from the independent reviewer session, accepted by `review_collect.py` | PR comment URL, request ID, verdict digest from R2's post-review evidence |
+| E-2 | A human merged the R2 PR into `main` of `Cazador0/skill-factory`, and the merge contains the reviewed head (the person's decision, 2026-10-22: "R3 entry = R2 merged"; synthesis D-32) | GitHub PR state, merge commit SHA, `git merge-base --is-ancestor <reviewed head> <merge commit>` |
+| E-3 | `release check --spec SPEC-202 --stage merge` reports every gate `pass` on the reviewed head. A release merges only when its live gates pass (intake Q1, Q15; SPEC-201 refinement ledger row 5), so SPEC-202's live gates are merge-stage gates and E-3 includes them | `release-gate-report.v1` |
+| E-4 | SPEC-202's live gates passed on recorded SPEC-105 runs: the run ids and `benchmark-run.v1` digests under `skill-lab/benchmarks/runs/` that SPEC-202's `evidence/live-runs.json` names and the R2 reviewer read are recorded, and none of R2's live gates is `fail` or `not_run`. If SPEC-202 as built still separates a `complete` stage, T001 records it and requires that stage to pass too | `release-gate-report.v1`; run digests |
+| E-5 | R2 deliverables R3 builds on exist under SPEC-202's names: `_skillkit.policy` (base-branch verification), `_skillkit.gitea` (endpoint table, `GiteaClient.send`), `_skillkit.gitea_memory`, `_skillkit.mutations`, `_skillkit.markers`, `_skillkit.plan_apply`, `_skillkit.leases`, `_skillkit.delivery`, `gitea-project.v1`, `review-post.v1`, `branch-protection-audit.v1`, `delivery-record.v1`, `human-signoff.v1`, `skill-lab smoke gitea`, `skill-lab signoff`, `skill-lab gate l1`, `skill-lab policy containment --level`, `skill-lab release record-run`; and the R1 deliverables R3 relies on: R1's four webhook layers (SPEC-201 FR-025) and SPEC-105's harness delivered inside R1 (`score --catalog`, `skill-lab streak`, `skill-lab report`, `run-monitor` `snapshot.py`, `prices.json`, `monitor-limits.json`) | T002 and T151 write `evidence/r2-alignment.json` |
 | E-6 | This folder's six artifacts exist, and `lead-architect` readiness on this spec reports no failing check | `spec-readiness.v1` envelope (T016) |
-| E-7 | Merge of R3 (step 8) additionally requires R2 merged to `main` by a human | GitHub PR state |
 
-E-7 gates step 8 only. Steps 5–7 may proceed while R2 waits for its human merge, because the R3 PR is stacked on the
-R2 branch (user decision).
+All six hold before step 5 starts. E-2 replaces the earlier rule that let R3 step 5 start at R2's `APPROVE` with the R3 PR
+stacked on the R2 branch: R3 now starts from `main` at the R2 merge commit, and the R3 PR targets `main` from the start
+(synthesis.md D-32, Q-4 resolved).
 
 ## 4. Exit criteria
 
@@ -106,8 +108,8 @@ ready" and Q15, applied to every release by SPEC-201 refinement ledger row 5). "
   and `review_collect.py` accepted it (G-POST-02). The reviewer used recorded evidence only, held no Ollama or TypeSafe
   keys, said so in its verdict, and posted its own `run-health.v1` report as a separate marked comment (SPEC-105
   FR-023, research R-12). At most 3 review rounds; after round 3 the person decides.
-- X-4: offline CI on the PR head is green (G-POST-01; live tiers run only when started manually), R2 is merged, and a
-  human merged R3.
+- X-4: offline CI on the PR head is green (G-POST-01; live tiers run only when started manually), and a human merged
+  R3 (R2 was merged before R3 started, E-2).
 - X-5: the live Gitea merge smoke stage (RT-02) is **not** an exit criterion, because the user decided "test double
   now, live later". It is enforced at runtime: the client refuses `gitea.pr.merge_when_checks_succeed` against any
   non-loopback host until a passing `smoke-report.v1` with stage `merge` exists for that host and Gitea version.
@@ -129,7 +131,7 @@ Script names are SPEC-201's and SPEC-202's. R3 enables their guarded paths or ad
 | speckit-gitea-sync | `sync_drift.py --on-event --apply`: drift check on issue and base-branch events, R2 comment plan once, drift state that dispatch honours | Rewriting specs or the map (never) |
 | kanban-state-machine | `labels_plan.py --on-event\|--reconcile --apply` as `system`: observed-fact transitions recomputed from live state | Role-owned work transitions by `system`; project columns |
 | work-lease | `lease.py recover\|takeover\|expired`: recovery protocol R-0..R-9, takeover gated by a fresh `lease-recovery.v1`, orchestration lease for the gateway; TTL and grace constants | Multi-host lease authority |
-| gitea-event-normalizer | `normalize.py serve\|ingest\|process\|reconcile\|status`: the webhook gateway, the event processor with the fixed routing table, and the ordering guard | Creating webhooks in Gitea (`gitea.webhook.create` stays `human-only`) |
+| gitea-event-normalizer | `normalize.py serve\|ingest\|process\|reconcile\|status`: the webhook gateway on R1's four replay-defence layers (called, not re-implemented), the event processor with the fixed routing table, and the route policy over R1's `stale` flag and R3's `stale_commit` verdict | Creating webhooks in Gitea (`gitea.webhook.create` stays `human-only`); re-implementing R1's layers |
 | merge-policy-gate | `merge_decision.py` at `guarded-autonomous` (13 evidence gates, 6 caps, `AUTO_MERGE` for low risk only, decision records at every level); `merge_plan.py --apply\|--evaluate\|--evaluate-open\|--cancel\|--cancel-if-head-differs\|--cancel-all\|--sweep-expired\|--reevaluate-open`; `branch_audit.py` requires BP-09 at this level; new `autonomy_scorecard.py` and `autonomy_guard.py detect\|evaluate\|demote\|audit-merge` | Auto-merge of medium, high, or critical risk; auto-promotion; any merge of the factory repository |
 | session-checkpoint | `checkpoint.py resume-plan --recovery` (checks `pr_state`, `descendant_of_checkpoint`, `commit_attribution`, `push_receipts_match`), consumed by lease recovery | — |
 | twelve-factor-audit | No change (re-validated) | — |
@@ -156,15 +158,15 @@ Script names are SPEC-201's and SPEC-202's. R3 enables their guarded paths or ad
 
 | ID | Milestone | Contents (tasks.md phases) | Done when |
 |---|---|---|---|
-| M0 | Entry | Phase 1 (T001–T016) | E-1..E-6 recorded; R2 alignment and Gitea facts recorded |
-| M1 | Foundation | Phase 2 (T017–T059): contracts, policy clamp, promotion, latch, authority, autonomy and merge-policy modules, client rows, double semantics and webhooks, leases and recovery, gateway and event loop, git helpers, lab commands, fixtures | Phase 2 tests green; `sync --check` clean |
+| M0 | Entry | Phase 1 (T001–T016, T151) | E-1..E-6 recorded (R2 merged); R2, R1, and SPEC-105 alignment (X-1..X-15) and Gitea facts recorded |
+| M1 | Foundation | Phase 2 (T017–T059, T154): contracts, policy clamp, promotion, latch, authority, autonomy and merge-policy modules, client rows, double semantics and webhooks, leases and recovery, gateway and event loop, git helpers, lab commands including the SPEC-105 live-gate evaluation, fixtures | Phase 2 tests green; `sync --check` clean |
 | M2 | MVP: guarded auto-merge on the double | Phase 3 (US1) | `test_r3_us1_auto_merge.py` green |
 | M3 | Gateway | Phase 4 (US2) | `test_r3_us2_gateway.py` green |
 | M4 | Ordering and event-driven board | Phase 5 (US3) | `test_r3_us3_ordering.py` green (all permutations) |
 | M5 | Demotion and promotion | Phase 6 (US4) | `test_r3_us4_demotion.py` green |
 | M6 | Recovery, dispatch, stale heads | Phases 7–9 (US5–US7) | US5–US7 integration tests green |
 | M7 | Verification suites | Phase 10 (US8) | `afv-report.v1` meets minimums; soak 0 violations |
-| M8 | Release candidate | Phase 11 and Phase 12 up to T141 | every offline merge-stage gate passes; converge 0 findings |
+| M8 | Release candidate | Phase 11 (T129–T132, T155) and Phase 12 up to T141 | every offline merge-stage gate passes; converge 0 findings |
 | M-LIVE | Live gates | T142 (3 consecutive counting SPEC-105 runs) when keys and network exist; T143 when a Gitea sandbox is configured | G-LIVE-01..08 pass; required before the PR body and the review (T144), because R3 merges only when its live gates pass. RT-02 unlocks live auto-merge per host |
 | M9 | PR, review, merge | T144–T150, T152, T153 | X-1..X-4 |
 | M-PROMO | First project promotion (human; outside tasks.md) | runbook `skill-lab/docs/runbooks/autonomy-promotion.md` | P-1..P-8 eligible, signed, human-merged; `skill-lab autonomy status` shows `guarded-autonomous` |
@@ -176,20 +178,20 @@ The roadmap's eight steps, made concrete for R3. Steps 5–8 follow SPEC-201's `
 | Step | What happens in R3 | Artifact | Who |
 |---|---|---|---|
 | 1 Plan | This document | `release-plan.md` | Lead (planning session) |
-| 2 Synthesize | Findings F-1..F-44, decisions D-1..D-31, cross-release findings X-1..X-15, verifications V-1..V-11, risks, questions Q-1..Q-14 (Q-4 and Q-9 resolved by the person's answers) | `synthesis.md` | Lead |
+| 2 Synthesize | Findings F-1..F-44, decisions D-1..D-32, cross-release findings X-1..X-15, verifications V-1..V-11, risks, questions Q-1..Q-14 (Q-4, Q-9, and Q-2 (b) resolved by the person's answers; Q-12..Q-14 open) | `synthesis.md` | Lead |
 | 3 Tasks as spec | FRs, SCs, gates, contracts, autonomy policy; dependency-ordered tasks | `spec.md`, `tasks.md`, `traceability.json` | Lead |
 | 4 Implementation plan | Technical context, constitution check, exact files, decision function, routing table, recovery rules, test and benchmark strategy, rollout and rollback | `plan.md` | Lead |
-| 5 Execute | Work happens in a checkout of `Cazador0/skill-factory` on branch `release/r3-guarded-autonomous`, created from the `release/r2-agent-implementation` head. `/speckit-development` (the R2 build, running at `shadow` against the factory repository) drives `tasks.md` in dependency order: one task per step, marked `[x]` only with passing `check-run` evidence, then converge until 0 findings. Evidence goes to `skill-lab/specs/203-release-guarded-autonomous/evidence/`. The new guarded capabilities are exercised only against the Gitea test double, plus a sandbox Gitea repository when one is configured, **never** against the factory repository | Code, tests, evals, evidence | PSE sessions, orchestrated |
-| 6 Pull request | `pr_body.py` renders `evidence/pr-body.md`; `export-repo` builds and checks the standalone tree; `delivery_plan.py` with forge `github` writes `evidence/pr-request.json`. The orchestrator, not a skill (SPEC-202 D-4), pushes `release/r3-guarded-autonomous` and opens a PR with base `release/r2-agent-implementation` (stacked), then posts the `skill-lab report` comment of each streak run and the streak record on the PR (SPEC-105 FR-018; T153). CI on the factory runs only the offline tiers on every PR; live tiers run only when started manually | GitHub PR | Orchestrator |
+| 5 Execute | Work happens in a checkout of `Cazador0/skill-factory` on branch `release/r3-guarded-autonomous`, created from `main` at the R2 merge commit (E-2). `/speckit-development` (the R2 build, running at `shadow` against the factory repository) drives `tasks.md` in dependency order: one task per step, marked `[x]` only with passing `check-run` evidence, then converge until 0 findings. Evidence goes to `skill-lab/specs/203-release-guarded-autonomous/evidence/`. The new guarded capabilities are exercised only against the Gitea test double, plus a sandbox Gitea repository when one is configured, **never** against the factory repository | Code, tests, evals, evidence | PSE sessions, orchestrated |
+| 6 Pull request | `pr_body.py` renders `evidence/pr-body.md`; `export-repo` builds and checks the standalone tree; `delivery_plan.py` with forge `github` writes `evidence/pr-request.json`. The orchestrator, not a skill (SPEC-202 D-4), pushes `release/r3-guarded-autonomous` and opens a PR with base `main`, then posts the `skill-lab report` comment of each streak run and the streak record on the PR (SPEC-105 FR-018; T153). CI on the factory runs only the offline tiers on every PR; live tiers run only when started manually | GitHub PR | Orchestrator |
 | 7 Review | `review_request.py` writes `review-request.v1` (forge `github`, round 1) carrying the digests of the 3 streak runs and of the `benchmark-streak.v1` record. The orchestrator creates a separate Claude Code cloud session with `create_session` on the release branch; its environment holds no Ollama or TypeSafe keys. That session loads `.claude/skills/review-verifier`, rebuilds the requirements matrix from this `spec.md`, re-runs the offline merge-stage gates, re-computes the live gates offline from the committed runs (recorded evidence only; it never re-runs a live case and says so in its verdict), runs merge-policy-gate on the diff (expects `critical`, `HUMAN_APPROVAL_REQUIRED`, `FACTORY_REPOSITORY`), posts a `review-verdict.v1` comment with R1's marker, and posts its own `run-health.v1` snapshot as a separate comment marked `<!-- skill-lab:run-health:v1 request_id=<id> -->` (SPEC-105 FR-023). If no cloud session can be created, R1's `review_local.py` (`claude -p --json-schema`) is the fallback, and the verdict records `mode: cli-fallback`. `review_collect.py` accepts the verdict. At most 3 rounds; after round 3 the person decides | PR comments | Independent reviewer |
-| 8 Merge | `release check --stage post-review` passes (CI green, verdict collected). Once R2 is merged and `release/r2-agent-implementation` is gone, the orchestrator retargets the base to `main` (`gh pr edit --base main`); if the diff changed, step 7 runs again. A human merges. No agent and no R3 code path merges the factory repository | Merged PR | Human |
+| 8 Merge | `release check --stage post-review` passes (CI green, verdict collected), and the merge-stage report passes every offline and live gate on the reviewed head; if the diff changed after the reviewed head, step 7 runs again (a change to any `SKILL.md` or eval case also restarts the live streak, T142). A human merges. No agent and no R3 code path merges the factory repository | Merged PR | Human |
 
 ## 9. Release branch and naming
 
 | Item | Value | Note |
 |---|---|---|
-| Release branch | `release/r3-guarded-autonomous` | Created from `release/r2-agent-implementation` |
-| PR base | `release/r2-agent-implementation` (stacked); `main` after R2 merges | User decision |
+| Release branch | `release/r3-guarded-autonomous` | Created from `main` at the R2 merge commit (E-2) |
+| PR base | `main` | R3 starts only after R2 is merged (the person's decision, 2026-10-22: "R3 entry = R2 merged"; synthesis D-32), so the earlier stacked base `release/r2-agent-implementation` is not used |
 | Agent branches produced by the skills | `agent/pse/<issue>-<slug>` in the Gitea target repository; rebased in place by the leased PSE | Report: "Recommended branch format" |
 | Evidence folder | `skill-lab/specs/203-release-guarded-autonomous/evidence/` | Created during step 5; evidence produced at or after the reviewed head stays out of the branch (SPEC-201 D-17) |
 | Live run results | `skill-lab/benchmarks/runs/<run_id>/` (committed: results, run summary, run log, 14 health reports, PR comment) | SPEC-105 FR-015 and SPEC-201 refinement set 2: R3 evidence points at each run by digest (`evidence/live-runs.json`) instead of copying it |

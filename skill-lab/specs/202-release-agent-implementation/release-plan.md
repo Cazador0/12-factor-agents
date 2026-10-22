@@ -34,12 +34,16 @@ mechanically checked boundaries:
   must pass on `--runtime ollama-local`. Every Zed profile keeps provider `ollama` at `http://localhost:11434`: the local
   Ollama app, signed in to ollama.com, serves the cloud models in R1. L1 switches the profile model ids to local models
   on that same provider.
+- **Run monitoring on local runs.** `run-monitor` (skill 14, SPEC-014) gets one option, `snapshot.py --host-metrics off`,
+  which bench passes on `--runtime ollama-local` runs. Those run on the person's machine, and the person did not choose
+  to monitor it (intake Q19); whether to monitor it stays the person's decision (Q-10).
 
 Everything runs offline against the Gitea 28.x test double first. Live Gitea writes start only when `GITEA_URL` and
 `GITEA_TOKEN` are present and the smoke test has passed. The live benchmark gates need `OLLAMA_API_KEY` and
 `TYPESAFE_API_KEY` (or `JEV_API_KEY`), and no live result is ever fabricated. The R2 PR merges only after its live gates
 pass on one fully passing counting live run of the R2 suite. There is no "merged, live-pending" state (the person's
-decision: intake Q1 and Q15, SPEC-201 refinement ledger row 5).
+decision: intake Q1 and Q15, SPEC-201 refinement ledger row 5). R2 starts only after R1 is merged, with R1's independent
+`APPROVE` and its live gates passed, and R3 starts only after R2 is merged (the person's decision, 2026-10-22).
 
 ## 2. Release goals
 
@@ -65,15 +69,15 @@ R2 step 5 (execute) does not start until all of these hold. T001 records each on
 
 | ID | Criterion | Evidence |
 |---|---|---|
-| E-1 | The R1 PR (SPEC-201) has an `APPROVE` `review-verdict.v1` from the independent reviewer session, accepted by `review_collect.py` (roadmap: "R2 starts only after the R1 PR has an APPROVE verdict") | PR comment URL, request ID, verdict digest (copied from R1's post-review evidence) |
-| E-2 | Branch `release/r1-shadow` exists on `Cazador0/skill-factory`, and its head is the reviewed commit | `git ls-remote` output |
+| E-1 | The R1 PR (SPEC-201) has an `APPROVE` `review-verdict.v1` from the independent reviewer session, accepted by `review_collect.py` (roadmap: "R2's entry is R1 merged, with an `APPROVE` verdict from the independent reviewer and R1's live gates passed") | PR comment URL, request ID, verdict digest (copied from R1's post-review evidence) |
+| E-2 | A human merged the R1 PR into `main` of `Cazador0/skill-factory`, and the merge contains the reviewed head (the person's decision, 2026-10-22: "R2 entry = R1 merged with APPROVE and live gates passed") | GitHub PR state, merge commit SHA, `git merge-base --is-ancestor <reviewed head> <merge commit>` |
 | E-3 | R1's `release check --spec SPEC-201 --stage merge` reports every gate `pass` on that head. R1's merge stage includes its live gate: one fully passing counting live run (SPEC-105 FR-009) | `release-gate-report.v1` |
 | E-4 | R1 deliverables R2 builds on exist under the names SPEC-201 gives them: `_skillkit.policy` (catalog of 34 actions, `SUPPORTED_MAX_LEVEL`), `_skillkit.gitea` (`GiteaClient.send`), `_skillkit.gitrepo`, `_skillkit.checks` (`check-run.v1`), the read-only Gitea double, the containment harness, `release check`, `export-repo`, and the scripts listed in §5. Also SPEC-105's harness, delivered inside R1: the floor gates in `skill-lab/benchmarks/criteria/_defaults.json` with `score --catalog`, the Jev re-ask, outage classification, `skill-lab streak` (`benchmark-streak.v1`), `skill-lab report`, the run log, `run-monitor` `snapshot` (`run-health.v1`, skill 14), runs committed under `skill-lab/benchmarks/runs/`, `prices.json`, and `monitor-limits.json` | T005 writes `evidence/r1-alignment.json` |
 | E-5 | This folder's six artifacts exist, and `lead-architect` readiness on this spec reports no failing check | `spec-readiness.v1` envelope (T006) |
-| E-6 | Merge of R2 (step 8) additionally requires R1 merged to `main` by a human | GitHub PR state |
 
-E-6 gates step 8 only. Steps 5–7 may proceed while R1 waits for its human merge, because the R2 PR is stacked on the
-R1 branch (user decision), which matches R1's own plan (SPEC-201 release-plan §4).
+All five hold before step 5 starts. R2 no longer overlaps R1's human merge, so the R2 branch starts from `main` at the R1
+merge commit, and the R2 PR targets `main` from the start. The earlier stacked base (`release/r1-shadow`) is no longer
+needed (synthesis.md §8, row 4).
 
 ## 4. Exit criteria
 
@@ -86,19 +90,21 @@ on 2026-10-22. Wherever SPEC-200 or SPEC-203 says "R2 complete", it means R2 mer
 
 - X-1: `release check --spec SPEC-202 --stage merge` reports every gate G-OFF-01..G-OFF-23 and G-LIVE-01..G-LIVE-07
   `pass`. The live gates are computed from one fully passing counting live run of the R2 suite, committed under
-  `skill-lab/benchmarks/runs/<run_id>/` and named by run id and digest in `evidence/live-run.json` (FR-047).
+  `skill-lab/benchmarks/runs/<run_id>/` and named by run id and digest in `evidence/live-runs.json`, which
+  `skill-lab release record-run` writes (FR-046, FR-047).
 - X-2: converge reports 0 findings against this spec, plan, and tasks (G-OFF-23).
 - X-3: a separate Claude Code cloud session posted an `APPROVE` `review-verdict.v1` on the R2 PR, and `review_collect.py`
   accepted it (G-POST-02). The reviewer used recorded evidence only and held no Ollama or TypeSafe keys, and it posted
   its own `run-health.v1` report as a separate marked PR comment (SPEC-105 FR-023, R-12).
-- X-4: CI on the PR head is green (G-POST-01), R1 is merged, and a human merged R2.
-- X-5: there is no "merged, live-pending" state. A live gate that is `not_run` or `fail` keeps the PR open. R3 step 5 may
-  start at R2's independent `APPROVE` with every merge-stage gate `pass`, which now includes the live gates (D-20).
+- X-4: CI on the PR head is green (G-POST-01; offline CI on every PR, live tiers only when started manually), and a
+  human merged R2.
+- X-5: there is no "merged, live-pending" state. A live gate that is `not_run` or `fail` keeps the PR open. R3 starts
+  only after R2 is merged (the person's decision, 2026-10-22; D-20).
 
 **Outside the exit criteria**:
 
-- X-6: L1 is not an exit criterion. It is milestone M-L1 on the inference track, which runs in parallel with R3
-  (roadmap sequencing diagram). Its gate record must be honest: `NOT_ENABLED` with reasons is a valid record.
+- X-6: L1 is not an exit criterion. It is milestone M-L1 on the inference track, which by default runs in parallel
+  with R3 (roadmap sequencing diagram; Q-5 is still open). Its gate record must be honest: `NOT_ENABLED` with reasons is a valid record.
 - X-7: the live Gitea smoke test (RT-01) is not an exit criterion either, because the user decided "test double now,
   live later". It is enforced at runtime instead: the Gitea client refuses consequential writes to any non-loopback
   host until a passing `smoke-report.v1` for that host exists (FR-041).
@@ -152,7 +158,7 @@ Script names are SPEC-201's. R2 enables their `--apply` paths, or adds the few n
 | M3 | Review and merge gate | Phase 4 (US2) | `test_r2_us2_review_merge.py` green |
 | M4 | Lead drives the board | Phase 5 (US3) | `test_r2_us3_lead_board.py` green |
 | M5 | End-to-end delivery | Phase 6 (US4) | Golden end-to-end and resume tests green |
-| M6 | L1 mechanism and live smoke test | Phases 7 and 8 (US5, US6) | Gate matrix, installer, and smoke-against-double tests green |
+| M6 | L1 mechanism, local monitoring, and live smoke test | Phases 7 and 8 (US5, US6), including T143–T144 | Gate matrix, installer, host-metrics-off, and smoke-against-double tests green |
 | M7 | Release candidate | Phase 9: ADRs, CONVENTIONS, configs, validator rule, gates, live-gate evaluation, catalog, traceability, offline gates, converge | Every G-OFF gate passes (T134); converge has 0 findings |
 | M-LIVE | Live gates | T135 and T145 (required for the merge; they need keys and network); T136 when Gitea is configured | G-LIVE-01..G-LIVE-07 `pass` (part of X-1); RT-01 unlocks live writes |
 | M8 | PR, review, merge | Phase 9 tail (T138, T139, T146, T140–T142) | X-1..X-5 |
@@ -165,30 +171,30 @@ The roadmap's eight steps, made concrete for R2. Steps 5–8 follow SPEC-201's `
 | Step | What happens in R2 | Artifact | Who |
 |---|---|---|---|
 | 1 Plan | This document | `release-plan.md` | Lead (planning session) |
-| 2 Synthesize | Findings F-1..F-44, decisions D-1..D-29, verifications V-1..V-7, risks, open questions Q-1..Q-10 (Q-3, Q-7, Q-8 resolved), alignment ledger | `synthesis.md` | Lead |
+| 2 Synthesize | Findings F-1..F-45, decisions D-1..D-29, verifications V-1..V-7, risks, open questions Q-1..Q-10 (Q-3, Q-7, Q-8 resolved), alignment ledger | `synthesis.md` | Lead |
 | 3 Tasks as spec | FRs, SCs, gates, contracts, autonomy policy; dependency-ordered tasks | `spec.md`, `tasks.md`, `traceability.json` | Lead |
 | 4 Implementation plan | Technical context, constitution check, exact files, endpoint table, test and benchmark strategy, rollout and rollback | `plan.md` | Lead |
-| 5 Execute | Work happens in a checkout of `Cazador0/skill-factory` on branch `release/r2-agent-implementation`, created from the `release/r1-shadow` head. `/speckit-development` drives `tasks.md` in dependency order. It is the R1 build, running at `shadow` against the factory repository: one task per step, marked `[x]` only with passing `check-run` evidence, and converge until 0 findings. Evidence goes to `skill-lab/specs/202-release-agent-implementation/evidence/`. The live gate run (T135) is committed under `skill-lab/benchmarks/runs/<run_id>/` and named by digest in `evidence/live-run.json`. CI runs only the offline gates on every PR; live benchmarks run only when started manually. The new R2 write capabilities are exercised only against the Gitea test double, plus a sandbox Gitea repository when one is configured, never against the factory repository | Code, tests, evals, evidence | PSE sessions, orchestrated |
-| 6 Pull request | `pr_body.py` renders `evidence/pr-body.md`, and `export-repo` builds and checks the standalone tree. `delivery_plan.py --step pr --forge github` (no `--apply`; the factory repository runs at `shadow`) writes `evidence/pr-request.json`. The orchestrator, not a skill (D-4), pushes `release/r2-agent-implementation` and opens a PR with base `release/r1-shadow` (stacked). It then posts the live scores rendered by `skill-lab report --run <run>` as a PR comment (SPEC-105 FR-018) | GitHub PR | Orchestrator |
+| 5 Execute | Work happens in a checkout of `Cazador0/skill-factory` on branch `release/r2-agent-implementation`, created from `main` at the R1 merge commit (E-2). `/speckit-development` drives `tasks.md` in dependency order. It is the R1 build, running at `shadow` against the factory repository: one task per step, marked `[x]` only with passing `check-run` evidence, and converge until 0 findings. Evidence goes to `skill-lab/specs/202-release-agent-implementation/evidence/`. The live gate run (T135) is committed under `skill-lab/benchmarks/runs/<run_id>/` and named by digest in `evidence/live-runs.json` (`skill-lab release record-run`); T145 then evaluates every merge-stage gate, live ones included. CI runs only the offline gates on every PR; live benchmarks run only when started manually. The new R2 write capabilities are exercised only against the Gitea test double, plus a sandbox Gitea repository when one is configured, never against the factory repository | Code, tests, evals, evidence | PSE sessions, orchestrated |
+| 6 Pull request | `pr_body.py` renders `evidence/pr-body.md`, and `export-repo` builds and checks the standalone tree. `delivery_plan.py --step pr --forge github` (no `--apply`; the factory repository runs at `shadow`) writes `evidence/pr-request.json`. The orchestrator, not a skill (D-4), pushes `release/r2-agent-implementation` and opens a PR with base `main`. It then posts the live scores rendered by `skill-lab report --run <run>` as a PR comment (SPEC-105 FR-018; T146) | GitHub PR | Orchestrator |
 | 7 Review | `review_request.py` writes `review-request.v1` (forge `github`, round 1). The orchestrator creates a separate Claude Code cloud session with `create_session` on the release branch. The review request carries the live run's digest. That session holds no Ollama or TypeSafe keys. It loads `.claude/skills/review-verifier`, rebuilds the requirements matrix from this `spec.md`, re-runs `release check --stage merge` (whose live gates read only the committed run, FR-047, so it re-runs no live case and says so in its verdict), runs merge-policy-gate on the diff (expects `critical`), and posts a `review-verdict.v1` comment with R1's marker. It also runs `run-monitor` `snapshot --target reviewer-session` in its own container and posts the `run-health.v1` report as a separate comment marked `<!-- skill-lab:run-health:v1 request_id=<id> -->` (SPEC-105 FR-023, R-12). If no cloud session can be created, R1's `review_local.py` (`claude -p --json-schema`) is the fallback, and the verdict records `mode: cli-fallback`. `review_collect.py` accepts the verdict. At most 3 rounds; after that the person decides | PR comments | Independent reviewer |
-| 8 Merge | `release check --stage post-review` passes (CI green, verdict collected). Once R1 is merged and `release/r1-shadow` is gone, the orchestrator retargets the base to `main` (`gh pr edit --base main`); if the diff changed, step 7 runs again. A fix that changes any SKILL.md or eval case changes the suite digest, so a new counting live run of the changed suite is needed before the next review round. A human merges | Merged PR | Human |
+| 8 Merge | `release check --stage post-review` passes (CI green, verdict collected). If the diff changed after the reviewed head, step 7 runs again. A fix that changes any SKILL.md or eval case changes the suite digest, so a new counting live run of the changed suite is needed before the next review round. A human merges | Merged PR | Human |
 
 ## 9. Release branch and naming
 
 | Item | Value | Note |
 |---|---|---|
-| Release branch | `release/r2-agent-implementation` | Created from `release/r1-shadow` (SPEC-201 release-plan §9) |
-| PR base | `release/r1-shadow` (stacked); `main` after R1 merges | User decision |
+| Release branch | `release/r2-agent-implementation` | Created from `main` at the R1 merge commit (E-2) |
+| PR base | `main` | R2 starts only after R1 is merged (the person's decision, 2026-10-22), so the earlier stacked base `release/r1-shadow` is not used |
 | PSE branches produced by the skills | `agent/pse/<issue>-<slug>` in the Gitea target repository | Report: "Recommended branch format" |
 | Evidence folder | `skill-lab/specs/202-release-agent-implementation/evidence/` | Created during step 5. Evidence produced at or after the reviewed head (review request, verdict, post-review gate report) stays out of the branch and lives in the PR thread (SPEC-201 D-17) |
 | Gate definitions | `skill-lab/specs/202-release-agent-implementation/gates.json` | `release-gates.v1` (SPEC-201) |
-| Live run results | `skill-lab/benchmarks/runs/<run_id>/` (committed, SPEC-105 FR-015) | `evidence/live-run.json` names the gate run by run id and digest (SPEC-201 refinement, set 2) |
+| Live run results | `skill-lab/benchmarks/runs/<run_id>/` (committed, SPEC-105 FR-015) | `evidence/live-runs.json` names each gate run by run id and digest, never a copy (SPEC-201 refinement, set 2; FR-046) |
 | ADR numbers | ADR-0201..ADR-0207 used; 0201–0209 reserved for R2 | R1 uses 0101–0109; R3 is expected to use 0301–0309 |
 
 ## 10. Milestone M-L1 procedure (local inference, outside the task graph)
 
-M-L1 runs after R2's mechanism exists (Phase 7) and live cloud runs are possible (T135). It runs in parallel with R3 and
-never blocks the R2 merge or R3 (X-6). It sits outside `tasks.md`: under SPEC-201's wave rule, a story phase that waits on
+M-L1 runs after R2's mechanism exists (Phase 7) and live cloud runs are possible (T135). By default it runs in parallel
+with R3 and never blocks the R2 merge or R3 (X-6; Q-5 is still open). It sits outside `tasks.md`: under SPEC-201's wave rule, a story phase that waits on
 Polish would form a cycle, and its artefacts cannot exist at merge time. Every command records evidence, and none
 fabricates a result. The streak rules are SPEC-105's (FR-010..FR-012), so this procedure adds no second definition of
 "reliable".

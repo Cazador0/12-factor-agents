@@ -115,7 +115,8 @@
       "verified_by": [
         "skill-lab/tests/test_validate_policy.py::TestPolicyActionKnown::test_unknown_literal_action_is_error",
         "skill-lab/tests/test_validate_policy.py::TestEvalInventory::test_missing_refusal_coverage_is_error",
-        "skill-lab/tests/test_policy.py::TestRefusals::test_one_error_per_refused_action"
+        "skill-lab/tests/test_policy.py::TestRefusals::test_one_error_per_refused_action",
+        "skill-lab/tests/test_validate_policy.py::TestEvalInventory::test_counts_per_skill"
       ],
       "planned": true
     },
@@ -141,7 +142,9 @@
       "verified_by": [
         "skill-lab/tests/test_config_rules.py::TestPolicyFileRules::test_zed_denies_policy_file_edits",
         "skill-lab/tests/test_config_rules.py::TestPolicyFileRules::test_claude_denies_policy_file_edits",
-        "skills/merge-policy-gate/evals/cases/policy-file-change-is-critical.json"
+        "skills/merge-policy-gate/evals/cases/policy-file-change-is-critical.json",
+        "skill-lab/tests/test_config_rules.py::TestPolicyFileRules::test_criteria_and_monitor_limits_edits_denied",
+        "skills/merge-policy-gate/tests/test_merge_decision.py::TestRiskClass::test_criteria_and_monitor_limits_are_critical"
       ],
       "planned": true
     },
@@ -173,12 +176,14 @@
         "skill-lab/contracts/schemas/mutation-request.v1.schema.json",
         "skill-lab/contracts/schemas/gitea-plan.v1.schema.json",
         "skill-lab/contracts/schemas/implementation-evidence.v1.schema.json",
-        "skill-lab/contracts/schemas/merge-decision.v1.schema.json"
+        "skill-lab/contracts/schemas/merge-decision.v1.schema.json",
+        "skill-lab/contracts/schemas/normalized-event.v1.schema.json"
       ],
       "verified_by": [
         "skill-lab/tests/test_contracts_r1.py::TestR1Contracts::test_examples_valid_and_invalid",
         "skill-lab/tests/test_contracts_r1.py::TestR1Contracts::test_schemas_use_subset_only",
-        "skill-lab/tests/test_sync_r1.py::TestSyncR1::test_new_schemas_vendored"
+        "skill-lab/tests/test_sync_r1.py::TestSyncR1::test_new_schemas_vendored",
+        "skill-lab/tests/test_contracts_r1.py::TestR1Contracts::test_normalized_event_additive_fields"
       ],
       "planned": true
     },
@@ -216,7 +221,9 @@
         "skill-lab/tests/test_checks.py::TestChecks::test_secret_env_removed",
         "skill-lab/tests/test_checks.py::TestChecks::test_denylisted_command_never_starts",
         "skill-lab/tests/test_checks.py::TestChecks::test_timeout_status",
-        "skill-lab/tests/test_checks.py::TestChecks::test_log_digest_matches"
+        "skill-lab/tests/test_checks.py::TestChecks::test_log_digest_matches",
+        "skill-lab/tests/test_skillkit_redact.py::TestRedact::test_previous_webhook_secret_masked",
+        "skill-lab/tests/test_checks.py::TestChecks::test_webhook_secrets_removed"
       ],
       "planned": true
     },
@@ -323,7 +330,8 @@
       "verified_by": [
         "skills/kanban-state-machine/tests/test_transition.py::TestNextAction::test_report_branches",
         "skills/kanban-state-machine/evals/cases/review-changes-requested-returns-to-pse.json",
-        "skill-lab/tests/integration/test_us6_events_flow.py::TestUS6::test_scenarios"
+        "skill-lab/tests/integration/test_us6_events_flow.py::TestUS6::test_scenarios",
+        "skills/kanban-state-machine/tests/test_transition_events.py::TestEventHints::test_decision_follows_reread_state"
       ],
       "planned": true
     },
@@ -346,13 +354,26 @@
       "implemented_by": [
         "skills/gitea-event-normalizer/scripts/normalize.py",
         "skills/gitea-event-normalizer/SKILL.md",
-        "skills/gitea-event-normalizer/references/event-types.md"
+        "skills/gitea-event-normalizer/references/event-types.md",
+        "skills/gitea-event-normalizer/references/webhook-hygiene.md",
+        "skill-lab/shared/_skillkit/redact.py"
       ],
       "verified_by": [
         "skills/gitea-event-normalizer/tests/test_normalize.py::TestNormalize::test_tampered_body_fails",
-        "skills/gitea-event-normalizer/tests/test_normalize.py::TestNormalize::test_duplicate_delivery",
+        "skills/gitea-event-normalizer/tests/test_normalize.py::TestNormalize::test_every_vocabulary_entry",
+        "skills/gitea-event-normalizer/tests/test_normalize_layers.py::TestBodyDigestDedupe::test_same_body_new_delivery_id_is_duplicate",
+        "skills/gitea-event-normalizer/tests/test_normalize_layers.py::TestBodyDigestDedupe::test_reused_delivery_id_new_body_is_not_duplicate",
+        "skills/gitea-event-normalizer/tests/test_normalize_layers.py::TestFreshness::test_older_updated_at_is_stale",
+        "skills/gitea-event-normalizer/tests/test_normalize_layers.py::TestFreshness::test_pr_head_change_at_same_updated_at_is_stale",
+        "skills/gitea-event-normalizer/tests/test_normalize_layers.py::TestHygiene::test_previous_secret_window_seven_days",
+        "skills/gitea-event-normalizer/tests/test_normalize_layers.py::TestHygiene::test_short_secret_refused",
+        "skills/gitea-event-normalizer/tests/test_normalize_layers.py::TestHygiene::test_rate_limit_per_object",
+        "skills/gitea-event-normalizer/tests/test_normalize_layers.py::TestHygiene::test_failed_signature_leaks_nothing",
+        "skills/gitea-event-normalizer/tests/test_normalize_layers.py::TestHygiene::test_digests_pruned_after_90_days",
+        "skills/gitea-event-normalizer/tests/test_normalize_layers.py::TestHygiene::test_hygiene_reference_sections",
         "skills/gitea-event-normalizer/evals/cases/tampered-body.json",
-        "skills/gitea-event-normalizer/tests/test_normalize.py::TestNormalize::test_every_vocabulary_entry"
+        "skills/gitea-event-normalizer/evals/cases/duplicate-body.json",
+        "skills/gitea-event-normalizer/evals/cases/stale-body.json"
       ],
       "planned": true
     },
@@ -468,10 +489,17 @@
         "skill-lab/specs/010-session-checkpoint/spec.md",
         "skill-lab/specs/011-twelve-factor-audit/spec.md",
         "skill-lab/specs/012-skill-forge/spec.md",
-        "skill-lab/specs/013-speckit-development/spec.md"
+        "skill-lab/specs/013-speckit-development/spec.md",
+        "skills/run-monitor/SKILL.md",
+        "skill-lab/specs/014-run-monitor/spec.md",
+        "skill-lab/shared/_skillkit/frontmatter.py",
+        "skill-lab/lab/catalog.py"
       ],
       "verified_by": [
-        "skill-lab/tests/test_skills_r1.py::TestSkillsR1::test_all_skills_validate_and_carry_spec_ids"
+        "skill-lab/tests/test_skills_r1.py::TestSkillsR1::test_all_skills_validate_and_carry_spec_ids",
+        "skill-lab/tests/test_skillkit_frontmatter.py::TestMetadata::test_secondary_family",
+        "skill-lab/tests/test_lab_core_catalog.py::TestCatalog::test_secondary_family_listed_under_both",
+        "skill-lab/tests/test_skills_r1.py::TestSkillsR1::test_run_monitor_families"
       ],
       "planned": true
     },
@@ -491,12 +519,15 @@
         "skill-lab/benchmarks/criteria/session-checkpoint.json",
         "skill-lab/benchmarks/criteria/twelve-factor-audit.json",
         "skill-lab/benchmarks/criteria/skill-forge.json",
-        "skill-lab/benchmarks/criteria/speckit-development.json"
+        "skill-lab/benchmarks/criteria/speckit-development.json",
+        "skill-lab/benchmarks/criteria/run-monitor.json",
+        "skill-lab/lab/validate.py"
       ],
       "verified_by": [
         "skill-lab/tests/test_validate_policy.py::TestEvalInventory::test_counts_per_skill",
         "skill-lab/tests/test_skills_r1.py::TestSkillsR1::test_inventory_and_criteria_present",
-        "skill-lab/tests/test_skills_r1.py::TestSkillsR1::test_criteria_replace_spec104_rate_defaults"
+        "skill-lab/tests/test_skills_r1.py::TestSkillsR1::test_criteria_at_floor_none_lowered",
+        "skill-lab/tests/test_skills_r1.py::TestSkillsR1::test_smoke_cases_tagged"
       ],
       "planned": true
     },
@@ -507,7 +538,10 @@
       ],
       "verified_by": [
         "skills/speckit-development/tests/test_review_request.py::TestReviewRequest::test_deterministic_request_id",
-        "skills/speckit-development/tests/test_review_request.py::TestReviewRequest::test_round_four_refused"
+        "skills/speckit-development/tests/test_review_request.py::TestReviewRequest::test_round_four_refused",
+        "skills/speckit-development/tests/test_review_request.py::TestReviewRequest::test_instructions_forbid_live_keys_and_reruns",
+        "skills/speckit-development/tests/test_review_request.py::TestReviewRequest::test_instructions_require_health_comment",
+        "skills/speckit-development/tests/test_review_request.py::TestReviewRequest::test_evidence_carries_live_run_digest"
       ],
       "planned": true
     },
@@ -522,7 +556,9 @@
         "skills/speckit-development/tests/test_review_collect.py::TestReviewCollect::test_stale_head",
         "skills/speckit-development/tests/test_review_collect.py::TestReviewCollect::test_reviewer_in_trailer_refused",
         "skills/speckit-development/tests/test_review_collect.py::TestReviewCollect::test_two_json_blocks_ambiguous",
-        "skills/speckit-development/evals/cases/collect-approve-current-head.json"
+        "skills/speckit-development/evals/cases/collect-approve-current-head.json",
+        "skills/speckit-development/tests/test_review_collect.py::TestReviewCollect::test_missing_health_comment",
+        "skills/speckit-development/tests/test_review_collect.py::TestReviewCollect::test_health_status_never_changes_verdict"
       ],
       "planned": true
     },
@@ -543,17 +579,20 @@
         "skill-lab/docs/runbooks/release-delivery.md"
       ],
       "verified_by": [
-        "skill-lab/tests/test_runbook.py::TestRunbook::test_required_steps_present"
+        "skill-lab/tests/test_runbook.py::TestRunbook::test_required_steps_present",
+        "skill-lab/tests/test_runbook.py::TestRunbook::test_reviewer_environment_without_live_keys"
       ],
       "planned": true
     },
     {
       "id": "FR-038",
       "implemented_by": [
-        "skills/speckit-development/scripts/pr_body.py"
+        "skills/speckit-development/scripts/pr_body.py",
+        "skill-lab/lab/report.py"
       ],
       "verified_by": [
-        "skills/speckit-development/tests/test_pr_body.py::TestPrBody::test_not_run_rendered_as_not_run"
+        "skills/speckit-development/tests/test_pr_body.py::TestPrBody::test_not_run_rendered_as_not_run",
+        "skills/speckit-development/tests/test_pr_body.py::TestPrBody::test_embeds_live_run_report"
       ],
       "planned": true
     },
@@ -570,7 +609,8 @@
         "skill-lab/tests/test_config_rules.py::TestCloudFirst::test_all_profiles_cloud",
         "skill-lab/tests/test_config_rules.py::TestCloudFirst::test_local_file_not_merged",
         "skill-lab/tests/test_install_inference.py::TestInstallInference::test_local_refused",
-        "skill-lab/tests/integration/test_us7_cloud_first.py::TestUS7::test_offline_scenarios"
+        "skill-lab/tests/integration/test_us7_cloud_first.py::TestUS7::test_offline_scenarios",
+        "skill-lab/tests/test_config_rules.py::TestCloudFirst::test_endpoint_is_signed_in_local_app"
       ],
       "planned": true
     },
@@ -579,20 +619,26 @@
       "implemented_by": [
         "skills/CATALOG.json",
         ".agents/skills/speckit-development",
-        ".claude/skills/speckit-development"
+        ".claude/skills/speckit-development",
+        ".agents/skills/run-monitor",
+        ".claude/skills/run-monitor"
       ],
       "verified_by": [
-        "skill-lab/tests/test_skills_r1.py::TestSkillsR1::test_discovery_symlinks_resolve"
+        "skill-lab/tests/test_skills_r1.py::TestSkillsR1::test_discovery_symlinks_resolve",
+        "skill-lab/tests/test_skills_r1.py::TestSkillsR1::test_twenty_eight_symlinks"
       ],
       "planned": true
     },
     {
       "id": "FR-041",
       "implemented_by": [
-        "skill-lab/lab/record_run.py"
+        "skill-lab/lab/record_run.py",
+        "skill-lab/lab/bench.py",
+        "skill-lab/specs/201-release-shadow/evidence/live-runs.json"
       ],
       "verified_by": [
         "skill-lab/tests/test_record_run.py::TestRecordRun::test_only_live_complete_runs_gate_eligible",
+        "skill-lab/tests/test_record_run.py::TestRecordRun::test_references_run_by_digest_without_copying",
         "skill-lab/tests/integration/test_us7_cloud_first.py::TestUS7::test_missing_keys_skip_not_pass"
       ],
       "planned": true
@@ -606,7 +652,10 @@
       "verified_by": [
         "skill-lab/tests/test_release_check.py::TestReleaseCheck::test_not_run_never_passes",
         "skill-lab/tests/test_release_check.py::TestReleaseCheck::test_live_metrics_from_runs",
-        "skill-lab/tests/test_contracts_r1.py::TestR1Contracts::test_release_gates_file_valid"
+        "skill-lab/tests/test_contracts_r1.py::TestR1Contracts::test_release_gates_file_valid",
+        "skill-lab/tests/test_release_check.py::TestReleaseCheck::test_live_gates_at_merge_stage",
+        "skill-lab/tests/test_release_check.py::TestReleaseCheck::test_newest_matching_run_only",
+        "skill-lab/tests/test_release_check.py::TestReleaseCheck::test_degraded_or_outage_run_fails_g_live_11"
       ],
       "planned": true
     },
@@ -620,7 +669,8 @@
         "skill-lab/tests/test_export_repo.py::TestExportRepo::test_layout_and_symlinks",
         "skill-lab/tests/test_export_repo.py::TestExportRepo::test_secret_refused",
         "skill-lab/tests/test_export_repo.py::TestExportRepo::test_reproducible_digest",
-        "skill-lab/tests/test_export_repo.py::TestExportRepo::test_check_detects_drift"
+        "skill-lab/tests/test_export_repo.py::TestExportRepo::test_check_detects_drift",
+        "skill-lab/tests/test_export_repo.py::TestExportRepo::test_runs_and_report_included"
       ],
       "planned": true
     },
@@ -658,10 +708,71 @@
         "skill-lab/docs/adr/0103-cloud-first-inference.md",
         "skill-lab/docs/adr/0104-independent-review-loop.md",
         "skill-lab/docs/adr/0105-standalone-export.md",
-        "skill-lab/docs/CONVENTIONS.md"
+        "skill-lab/docs/CONVENTIONS.md",
+        "skill-lab/docs/adr/0106-r1-live-gate-floor.md",
+        "skill-lab/docs/adr/0107-webhook-defense-layers.md"
       ],
       "verified_by": [
         "skill-lab/tests/test_adrs_r1.py::TestAdrsR1::test_madr_sections_and_conventions_refs"
+      ],
+      "planned": true
+    },
+    {
+      "id": "FR-047",
+      "implemented_by": [
+        "skills/kanban-state-machine/scripts/transition.py",
+        "skills/lead-architect/scripts/dispatch_recommend.py",
+        "skill-lab/shared/_skillkit/gitea.py"
+      ],
+      "verified_by": [
+        "skills/kanban-state-machine/tests/test_transition_events.py::TestEventHints::test_decision_follows_reread_state",
+        "skills/kanban-state-machine/tests/test_transition_events.py::TestEventHints::test_stale_duplicate_unverified_decide_nothing",
+        "skills/kanban-state-machine/tests/test_transition_events.py::TestEventHints::test_event_without_gitea_url_refused",
+        "skills/lead-architect/tests/test_dispatch_recommend_events.py::TestEventHints::test_recommendation_follows_reread_state",
+        "skills/kanban-state-machine/evals/cases/stale-event-decides-nothing.json",
+        "skill-lab/tests/integration/test_us6_events_flow.py::TestUS6::test_scenarios"
+      ],
+      "planned": true
+    },
+    {
+      "id": "FR-048",
+      "implemented_by": [
+        "skills/run-monitor/SKILL.md",
+        "skills/run-monitor/scripts/snapshot.py",
+        "skill-lab/specs/014-run-monitor/spec.md",
+        "skill-lab/specs/014-run-monitor/traceability.json",
+        "skill-lab/benchmarks/criteria/run-monitor.json"
+      ],
+      "verified_by": [
+        "skills/run-monitor/tests/test_snapshot.py",
+        "skills/run-monitor/evals/cases/snapshot-ok-below-limits.json",
+        "skills/run-monitor/evals/cases/snapshot-degraded-memory.json",
+        "skills/run-monitor/evals/cases/assessment-keeps-status.json",
+        "skill-lab/tests/integration/test_us10_run_monitor.py::TestUS10::test_scenarios"
+      ],
+      "planned": true
+    },
+    {
+      "id": "FR-049",
+      "implemented_by": [
+        "skill-lab/specs/105-jev-live-benchmarking/traceability.json",
+        "skill-lab/lab/bench.py",
+        "skill-lab/lab/score.py",
+        "skill-lab/lab/streak.py",
+        "skill-lab/lab/report.py",
+        "skill-lab/lab/runlog.py",
+        "skill-lab/benchmarks/criteria/_defaults.json",
+        "skill-lab/benchmarks/monitor-limits.json",
+        "skill-lab/benchmarks/prices.json"
+      ],
+      "verified_by": [
+        "skill-lab/tests/test_live_reask.py",
+        "skill-lab/tests/test_live_gate.py",
+        "skill-lab/tests/test_score_floor.py",
+        "skill-lab/tests/test_streak.py",
+        "skill-lab/tests/test_live_monitor.py",
+        "skill-lab/specs/105-jev-live-benchmarking/evidence/offline.md",
+        "skill-lab/specs/201-release-shadow/evidence/live-runs.json"
       ],
       "planned": true
     }
