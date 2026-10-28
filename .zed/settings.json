@@ -33,8 +33,6 @@
     "**/.playwright-mcp",
     "**/.agents/worktrees",
     "**/.codex",
-    "**/.claude",
-    "**/specs/**/.claude",
     "**/.specify/extensions/**/.specify-dev",
     "**/node_modules",
     "core"
