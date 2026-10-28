@@ -1,0 +1,233 @@
+{
+  "spec": "SPEC-012",
+  "requirements": [
+    {
+      "id": "FR-001",
+      "implemented_by": [
+        "skills/skill-forge/scripts/forge.py",
+        "skills/skill-forge/assets/schemas/scaffold-plan.v1.schema.json"
+      ],
+      "verified_by": [
+        "skills/skill-forge/tests/test_forge.py::TestNew::test_plan_without_apply_writes_nothing",
+        "skills/skill-forge/tests/test_forge.py::TestNew::test_apply_writes_planned_files",
+        "skills/skill-forge/evals/cases/new-plan-only.json",
+        "skills/skill-forge/evals/cases/new-apply-scaffold.json"
+      ],
+      "planned": true
+    },
+    {
+      "id": "FR-002",
+      "implemented_by": [
+        "skills/skill-forge/scripts/forge.py",
+        "skills/skill-forge/assets/reserved-names.json"
+      ],
+      "verified_by": [
+        "skills/skill-forge/tests/test_forge.py::TestNames::test_reserved_all_spellings",
+        "skills/skill-forge/tests/test_forge.py::TestNames::test_pattern_and_length",
+        "skills/skill-forge/tests/test_forge.py::TestNames::test_family_spec_validation",
+        "skills/skill-forge/evals/cases/rejects-create-skill-name.json",
+        "skills/skill-forge/evals/cases/new-name-invalid.json"
+      ],
+      "planned": true
+    },
+    {
+      "id": "FR-003",
+      "implemented_by": [
+        "skills/skill-forge/scripts/forge.py",
+        "skills/skill-forge/assets/templates/skill/SKILL.md.tmpl",
+        "skills/skill-forge/assets/templates/skill/script.py.tmpl",
+        "skills/skill-forge/assets/templates/skill/test_script.py.tmpl",
+        "skills/skill-forge/assets/templates/skill/overview.md.tmpl",
+        "skills/skill-forge/assets/templates/skill/example-fixture.md.tmpl"
+      ],
+      "verified_by": [
+        "skills/skill-forge/tests/test_forge.py::TestScaffoldContent::test_frontmatter_headings_and_size",
+        "skills/skill-forge/tests/test_forge.py::TestScaffoldContent::test_stub_script_passes_check",
+        "skills/skill-forge/tests/test_forge.py::TestScaffoldContent::test_scaffold_validates_with_lab",
+        "skills/skill-forge/evals/cases/new-apply-scaffold.json"
+      ],
+      "planned": true
+    },
+    {
+      "id": "FR-004",
+      "implemented_by": [
+        "skills/skill-forge/scripts/forge.py",
+        "skills/skill-forge/assets/templates/skill/cases/deterministic.json.tmpl",
+        "skills/skill-forge/assets/templates/skill/cases/agentic.json.tmpl",
+        "skills/skill-forge/assets/templates/skill/cases/trigger.json.tmpl",
+        "skills/skill-forge/assets/templates/skill/cases/policy.json.tmpl"
+      ],
+      "verified_by": [
+        "skills/skill-forge/tests/test_forge.py::TestEvals::test_counts_meet_minimums",
+        "skills/skill-forge/tests/test_forge.py::TestEvals::test_policy_skeleton_per_action_above_shadow",
+        "skills/skill-forge/tests/test_forge.py::TestEvals::test_no_overwrite",
+        "skills/skill-forge/evals/cases/evals-skeleton-counts.json"
+      ],
+      "planned": true
+    },
+    {
+      "id": "FR-005",
+      "implemented_by": [
+        "skills/skill-forge/scripts/forge.py",
+        "skills/skill-forge/references/check-rules.md",
+        "skills/skill-forge/assets/schemas/validation-report.v1.schema.json"
+      ],
+      "verified_by": [
+        "skills/skill-forge/tests/test_forge.py::TestCheck::test_good_skill",
+        "skills/skill-forge/tests/test_forge.py::TestCheck::test_each_rule_on_defect_fixtures",
+        "skills/skill-forge/tests/test_forge.py::TestCheck::test_runtime_profiles",
+        "skills/skill-forge/evals/cases/check-good-skill.json",
+        "skills/skill-forge/evals/cases/check-missing-heading.json",
+        "skills/skill-forge/evals/cases/check-eval-inventory-short.json"
+      ],
+      "planned": true
+    },
+    {
+      "id": "FR-006",
+      "implemented_by": [
+        "skills/skill-forge/scripts/forge.py"
+      ],
+      "verified_by": [
+        "skills/skill-forge/tests/test_forge.py::TestPolicy::test_deny_override_exit_4_nothing_written",
+        "skills/skill-forge/tests/test_forge.py::TestPolicy::test_plan_ignores_policy",
+        "skills/skill-forge/evals/cases/new-denied-by-policy.json",
+        "skills/skill-forge/evals/cases/agentic-policy-denied-stop.json"
+      ],
+      "planned": true
+    },
+    {
+      "id": "FR-007",
+      "implemented_by": [
+        "skills/skill-forge/scripts/forge.py"
+      ],
+      "verified_by": [
+        "skills/skill-forge/tests/test_forge.py::TestContainment::test_root_in_own_folder_forbidden",
+        "skills/skill-forge/tests/test_forge.py::TestContainment::test_midwrite_failure_leaves_no_folder",
+        "skills/skill-forge/tests/test_forge.py::TestNew::test_rerun_skip_and_exists_conflict",
+        "skills/skill-forge/evals/cases/new-root-forbidden-own-folder.json",
+        "skills/skill-forge/evals/cases/new-rerun-already-applied.json",
+        "skills/skill-forge/evals/cases/new-exists-differs.json"
+      ],
+      "planned": true
+    },
+    {
+      "id": "FR-008",
+      "implemented_by": [
+        "skills/skill-forge/scripts/forge.py",
+        "skills/skill-forge/scripts/_skillkit/"
+      ],
+      "verified_by": [
+        "skills/skill-forge/tests/test_forge.py::TestDeterminism::test_byte_identical_stdout_and_files",
+        "skills/skill-forge/tests/test_forge.py::TestScaffoldContent::test_vendored_copy_equals_forge_copy",
+        "skills/skill-forge/tests/test_forge.py::TestNew::test_next_steps_listed"
+      ],
+      "planned": true
+    },
+    {
+      "id": "FR-009",
+      "implemented_by": [
+        "skills/skill-forge/scripts/forge.py",
+        "skills/skill-forge/assets/templates/skill/"
+      ],
+      "verified_by": [
+        "skills/skill-forge/tests/test_forge.py::TestTemplates::test_all_templates_end_in_tmpl",
+        "skills/skill-forge/tests/test_forge.py::TestTemplates::test_no_leftover_tokens",
+        "skills/skill-forge/tests/test_forge.py::TestContainment::test_hostile_description_rejected",
+        "skills/skill-forge/evals/cases/agentic-injected-description.json"
+      ],
+      "planned": true
+    },
+    {
+      "id": "FR-010",
+      "implemented_by": [
+        "skills/skill-forge/scripts/forge.py"
+      ],
+      "verified_by": [
+        "skills/skill-forge/tests/test_forge.py::TestContainment::test_never_touches_registration_or_human_owned_files",
+        "skills/skill-forge/evals/cases/agentic-no-criteria-file.json"
+      ],
+      "planned": true
+    },
+    {
+      "id": "FR-011",
+      "implemented_by": [
+        "skills/skill-forge/scripts/forge.py"
+      ],
+      "verified_by": [
+        "skills/skill-forge/tests/test_forge.py::TestEvals::test_evals_subcommand_plan_and_apply",
+        "skills/skill-forge/tests/test_forge.py::TestEvals::test_neighbour_validation"
+      ],
+      "planned": true
+    },
+    {
+      "id": "FR-012",
+      "implemented_by": [
+        "skills/skill-forge/SKILL.md",
+        "skills/skill-forge/references/scaffold-layout.md"
+      ],
+      "verified_by": [
+        "skills/skill-forge/tests/test_forge.py::TestTemplates::test_skill_md_links_resolve",
+        "skill-lab/tests/test_skills_r1.py",
+        "skills/skill-forge/evals/cases/trigger-scaffold-new-skill.json",
+        "skills/skill-forge/evals/cases/trigger-null-builtin-create-skill.json",
+        "skills/skill-forge/evals/cases/agentic-reserved-name-redirect.json"
+      ],
+      "planned": true
+    },
+    {
+      "id": "FR-013",
+      "implemented_by": [
+        "skills/skill-forge/evals/cases/",
+        "skills/skill-forge/evals/fixtures/",
+        "skills/skill-forge/references/eval-minimums.md"
+      ],
+      "verified_by": [
+        "skills/skill-forge/evals/cases/rejects-create-skill-name.json",
+        "skills/skill-forge/evals/cases/new-denied-by-policy.json",
+        "skills/skill-forge/evals/cases/agentic-scaffold-plan-first.json",
+        "skills/skill-forge/evals/cases/agentic-fix-failing-check.json",
+        "skills/skill-forge/evals/cases/agentic-fill-eval-skeletons.json",
+        "skills/skill-forge/evals/cases/trigger-neg-audit-repo.json",
+        "skills/skill-forge/evals/cases/trigger-null-recipe.json",
+        "skill-lab/tests/test_skills_r1.py"
+      ],
+      "planned": true
+    },
+    {
+      "id": "FR-014",
+      "implemented_by": [
+        "skills/skill-forge/evals/cases/"
+      ],
+      "verified_by": [
+        "skills/skill-forge/evals/cases/agentic-scaffold-plan-first.json",
+        "skills/skill-forge/evals/cases/agentic-reserved-name-redirect.json",
+        "skills/skill-forge/evals/cases/agentic-policy-denied-stop.json",
+        "skills/skill-forge/evals/cases/agentic-no-criteria-file.json",
+        "skills/skill-forge/evals/cases/agentic-injected-description.json"
+      ],
+      "planned": true
+    },
+    {
+      "id": "FR-015",
+      "implemented_by": [
+        "skills/skill-forge/scripts/_skillkit/"
+      ],
+      "verified_by": [
+        "skills/skill-forge/tests/test_forge.py::TestLevelIndependence::test_identical_at_agent_implementation",
+        "skill-lab/tests/test_sync_r1.py"
+      ],
+      "planned": true
+    },
+    {
+      "id": "FR-016",
+      "implemented_by": [
+        "skills/skill-forge/scripts/_skillkit/"
+      ],
+      "verified_by": [
+        "skills/skill-forge/tests/test_forge.py::TestLevelIndependence::test_identical_at_guarded_autonomous_and_demoted",
+        "skill-lab/tests/test_skills_r1.py"
+      ],
+      "planned": true
+    }
+  ]
+}

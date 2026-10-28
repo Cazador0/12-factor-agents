@@ -1,0 +1,298 @@
+{
+  "spec": "SPEC-008",
+  "requirements": [
+    {
+      "id": "FR-001",
+      "implemented_by": [
+        "skills/gitea-event-normalizer/scripts/normalize.py"
+      ],
+      "verified_by": [
+        "skills/gitea-event-normalizer/tests/test_normalize.py::TestSignature::test_valid_signature_exit_0",
+        "skills/gitea-event-normalizer/tests/test_normalize.py::TestSignature::test_tampered_body_exit_1",
+        "skills/gitea-event-normalizer/tests/test_normalize.py::TestBodyDigest::test_sha256_of_raw_bytes",
+        "skills/gitea-event-normalizer/tests/test_normalize_layers.py::TestNoLeak::test_failed_signature_leaves_no_parsed_value",
+        "skills/gitea-event-normalizer/evals/cases/tampered-body.json",
+        "skills/gitea-event-normalizer/evals/cases/no-leak-on-bad-signature.json",
+        "skills/gitea-event-normalizer/evals/cases/valid-pull-request-opened.json"
+      ],
+      "planned": true
+    },
+    {
+      "id": "FR-002",
+      "implemented_by": [
+        "skills/gitea-event-normalizer/scripts/normalize.py",
+        "skills/gitea-event-normalizer/references/webhook-hygiene.md"
+      ],
+      "verified_by": [
+        "skills/gitea-event-normalizer/tests/test_normalize_layers.py::TestDedupe::test_same_body_new_delivery_id_is_duplicate",
+        "skills/gitea-event-normalizer/tests/test_normalize_layers.py::TestDedupe::test_reused_delivery_id_new_body_is_not",
+        "skills/gitea-event-normalizer/tests/test_normalize_layers.py::TestPrune90d::test_old_digests_pruned_on_apply",
+        "skills/gitea-event-normalizer/evals/cases/duplicate-body.json"
+      ],
+      "planned": true
+    },
+    {
+      "id": "FR-003",
+      "implemented_by": [
+        "skills/gitea-event-normalizer/scripts/normalize.py"
+      ],
+      "verified_by": [
+        "skills/gitea-event-normalizer/tests/test_normalize_layers.py::TestFreshness::test_older_updated_at_is_stale",
+        "skills/gitea-event-normalizer/tests/test_normalize_layers.py::TestFreshness::test_pr_same_updated_at_other_head_is_stale",
+        "skills/gitea-event-normalizer/tests/test_normalize_layers.py::TestFreshness::test_stale_leaves_record_unchanged",
+        "skills/gitea-event-normalizer/evals/cases/stale-body.json"
+      ],
+      "planned": true
+    },
+    {
+      "id": "FR-004",
+      "implemented_by": [
+        "skills/gitea-event-normalizer/scripts/normalize.py",
+        "skills/gitea-event-normalizer/references/event-types.md",
+        "skills/gitea-event-normalizer/SKILL.md"
+      ],
+      "verified_by": [
+        "skills/gitea-event-normalizer/tests/test_normalize.py::TestHint::test_no_decision_fields",
+        "skills/gitea-event-normalizer/tests/test_normalize.py::TestHint::test_flags_present_for_consumers",
+        "skill-lab/tests/integration/test_us6_events_flow.py",
+        "skills/gitea-event-normalizer/evals/cases/agentic-stale-hint-not-decision.json",
+        "skills/gitea-event-normalizer/evals/cases/agentic-hostile-payload-text.json"
+      ],
+      "planned": true
+    },
+    {
+      "id": "FR-005",
+      "implemented_by": [
+        "skills/gitea-event-normalizer/scripts/normalize.py",
+        "skills/gitea-event-normalizer/references/webhook-hygiene.md"
+      ],
+      "verified_by": [
+        "skills/gitea-event-normalizer/tests/test_normalize_layers.py::TestSecretLength::test_short_secret_exit_2",
+        "skills/gitea-event-normalizer/tests/test_normalize_layers.py::TestRotation::test_previous_secret_day_6",
+        "skills/gitea-event-normalizer/tests/test_normalize_layers.py::TestRotation::test_previous_secret_day_7_or_no_time_fails",
+        "skills/gitea-event-normalizer/tests/test_normalize_layers.py::TestRateLimit::test_over_limit_exit_4_nothing_recorded",
+        "skills/gitea-event-normalizer/tests/test_normalize_layers.py::TestHygieneDoc::test_required_sections",
+        "skills/gitea-event-normalizer/evals/cases/short-secret-refused.json",
+        "skills/gitea-event-normalizer/evals/cases/previous-secret-in-window.json",
+        "skills/gitea-event-normalizer/evals/cases/previous-secret-expired.json",
+        "skills/gitea-event-normalizer/evals/cases/rate-limited.json"
+      ],
+      "planned": true
+    },
+    {
+      "id": "FR-006",
+      "implemented_by": [
+        "skills/gitea-event-normalizer/scripts/normalize.py",
+        "skills/gitea-event-normalizer/references/event-types.md"
+      ],
+      "verified_by": [
+        "skills/gitea-event-normalizer/tests/test_normalize.py::TestVocabulary::test_every_entry_maps",
+        "skills/gitea-event-normalizer/tests/test_normalize.py::TestVocabulary::test_unmapped_not_blocking",
+        "skills/gitea-event-normalizer/evals/cases/valid-pull-request-opened.json",
+        "skills/gitea-event-normalizer/evals/cases/unmapped-event-type.json"
+      ],
+      "planned": true
+    },
+    {
+      "id": "FR-007",
+      "implemented_by": [
+        "skills/gitea-event-normalizer/scripts/normalize.py"
+      ],
+      "verified_by": [
+        "skills/gitea-event-normalizer/tests/test_normalize.py::TestPolicy::test_serve_refused_at_shadow",
+        "skills/gitea-event-normalizer/tests/test_normalize.py::TestPolicy::test_apply_denied_by_override",
+        "skills/gitea-event-normalizer/tests/test_normalize.py::TestPolicy::test_read_only_without_apply",
+        "skills/gitea-event-normalizer/evals/cases/serve-refused-at-shadow.json",
+        "skills/gitea-event-normalizer/evals/cases/apply-denied-by-override.json",
+        "skills/gitea-event-normalizer/evals/cases/plan-only-writes-nothing.json"
+      ],
+      "planned": true
+    },
+    {
+      "id": "FR-008",
+      "implemented_by": [
+        "skills/gitea-event-normalizer/scripts/normalize.py"
+      ],
+      "verified_by": [
+        "skills/gitea-event-normalizer/tests/test_normalize.py::TestDeterminism::test_byte_identical_stdout",
+        "skills/gitea-event-normalizer/tests/test_normalize.py::TestSeedStore::test_seed_store_nonempty_exit_2",
+        "skills/gitea-event-normalizer/evals/cases/plan-only-writes-nothing.json"
+      ],
+      "planned": true
+    },
+    {
+      "id": "FR-009",
+      "implemented_by": [
+        "skills/gitea-event-normalizer/SKILL.md"
+      ],
+      "verified_by": [
+        "skill-lab validate --skill gitea-event-normalizer",
+        "skills/gitea-event-normalizer/tests/test_normalize_layers.py::TestHygieneDoc::test_skill_links_hygiene_doc"
+      ],
+      "planned": true
+    },
+    {
+      "id": "FR-010",
+      "implemented_by": [
+        "skills/gitea-event-normalizer/evals/cases/",
+        "skills/gitea-event-normalizer/evals/fixtures/"
+      ],
+      "verified_by": [
+        "skill-lab validate --rule eval-inventory-r1",
+        "skills/gitea-event-normalizer/evals/cases/tampered-body.json",
+        "skills/gitea-event-normalizer/evals/cases/duplicate-body.json",
+        "skills/gitea-event-normalizer/evals/cases/stale-body.json",
+        "skills/gitea-event-normalizer/evals/cases/short-secret-refused.json",
+        "skills/gitea-event-normalizer/evals/cases/serve-refused-at-shadow.json",
+        "skills/gitea-event-normalizer/evals/cases/agentic-tampered-no-action.json",
+        "skills/gitea-event-normalizer/evals/cases/trigger-neg-move-state.json"
+      ],
+      "planned": true
+    },
+    {
+      "id": "FR-011",
+      "implemented_by": [
+        "skills/gitea-event-normalizer/scripts/normalize.py",
+        "skills/gitea-event-normalizer/SKILL.md"
+      ],
+      "verified_by": [
+        "skill-lab/tests/test_r2_unchanged_skills.py",
+        "skills/gitea-event-normalizer/tests/test_normalize.py::TestPolicy::test_serve_refused_at_agent_implementation",
+        "skill-lab validate --rule eval-inventory-r2"
+      ],
+      "planned": true
+    },
+    {
+      "id": "FR-012",
+      "implemented_by": [
+        "skills/gitea-event-normalizer/scripts/normalize.py"
+      ],
+      "verified_by": [
+        "skills/gitea-event-normalizer/tests/test_serve.py::TestServe::test_signed_post_202",
+        "skills/gitea-event-normalizer/tests/test_serve.py::TestServe::test_tampered_401",
+        "skills/gitea-event-normalizer/tests/test_serve.py::TestServe::test_size_method_path_header_rejections",
+        "skills/gitea-event-normalizer/tests/test_serve.py::TestServe::test_hygiene_refusals",
+        "skills/gitea-event-normalizer/tests/test_serve.py::TestServe::test_previous_secret_window",
+        "skill-lab/tests/integration/test_r3_us2_gateway.py"
+      ],
+      "planned": true
+    },
+    {
+      "id": "FR-013",
+      "implemented_by": [
+        "skills/gitea-event-normalizer/scripts/normalize.py"
+      ],
+      "verified_by": [
+        "skills/gitea-event-normalizer/tests/test_serve.py::TestServe::test_duplicate_digest_200",
+        "skills/gitea-event-normalizer/tests/test_serve.py::TestServe::test_202_only_after_flush",
+        "skills/gitea-event-normalizer/tests/test_serve.py::TestServe::test_inbox_full_503",
+        "skills/gitea-event-normalizer/tests/test_serve.py::TestServe::test_rate_limit_429",
+        "skills/gitea-event-normalizer/evals/cases/afv-duplicate-delivery-once.json"
+      ],
+      "planned": true
+    },
+    {
+      "id": "FR-014",
+      "implemented_by": [
+        "skills/gitea-event-normalizer/scripts/normalize.py"
+      ],
+      "verified_by": [
+        "skills/gitea-event-normalizer/tests/test_ingest_process.py::TestIngest::test_ingest_allowed_at_every_level",
+        "skills/gitea-event-normalizer/tests/test_ingest_process.py::TestIngest::test_shares_serve_code_path",
+        "skills/gitea-event-normalizer/evals/cases/gateway-process-applied.json"
+      ],
+      "planned": true
+    },
+    {
+      "id": "FR-015",
+      "implemented_by": [
+        "skills/gitea-event-normalizer/scripts/normalize.py",
+        "skills/gitea-event-normalizer/references/event-routing.md"
+      ],
+      "verified_by": [
+        "skills/gitea-event-normalizer/tests/test_ingest_process.py::TestProcess::test_sequence_order_single_worker",
+        "skills/gitea-event-normalizer/tests/test_ingest_process.py::TestProcess::test_dead_letter_rules",
+        "skills/gitea-event-normalizer/tests/test_ingest_process.py::TestProcess::test_ordering_guard_verdicts",
+        "skills/gitea-event-normalizer/tests/test_ingest_process.py::TestReconcile::test_tick_record",
+        "skills/gitea-event-normalizer/evals/cases/gateway-process-applied.json",
+        "skills/gitea-event-normalizer/evals/cases/gateway-process-rerun.json",
+        "skills/gitea-event-normalizer/evals/cases/gateway-process-refused-agent-implementation.json",
+        "skills/gitea-event-normalizer/evals/cases/gateway-process-refused-demoted.json",
+        "skills/gitea-event-normalizer/evals/cases/afv-stale-commit-approval.json",
+        "skills/gitea-event-normalizer/evals/cases/afv-stale-commit-check.json",
+        "skills/gitea-event-normalizer/evals/cases/afv-stale-body-no-route.json",
+        "skills/gitea-event-normalizer/evals/cases/afv-dead-letter-after-three.json"
+      ],
+      "planned": true
+    },
+    {
+      "id": "FR-016",
+      "implemented_by": [
+        "skills/gitea-event-normalizer/scripts/normalize.py"
+      ],
+      "verified_by": [
+        "skills/gitea-event-normalizer/tests/test_serve.py::TestServe::test_orchestration_lease_second_gateway_refused",
+        "skills/gitea-event-normalizer/tests/test_serve.py::TestServe::test_ready_file_and_sigterm",
+        "skills/gitea-event-normalizer/tests/test_serve.py::TestServe::test_demotion_stops_with_one_gateway_run",
+        "skills/gitea-event-normalizer/tests/test_ingest_process.py::TestStatus::test_read_only",
+        "skills/gitea-event-normalizer/evals/cases/afv-second-gateway-refused.json",
+        "skills/gitea-event-normalizer/evals/cases/afv-inbox-replay-after-restart.json"
+      ],
+      "planned": true
+    },
+    {
+      "id": "FR-017",
+      "implemented_by": [
+        "skills/gitea-event-normalizer/scripts/normalize.py"
+      ],
+      "verified_by": [
+        "skills/gitea-event-normalizer/tests/test_serve.py::TestHealth::test_snapshot_runs_each_tick",
+        "skills/gitea-event-normalizer/tests/test_serve.py::TestHealth::test_degraded_changes_nothing",
+        "skills/gitea-event-normalizer/tests/test_serve.py::TestHealth::test_no_container_socket_opened",
+        "skills/gitea-event-normalizer/tests/test_serve.py::TestHealth::test_missing_snapshot_script_refuses_serve"
+      ],
+      "planned": true
+    },
+    {
+      "id": "FR-018",
+      "implemented_by": [
+        "skills/gitea-event-normalizer/evals/cases/",
+        "skills/gitea-event-normalizer/SKILL.md"
+      ],
+      "verified_by": [
+        "skill-lab validate --rule eval-inventory-r3",
+        "skill-lab validate --rule afv-inventory",
+        "skills/gitea-event-normalizer/evals/cases/gateway-process-refused-agent-implementation.json",
+        "skills/gitea-event-normalizer/evals/cases/afv-handler-authority-bounded.json",
+        "skills/gitea-event-normalizer/evals/cases/afv-payload-instructions-ignored.json",
+        "skills/gitea-event-normalizer/evals/cases/agentic-r3-operator-start.json",
+        "skills/gitea-event-normalizer/evals/cases/trigger-r3-start-gateway.json",
+        "skills/gitea-event-normalizer/evals/cases/trigger-r3-neg-drift.json"
+      ],
+      "planned": true
+    },
+    {
+      "id": "FR-019",
+      "implemented_by": [
+        "skills/gitea-event-normalizer/references/gateway.md",
+        "skills/gitea-event-normalizer/references/event-routing.md"
+      ],
+      "verified_by": [
+        "skill-lab/tests/test_event_routing_docs.py"
+      ],
+      "planned": true
+    },
+    {
+      "id": "FR-020",
+      "implemented_by": [
+        "skills/gitea-event-normalizer/scripts/normalize.py",
+        "skills/merge-policy-gate/scripts/merge_decision.py"
+      ],
+      "verified_by": [
+        "skill-lab/tests/test_validate_r3.py",
+        "skills/gitea-event-normalizer/evals/cases/afv-handler-authority-bounded.json"
+      ],
+      "planned": true
+    }
+  ]
+}

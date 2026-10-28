@@ -1,0 +1,225 @@
+{
+  "spec": "SPEC-005",
+  "requirements": [
+    {
+      "id": "FR-001",
+      "implemented_by": [
+        "skills/speckit-gitea-sync/scripts/sync_drift.py"
+      ],
+      "verified_by": [
+        "skills/speckit-gitea-sync/tests/test_sync_drift.py::TestSyncDrift::test_sorted_and_byte_identical",
+        "skills/speckit-gitea-sync/tests/test_sync_drift.py::TestSyncDrift::test_in_sync",
+        "skills/speckit-gitea-sync/evals/cases/drift-in-sync.json",
+        "skills/speckit-gitea-sync/evals/cases/drift-orphan-and-state-mismatch.json"
+      ],
+      "planned": true
+    },
+    {
+      "id": "FR-002",
+      "implemented_by": [
+        "skills/speckit-gitea-sync/scripts/sync_drift.py",
+        "skills/speckit-gitea-sync/references/drift-kinds.md"
+      ],
+      "verified_by": [
+        "skills/speckit-gitea-sync/tests/test_sync_drift.py::TestSyncDrift::test_orphan_and_state_mismatch",
+        "skills/speckit-gitea-sync/tests/test_sync_drift.py::TestSyncDrift::test_title_mismatch",
+        "skills/speckit-gitea-sync/tests/test_sync_drift.py::TestSyncDrift::test_dependency_mismatch",
+        "skills/speckit-gitea-sync/tests/test_sync_drift.py::TestSyncDrift::test_stale_map",
+        "skills/speckit-gitea-sync/tests/test_sync_drift.py::TestSyncDrift::test_missing_issue_only_once",
+        "skills/speckit-gitea-sync/evals/cases/drift-missing-issue.json",
+        "skills/speckit-gitea-sync/evals/cases/drift-title-mismatch.json",
+        "skills/speckit-gitea-sync/evals/cases/drift-dependency-mismatch.json",
+        "skills/speckit-gitea-sync/evals/cases/drift-stale-map.json"
+      ],
+      "planned": true
+    },
+    {
+      "id": "FR-003",
+      "implemented_by": [
+        "skills/speckit-gitea-sync/scripts/sync_drift.py"
+      ],
+      "verified_by": [
+        "skills/speckit-gitea-sync/tests/test_sync_drift.py::TestSyncDrift::test_no_map_is_empty",
+        "skills/speckit-gitea-sync/tests/test_sync_drift.py::TestReadOnly::test_only_get_requests",
+        "skills/speckit-gitea-sync/tests/test_sync_drift.py::TestReadOnly::test_no_write_outside_out",
+        "skills/speckit-gitea-sync/evals/cases/drift-orphan-and-state-mismatch.json"
+      ],
+      "planned": true
+    },
+    {
+      "id": "FR-004",
+      "implemented_by": [
+        "skills/speckit-gitea-sync/scripts/comment_plan.py",
+        "skills/speckit-gitea-sync/assets/templates/drift-comment.md",
+        "skills/speckit-gitea-sync/references/drift-comments.md"
+      ],
+      "verified_by": [
+        "skills/speckit-gitea-sync/tests/test_comment_plan.py::TestCommentPlan::test_one_op_per_issue",
+        "skills/speckit-gitea-sync/tests/test_comment_plan.py::TestCommentPlan::test_no_issue_skipped",
+        "skills/speckit-gitea-sync/tests/test_comment_plan.py::TestCommentPlan::test_marker_grammar",
+        "skills/speckit-gitea-sync/evals/cases/comment-plan-one-per-drift.json",
+        "skills/speckit-gitea-sync/evals/cases/comment-plan-in-sync-empty.json"
+      ],
+      "planned": true
+    },
+    {
+      "id": "FR-005",
+      "implemented_by": [
+        "skills/speckit-gitea-sync/scripts/comment_plan.py"
+      ],
+      "verified_by": [
+        "skills/speckit-gitea-sync/tests/test_comment_plan.py::TestCommentPlan::test_key_derivation",
+        "skills/speckit-gitea-sync/tests/test_comment_plan.py::TestCommentPlan::test_unchanged_drift_same_key",
+        "skills/speckit-gitea-sync/tests/test_comment_plan.py::TestCommentPlan::test_byte_identical"
+      ],
+      "planned": true
+    },
+    {
+      "id": "FR-006",
+      "implemented_by": [
+        "skills/speckit-gitea-sync/scripts/comment_plan.py"
+      ],
+      "verified_by": [
+        "skills/speckit-gitea-sync/tests/test_comment_plan.py::TestCommentPlan::test_apply_refused_at_shadow",
+        "skills/speckit-gitea-sync/tests/test_comment_plan.py::TestCommentPlan::test_deny_override",
+        "skills/speckit-gitea-sync/evals/cases/comment-plan-apply-refused.json",
+        "skills/speckit-gitea-sync/evals/cases/agentic-comment-plan-not-posted.json"
+      ],
+      "planned": true
+    },
+    {
+      "id": "FR-007",
+      "implemented_by": [
+        "skills/speckit-gitea-sync/scripts/sync_drift.py",
+        "skills/speckit-gitea-sync/scripts/comment_plan.py"
+      ],
+      "verified_by": [
+        "skills/speckit-gitea-sync/tests/test_comment_plan.py::TestCommentPlan::test_only_create_comment_vocabulary",
+        "skills/speckit-gitea-sync/evals/cases/agentic-state-mismatch-not-fixed.json",
+        "skills/speckit-gitea-sync/evals/cases/agentic-orphan-not-deleted.json",
+        "skills/speckit-gitea-sync/evals/cases/agentic-injected-issue-title.json",
+        "skills/speckit-gitea-sync/evals/cases/agentic-drift-explained.json"
+      ],
+      "planned": true
+    },
+    {
+      "id": "FR-008",
+      "implemented_by": [
+        "skills/speckit-gitea-sync/scripts/sync_drift.py",
+        "skills/speckit-gitea-sync/scripts/comment_plan.py",
+        "skills/speckit-gitea-sync/SKILL.md"
+      ],
+      "verified_by": [
+        "skills/speckit-gitea-sync/tests/test_comment_plan.py::TestInputs::test_credentialed_url_refused",
+        "skills/speckit-gitea-sync/tests/test_sync_drift.py::TestInputs::test_no_tasks",
+        "skills/speckit-gitea-sync/tests/test_sync_drift.py::TestInputs::test_invalid_map"
+      ],
+      "planned": true
+    },
+    {
+      "id": "FR-009",
+      "implemented_by": [
+        "skills/speckit-gitea-sync/evals/cases/",
+        "skills/speckit-gitea-sync/evals/fixtures/"
+      ],
+      "verified_by": [
+        "skills/speckit-gitea-sync/evals/cases/drift-orphan-and-state-mismatch.json",
+        "skills/speckit-gitea-sync/evals/cases/comment-plan-apply-refused.json",
+        "skills/speckit-gitea-sync/evals/cases/agentic-drift-explained.json",
+        "skills/speckit-gitea-sync/evals/cases/trigger-which-drifted.json",
+        "skills/speckit-gitea-sync/evals/cases/trigger-null-json-diff.json",
+        "skills/speckit-gitea-sync/evals/cases/trigger-neg-create-issues.json"
+      ],
+      "planned": true
+    },
+    {
+      "id": "FR-010",
+      "implemented_by": [
+        "skills/speckit-gitea-sync/scripts/comment_plan.py"
+      ],
+      "verified_by": [
+        "skills/speckit-gitea-sync/tests/test_comment_plan_apply.py::TestCommentApply::test_comment_only_dedupe",
+        "skills/speckit-gitea-sync/tests/test_comment_plan_apply.py::TestCommentApply::test_rerun_zero_writes",
+        "skills/speckit-gitea-sync/tests/test_comment_plan_apply.py::TestCommentApply::test_forged_marker_ignored",
+        "skills/speckit-gitea-sync/tests/test_comment_plan_apply.py::TestCommentApply::test_unsupported_op",
+        "skills/speckit-gitea-sync/tests/test_comment_plan_apply.py::TestCommentApply::test_plan_stale",
+        "skills/speckit-gitea-sync/tests/test_comment_plan_apply.py::TestCommentApply::test_files_unmodified",
+        "skills/speckit-gitea-sync/evals/cases/comment-apply-applied.json",
+        "skills/speckit-gitea-sync/evals/cases/comment-apply-rerun.json",
+        "skills/speckit-gitea-sync/evals/cases/comment-apply-only-create-comment.json",
+        "skills/speckit-gitea-sync/evals/cases/comment-apply-forged-marker-ignored.json"
+      ],
+      "planned": true
+    },
+    {
+      "id": "FR-011",
+      "implemented_by": [
+        "skills/speckit-gitea-sync/scripts/comment_plan.py"
+      ],
+      "verified_by": [
+        "skills/speckit-gitea-sync/tests/test_comment_plan_apply.py::TestCommentApply::test_identity_mismatch",
+        "skills/speckit-gitea-sync/tests/test_comment_plan_apply.py::TestCommentApply::test_token_canary_absent"
+      ],
+      "planned": true
+    },
+    {
+      "id": "FR-012",
+      "implemented_by": [
+        "skills/speckit-gitea-sync/SKILL.md",
+        "skills/speckit-gitea-sync/evals/cases/"
+      ],
+      "verified_by": [
+        "skills/speckit-gitea-sync/evals/cases/agentic-r2-drift-comments.json",
+        "skills/speckit-gitea-sync/evals/cases/trigger-r2-post-drift-comments.json",
+        "skills/speckit-gitea-sync/evals/cases/trigger-r2-neg-apply-issues.json"
+      ],
+      "planned": true
+    },
+    {
+      "id": "FR-013",
+      "implemented_by": [
+        "skills/speckit-gitea-sync/scripts/sync_drift.py",
+        "skills/speckit-gitea-sync/references/drift-comments.md"
+      ],
+      "verified_by": [
+        "skills/speckit-gitea-sync/tests/test_sync_on_event.py::TestSyncOnEvent::test_drift_comment_once_and_state_file",
+        "skills/speckit-gitea-sync/tests/test_sync_on_event.py::TestSyncOnEvent::test_event_kinds",
+        "skills/speckit-gitea-sync/tests/test_sync_on_event.py::TestSyncOnEvent::test_base_push_filter",
+        "skills/speckit-gitea-sync/tests/test_sync_on_event.py::TestSyncOnEvent::test_state_cleared_when_in_sync",
+        "skills/speckit-gitea-sync/tests/test_sync_on_event.py::TestSyncOnEvent::test_event_is_a_hint",
+        "skills/speckit-gitea-sync/evals/cases/drift-on-issue-edit.json",
+        "skills/speckit-gitea-sync/evals/cases/drift-on-base-push.json",
+        "skills/speckit-gitea-sync/evals/cases/drift-state-cleared-when-in-sync.json"
+      ],
+      "planned": true
+    },
+    {
+      "id": "FR-014",
+      "implemented_by": [
+        "skills/speckit-gitea-sync/scripts/sync_drift.py"
+      ],
+      "verified_by": [
+        "skills/speckit-gitea-sync/tests/test_sync_on_event.py::TestSyncOnEvent::test_shadow_and_demotion_refused",
+        "skills/speckit-gitea-sync/tests/test_sync_on_event.py::TestSyncOnEvent::test_other_feature_skipped",
+        "skills/speckit-gitea-sync/tests/test_sync_on_event.py::TestSyncOnEvent::test_hostile_edit_text",
+        "skills/speckit-gitea-sync/evals/cases/afv-issue-edit-instructions-ignored.json"
+      ],
+      "planned": true
+    },
+    {
+      "id": "FR-015",
+      "implemented_by": [
+        "skills/speckit-gitea-sync/SKILL.md",
+        "skills/speckit-gitea-sync/evals/cases/"
+      ],
+      "verified_by": [
+        "skills/speckit-gitea-sync/evals/cases/drift-on-issue-edit.json",
+        "skills/speckit-gitea-sync/evals/cases/afv-issue-edit-instructions-ignored.json",
+        "skills/speckit-gitea-sync/evals/cases/agentic-r3-drift-on-event.json",
+        "skills/speckit-gitea-sync/evals/cases/trigger-r3-check-after-edit.json",
+        "skills/speckit-gitea-sync/evals/cases/trigger-r3-neg-create-issues.json"
+      ],
+      "planned": true
+    }
+  ]
+}

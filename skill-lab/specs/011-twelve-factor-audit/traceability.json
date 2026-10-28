@@ -1,0 +1,196 @@
+{
+  "spec": "SPEC-011",
+  "requirements": [
+    {
+      "id": "FR-001",
+      "implemented_by": [
+        "skills/twelve-factor-audit/scripts/audit.py"
+      ],
+      "verified_by": [
+        "skills/twelve-factor-audit/tests/test_audit.py::skills/twelve-factor-audit/tests/test_audit.py::TestScan::test_sorted_walk_skips_dirs",
+        "skills/twelve-factor-audit/tests/test_audit.py::skills/twelve-factor-audit/tests/test_audit.py::TestScan::test_symlink_escape_skipped",
+        "skills/twelve-factor-audit/tests/test_audit.py::skills/twelve-factor-audit/tests/test_audit.py::TestScan::test_max_files_limit",
+        "skills/twelve-factor-audit/tests/test_audit.py::skills/twelve-factor-audit/tests/test_audit.py::TestContainment::test_no_subprocess_no_network",
+        "skills/twelve-factor-audit/evals/cases/audit-scan-limit-warning.json",
+        "skills/twelve-factor-audit/evals/cases/audit-symlink-escape-skipped.json"
+      ],
+      "planned": true
+    },
+    {
+      "id": "FR-002",
+      "implemented_by": [
+        "skills/twelve-factor-audit/scripts/audit.py",
+        "skills/twelve-factor-audit/assets/signals.json",
+        "skills/twelve-factor-audit/references/scoring.md"
+      ],
+      "verified_by": [
+        "skills/twelve-factor-audit/tests/test_audit.py::skills/twelve-factor-audit/tests/test_audit.py::TestScoring::test_tier_rule",
+        "skills/twelve-factor-audit/tests/test_audit.py::skills/twelve-factor-audit/tests/test_audit.py::TestScoring::test_tier3_without_tier1_scores_zero",
+        "skills/twelve-factor-audit/evals/cases/audit-signals-invalid.json"
+      ],
+      "planned": true
+    },
+    {
+      "id": "FR-003",
+      "implemented_by": [
+        "skills/twelve-factor-audit/scripts/audit.py",
+        "skills/twelve-factor-audit/assets/schemas/twelve-factor-scorecard.v1.schema.json"
+      ],
+      "verified_by": [
+        "skills/twelve-factor-audit/tests/test_audit.py::skills/twelve-factor-audit/tests/test_audit.py::TestScorecard::test_schema_valid_and_sum",
+        "skills/twelve-factor-audit/tests/test_audit.py::skills/twelve-factor-audit/tests/test_audit.py::TestScorecard::test_evidence_paths_exist",
+        "skills/twelve-factor-audit/evals/cases/audit-sample-repo-scorecard.json",
+        "skills/twelve-factor-audit/evals/cases/audit-empty-repo-all-zero.json"
+      ],
+      "planned": true
+    },
+    {
+      "id": "FR-004",
+      "implemented_by": [
+        "skills/twelve-factor-audit/scripts/audit.py",
+        "skills/twelve-factor-audit/assets/signals.json"
+      ],
+      "verified_by": [
+        "skills/twelve-factor-audit/tests/test_audit.py::skills/twelve-factor-audit/tests/test_audit.py::TestScorecard::test_grade_thresholds",
+        "skills/twelve-factor-audit/tests/test_audit.py::skills/twelve-factor-audit/tests/test_audit.py::TestScorecard::test_strings_from_signals_only",
+        "skills/twelve-factor-audit/evals/cases/audit-grade-thresholds.json"
+      ],
+      "planned": true
+    },
+    {
+      "id": "FR-005",
+      "implemented_by": [
+        "skills/twelve-factor-audit/scripts/audit.py"
+      ],
+      "verified_by": [
+        "skills/twelve-factor-audit/tests/test_audit.py::skills/twelve-factor-audit/tests/test_audit.py::TestDeterminism::test_byte_identical",
+        "skills/twelve-factor-audit/tests/test_audit.py::skills/twelve-factor-audit/tests/test_audit.py::TestDeterminism::test_listing_order_independent",
+        "skills/twelve-factor-audit/evals/cases/audit-sample-repo-scorecard.json"
+      ],
+      "planned": true
+    },
+    {
+      "id": "FR-006",
+      "implemented_by": [
+        "skills/twelve-factor-audit/scripts/audit.py"
+      ],
+      "verified_by": [
+        "skills/twelve-factor-audit/tests/test_audit.py::skills/twelve-factor-audit/tests/test_audit.py::TestContainment::test_out_inside_git_refused",
+        "skills/twelve-factor-audit/tests/test_audit.py::skills/twelve-factor-audit/tests/test_audit.py::TestContainment::test_no_write_without_out",
+        "skills/twelve-factor-audit/evals/cases/audit-out-inside-git-refused.json"
+      ],
+      "planned": true
+    },
+    {
+      "id": "FR-007",
+      "implemented_by": [
+        "skills/twelve-factor-audit/scripts/audit.py"
+      ],
+      "verified_by": [
+        "skills/twelve-factor-audit/tests/test_audit.py::skills/twelve-factor-audit/tests/test_audit.py::TestFailUnder::test_below_threshold_exit_1",
+        "skills/twelve-factor-audit/tests/test_audit.py::skills/twelve-factor-audit/tests/test_audit.py::TestFailUnder::test_range_usage_error",
+        "skills/twelve-factor-audit/evals/cases/audit-fail-under-gate.json"
+      ],
+      "planned": true
+    },
+    {
+      "id": "FR-008",
+      "implemented_by": [
+        "skills/twelve-factor-audit/references/scoring.md",
+        "skills/twelve-factor-audit/assets/signals.json"
+      ],
+      "verified_by": [
+        "skills/twelve-factor-audit/tests/test_audit.py::skills/twelve-factor-audit/tests/test_audit.py::TestReferences::test_scoring_md_matches_signals"
+      ],
+      "planned": true
+    },
+    {
+      "id": "FR-009",
+      "implemented_by": [
+        "skills/twelve-factor-audit/scripts/audit.py"
+      ],
+      "verified_by": [
+        "skills/twelve-factor-audit/tests/test_audit.py::skills/twelve-factor-audit/tests/test_audit.py::TestContainment::test_hostile_readme_cannot_raise_score",
+        "skills/twelve-factor-audit/tests/test_audit.py::skills/twelve-factor-audit/tests/test_audit.py::TestContainment::test_regex_budget",
+        "skills/twelve-factor-audit/evals/cases/audit-injection-readme-ignored.json",
+        "skills/twelve-factor-audit/evals/cases/agentic-injected-readme.json"
+      ],
+      "planned": true
+    },
+    {
+      "id": "FR-010",
+      "implemented_by": [
+        "skills/twelve-factor-audit/references/factors.md",
+        "skills/twelve-factor-audit/references/scoring.md"
+      ],
+      "verified_by": [
+        "skills/twelve-factor-audit/tests/test_audit.py::skills/twelve-factor-audit/tests/test_audit.py::TestReferences::test_no_copied_upstream_sentences",
+        "skills/twelve-factor-audit/tests/test_audit.py::skills/twelve-factor-audit/tests/test_audit.py::TestReferences::test_all_factor_links_present"
+      ],
+      "planned": true
+    },
+    {
+      "id": "FR-011",
+      "implemented_by": [
+        "skills/twelve-factor-audit/SKILL.md"
+      ],
+      "verified_by": [
+        "skills/twelve-factor-audit/tests/test_audit.py::skills/twelve-factor-audit/tests/test_audit.py::TestReferences::test_skill_md_links_resolve",
+        "skill-lab/tests/test_skills_r1.py",
+        "skills/twelve-factor-audit/evals/cases/trigger-audit-repo.json"
+      ],
+      "planned": true
+    },
+    {
+      "id": "FR-012",
+      "implemented_by": [
+        "skills/twelve-factor-audit/evals/cases/",
+        "skills/twelve-factor-audit/evals/fixtures/"
+      ],
+      "verified_by": [
+        "skills/twelve-factor-audit/evals/cases/audit-sample-repo-scorecard.json",
+        "skills/twelve-factor-audit/evals/cases/agentic-audit-sample-repo.json",
+        "skills/twelve-factor-audit/evals/cases/agentic-no-invented-evidence.json",
+        "skills/twelve-factor-audit/evals/cases/trigger-neg-scaffold-skill.json",
+        "skills/twelve-factor-audit/evals/cases/trigger-null-weather.json",
+        "skill-lab/tests/test_skills_r1.py"
+      ],
+      "planned": true
+    },
+    {
+      "id": "FR-013",
+      "implemented_by": [
+        "skills/twelve-factor-audit/evals/cases/"
+      ],
+      "verified_by": [
+        "skills/twelve-factor-audit/evals/cases/agentic-audit-sample-repo.json",
+        "skills/twelve-factor-audit/evals/cases/agentic-recommend-next-step.json",
+        "skills/twelve-factor-audit/evals/cases/agentic-copy-total-grade.json",
+        "skills/twelve-factor-audit/evals/cases/agentic-no-invented-evidence.json"
+      ],
+      "planned": true
+    },
+    {
+      "id": "FR-014",
+      "implemented_by": [
+        "skills/twelve-factor-audit/scripts/_skillkit/"
+      ],
+      "verified_by": [
+        "skills/twelve-factor-audit/tests/test_audit.py::skills/twelve-factor-audit/tests/test_audit.py::TestLevelIndependence::test_identical_at_agent_implementation",
+        "skill-lab/tests/test_sync_r1.py"
+      ],
+      "planned": true
+    },
+    {
+      "id": "FR-015",
+      "implemented_by": [
+        "skills/twelve-factor-audit/scripts/_skillkit/"
+      ],
+      "verified_by": [
+        "skills/twelve-factor-audit/tests/test_audit.py::skills/twelve-factor-audit/tests/test_audit.py::TestLevelIndependence::test_identical_at_guarded_autonomous_and_demoted",
+        "skill-lab/tests/test_skills_r1.py"
+      ],
+      "planned": true
+    }
+  ]
+}

@@ -1,0 +1,284 @@
+{
+  "spec": "SPEC-003",
+  "requirements": [
+    {
+      "id": "FR-001",
+      "implemented_by": [
+        "skills/review-verifier/scripts/requirements_matrix.py",
+        "skills/review-verifier/references/verdict-format.md"
+      ],
+      "verified_by": [
+        "skills/review-verifier/tests/test_requirements_matrix.py::TestMatrix::test_golden_twelve_plus_sc",
+        "skills/review-verifier/tests/test_requirements_matrix.py::TestHeadBinding::test_check_for_other_commit_is_not_run",
+        "skills/review-verifier/tests/test_requirements_matrix.py::TestRanges::test_fr_range_in_tasks",
+        "skills/review-verifier/evals/cases/matrix-golden-12-plus-sc.json"
+      ],
+      "planned": true
+    },
+    {
+      "id": "FR-002",
+      "implemented_by": [
+        "skills/review-verifier/scripts/requirements_matrix.py"
+      ],
+      "verified_by": [
+        "skills/review-verifier/tests/test_requirements_matrix.py::TestUngrounded::test_claim_without_record_is_unverified",
+        "skills/review-verifier/tests/test_requirements_matrix.py::TestMatrix::test_failed_check_is_failed",
+        "skills/review-verifier/evals/cases/matrix-evidence-claim-ungrounded.json",
+        "skills/review-verifier/evals/cases/matrix-failed-check.json",
+        "skills/review-verifier/evals/cases/agentic-matrix-from-spec-not-evidence.json"
+      ],
+      "planned": true
+    },
+    {
+      "id": "FR-003",
+      "implemented_by": [
+        "skills/review-verifier/scripts/quality_gate.py",
+        "skills/review-verifier/references/quality-gate-categories.md"
+      ],
+      "verified_by": [
+        "skills/review-verifier/tests/test_quality_gate.py::TestNotRun::test_applicable_not_run_fails",
+        "skills/review-verifier/tests/test_quality_gate.py::TestApplicability::test_missing_decision_exit_2",
+        "skills/review-verifier/tests/test_quality_gate.py::TestConvergence::test_findings_fail_gate",
+        "skills/review-verifier/tests/test_quality_gate.py::TestBranch::test_stale_branch_fails",
+        "skills/review-verifier/evals/cases/quality-gate-not-run-is-not-pass.json",
+        "skills/review-verifier/evals/cases/quality-gate-applicability-missing.json",
+        "skills/review-verifier/evals/cases/agentic-not-run-is-not-passed.json"
+      ],
+      "planned": true
+    },
+    {
+      "id": "FR-004",
+      "implemented_by": [
+        "skills/review-verifier/scripts/quality_gate.py"
+      ],
+      "verified_by": [
+        "skills/review-verifier/tests/test_quality_gate.py::TestLiveGates::test_digest_mismatch_fails",
+        "skills/review-verifier/tests/test_quality_gate.py::TestLiveGates::test_no_process_started",
+        "skills/review-verifier/evals/cases/quality-gate-live-digest-mismatch.json",
+        "skills/review-verifier/evals/cases/agentic-live-evidence-only.json"
+      ],
+      "planned": true
+    },
+    {
+      "id": "FR-005",
+      "implemented_by": [
+        "skills/review-verifier/scripts/review_verdict.py",
+        "skills/review-verifier/references/verdict-format.md"
+      ],
+      "verified_by": [
+        "skills/review-verifier/tests/test_review_verdict.py::TestApproveRule::test_approve_requires_all_conditions",
+        "skills/review-verifier/tests/test_review_verdict.py::TestBlockedByEnv::test_live_key_name_gives_blocked",
+        "skills/review-verifier/tests/test_review_verdict.py::TestBlockedByEnv::test_value_never_printed",
+        "skills/review-verifier/evals/cases/verdict-approve-clean.json",
+        "skills/review-verifier/evals/cases/verdict-unverified-not-approve.json",
+        "skills/review-verifier/evals/cases/verdict-blocked-by-env.json",
+        "skills/review-verifier/evals/cases/agentic-blocker-cites-requirement.json"
+      ],
+      "planned": true
+    },
+    {
+      "id": "FR-006",
+      "implemented_by": [
+        "skills/review-verifier/scripts/review_verdict.py",
+        "skills/review-verifier/references/independence-rules.md"
+      ],
+      "verified_by": [
+        "skills/review-verifier/tests/test_review_verdict.py::TestIndependence::test_same_session_refused",
+        "skills/review-verifier/tests/test_review_verdict.py::TestIndependence::test_trailer_hit_refused",
+        "skills/review-verifier/tests/test_review_verdict.py::TestIndependence::test_reviewer_edited_production_refused",
+        "skills/review-verifier/evals/cases/verdict-self-review-refused.json",
+        "skills/review-verifier/evals/cases/verdict-trailer-independence.json"
+      ],
+      "planned": true
+    },
+    {
+      "id": "FR-007",
+      "implemented_by": [
+        "skills/review-verifier/scripts/review_verdict.py",
+        "skills/review-verifier/assets/templates/verdict-comment.md"
+      ],
+      "verified_by": [
+        "skills/review-verifier/tests/test_review_verdict.py::TestRender::test_one_marker_one_json_block",
+        "skills/review-verifier/tests/test_review_verdict.py::TestRender::test_roundtrip_through_collect_parser",
+        "skills/review-verifier/evals/cases/render-comment-roundtrip.json",
+        "skill-lab/tests/integration/test_us5_review_flow.py"
+      ],
+      "planned": true
+    },
+    {
+      "id": "FR-008",
+      "implemented_by": [
+        "skills/review-verifier/scripts/review_verdict.py"
+      ],
+      "verified_by": [
+        "skills/review-verifier/tests/test_review_verdict.py::TestCommentPlan::test_create_comment_op",
+        "skills/review-verifier/tests/test_review_verdict.py::TestCommentPlan::test_post_adds_review_submit_op",
+        "skills/review-verifier/tests/test_review_verdict.py::TestPolicy::test_apply_refused_at_shadow",
+        "skills/review-verifier/evals/cases/comment-plan-shape.json",
+        "skills/review-verifier/evals/cases/comment-plan-apply-refused-at-shadow.json",
+        "skills/review-verifier/evals/cases/review-submit-apply-refused-at-shadow.json",
+        "skills/review-verifier/evals/cases/agentic-comment-plan-not-posted.json"
+      ],
+      "planned": true
+    },
+    {
+      "id": "FR-009",
+      "implemented_by": [
+        "skills/review-verifier/SKILL.md",
+        "skills/review-verifier/references/independence-rules.md",
+        "skills/review-verifier/scripts/review_verdict.py"
+      ],
+      "verified_by": [
+        "skills/review-verifier/tests/test_review_verdict.py::TestIndependence::test_no_write_outside_out",
+        "skills/review-verifier/evals/cases/agentic-no-repair-and-approve.json",
+        "skills/review-verifier/evals/cases/agentic-live-evidence-only.json",
+        "skill-lab/tests/test_skills_r1.py"
+      ],
+      "planned": true
+    },
+    {
+      "id": "FR-010",
+      "implemented_by": [
+        "skills/review-verifier/SKILL.md"
+      ],
+      "verified_by": [
+        "skill-lab/tests/test_skills_r1.py",
+        "skills/review-verifier/evals/cases/trigger-review-pr-against-spec.json",
+        "skills/review-verifier/evals/cases/trigger-requirements-matrix.json",
+        "skills/review-verifier/evals/cases/trigger-quality-gate.json",
+        "skills/review-verifier/evals/cases/trigger-write-verdict.json",
+        "skills/review-verifier/evals/cases/trigger-independent-review.json",
+        "skills/review-verifier/evals/cases/trigger-neg-implement.json",
+        "skills/review-verifier/evals/cases/trigger-neg-risk-class.json",
+        "skills/review-verifier/evals/cases/trigger-neg-collect-verdict.json",
+        "skills/review-verifier/evals/cases/trigger-null-poem.json",
+        "skills/review-verifier/evals/cases/trigger-null-quicksort.json",
+        "skills/review-verifier/evals/cases/agentic-blocker-cites-requirement.json"
+      ],
+      "planned": true
+    },
+    {
+      "id": "FR-011",
+      "implemented_by": [
+        "skills/review-verifier/scripts/review_verdict.py"
+      ],
+      "verified_by": [
+        "skills/review-verifier/tests/test_verdict_post.py::TestPost::test_event_mapping",
+        "skills/review-verifier/tests/test_verdict_post.py::TestPost::test_idempotent_per_commit_and_digest",
+        "skills/review-verifier/tests/test_verdict_post.py::TestPost::test_fault_resume_from_receipts",
+        "skills/review-verifier/evals/cases/post-applied.json",
+        "skills/review-verifier/evals/cases/post-rerun.json",
+        "skills/review-verifier/evals/cases/comment-applied.json",
+        "skills/review-verifier/evals/cases/comment-rerun.json",
+        "skill-lab/tests/integration/test_r2_us2_review_merge.py"
+      ],
+      "planned": true
+    },
+    {
+      "id": "FR-012",
+      "implemented_by": [
+        "skills/review-verifier/scripts/review_verdict.py",
+        "skills/review-verifier/references/independence-rules.md"
+      ],
+      "verified_by": [
+        "skills/review-verifier/tests/test_verdict_post.py::TestIndependence::test_five_kinds_refused",
+        "skills/review-verifier/evals/cases/independence-author-login.json",
+        "skills/review-verifier/evals/cases/independence-commit-author-login.json",
+        "skills/review-verifier/evals/cases/independence-pse-login.json",
+        "skills/review-verifier/evals/cases/independence-session-trailer.json",
+        "skills/review-verifier/evals/cases/independence-reviewer-commits-outside-tests.json"
+      ],
+      "planned": true
+    },
+    {
+      "id": "FR-013",
+      "implemented_by": [
+        "skills/review-verifier/scripts/review_verdict.py"
+      ],
+      "verified_by": [
+        "skills/review-verifier/tests/test_verdict_post.py::TestFreshness::test_stale_head",
+        "skills/review-verifier/tests/test_verdict_post.py::TestFreshness::test_pr_not_open",
+        "skills/review-verifier/tests/test_verdict_post.py::TestPost::test_approval_without_gate",
+        "skills/review-verifier/evals/cases/post-stale-head.json",
+        "skills/review-verifier/evals/cases/post-pr-closed.json",
+        "skills/review-verifier/evals/cases/approval-without-gate.json",
+        "skills/review-verifier/evals/cases/agentic-r2-post-stale.json"
+      ],
+      "planned": true
+    },
+    {
+      "id": "FR-014",
+      "implemented_by": [
+        "skills/review-verifier/SKILL.md"
+      ],
+      "verified_by": [
+        "skills/review-verifier/evals/cases/agentic-r2-self-review-refusal.json",
+        "skills/review-verifier/evals/cases/agentic-r2-post-stale.json",
+        "skills/review-verifier/evals/cases/trigger-r2-post-verdict.json",
+        "skills/review-verifier/evals/cases/trigger-r2-neg-safe-to-merge.json",
+        "skills/review-verifier/evals/cases/post-applied.json",
+        "skills/review-verifier/evals/cases/comment-applied.json"
+      ],
+      "planned": true
+    },
+    {
+      "id": "FR-015",
+      "implemented_by": [
+        "skills/review-verifier/scripts/invalidate.py"
+      ],
+      "verified_by": [
+        "skills/review-verifier/tests/test_invalidate.py::TestLocalMarking::test_any_role_marks_stale",
+        "skills/review-verifier/tests/test_invalidate.py::TestLocalMarking::test_never_approves",
+        "skills/review-verifier/evals/cases/invalidate-local-marks-stale.json",
+        "skills/review-verifier/evals/cases/afv-stale-verdict-rejected.json",
+        "skills/review-verifier/evals/cases/agentic-r3-current-head-only.json",
+        "skills/review-verifier/evals/cases/agentic-r3-rereview-request.json"
+      ],
+      "planned": true
+    },
+    {
+      "id": "FR-016",
+      "implemented_by": [
+        "skills/review-verifier/scripts/invalidate.py"
+      ],
+      "verified_by": [
+        "skills/review-verifier/tests/test_invalidate.py::TestDismiss::test_only_own_non_head_approvals",
+        "skills/review-verifier/tests/test_invalidate.py::TestDismiss::test_already_dismissed",
+        "skills/review-verifier/tests/test_invalidate.py::TestDismiss::test_403_is_gitea_auth",
+        "skills/review-verifier/tests/test_invalidate.py::TestDismiss::test_refused_below_guarded",
+        "skills/review-verifier/evals/cases/review-dismiss-applied.json",
+        "skills/review-verifier/evals/cases/review-dismiss-rerun.json",
+        "skills/review-verifier/evals/cases/review-dismiss-refused-agent-implementation.json",
+        "skills/review-verifier/evals/cases/review-dismiss-refused-demoted.json",
+        "skills/review-verifier/evals/cases/invalidate-not-owned-untouched.json",
+        "skills/review-verifier/evals/cases/invalidate-identity-mismatch.json",
+        "skills/review-verifier/evals/cases/afv-dismissal-verified.json",
+        "skills/review-verifier/evals/cases/agentic-r3-no-foreign-dismissal.json",
+        "skill-lab/tests/integration/test_r3_us7_stale_heads.py"
+      ],
+      "planned": true
+    },
+    {
+      "id": "FR-017",
+      "implemented_by": [
+        "skills/review-verifier/SKILL.md"
+      ],
+      "verified_by": [
+        "skills/review-verifier/evals/cases/review-dismiss-applied.json",
+        "skills/review-verifier/evals/cases/review-dismiss-rerun.json",
+        "skills/review-verifier/evals/cases/review-dismiss-refused-agent-implementation.json",
+        "skills/review-verifier/evals/cases/review-dismiss-refused-demoted.json",
+        "skills/review-verifier/evals/cases/afv-dismissal-verified.json",
+        "skills/review-verifier/evals/cases/afv-stale-verdict-rejected.json",
+        "skills/review-verifier/evals/cases/agentic-afv-injected-approve.json",
+        "skills/review-verifier/evals/cases/agentic-r3-no-foreign-dismissal.json",
+        "skills/review-verifier/evals/cases/agentic-r3-current-head-only.json",
+        "skills/review-verifier/evals/cases/agentic-r3-rereview-request.json",
+        "skills/review-verifier/evals/cases/trigger-r3-stale-approval.json",
+        "skills/review-verifier/evals/cases/trigger-r3-neg-safe-to-merge.json",
+        "skill-lab/tests/integration/test_r3_us7_stale_heads.py"
+      ],
+      "planned": true
+    }
+  ]
+}

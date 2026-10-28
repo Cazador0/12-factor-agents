@@ -1,0 +1,373 @@
+{
+  "spec": "SPEC-013",
+  "requirements": [
+    {
+      "id": "FR-001",
+      "implemented_by": [
+        "skills/speckit-development/scripts/dev_state.py"
+      ],
+      "verified_by": [
+        "skills/speckit-development/tests/test_dev_state.py::TestNext::test_golden_next_wave",
+        "skills/speckit-development/tests/test_dev_state.py::TestCycle::test_cycle_refused",
+        "skills/speckit-development/evals/cases/next-wave-golden.json",
+        "skills/speckit-development/evals/cases/cycle-refused.json"
+      ],
+      "planned": true
+    },
+    {
+      "id": "FR-002",
+      "implemented_by": [
+        "skills/speckit-development/scripts/dev_state.py"
+      ],
+      "verified_by": [
+        "skills/speckit-development/tests/test_dev_state.py::TestCheck::test_derivation",
+        "skills/speckit-development/tests/test_dev_state.py::TestCheck::test_denylist",
+        "skills/speckit-development/evals/cases/check-plan-only.json",
+        "skills/speckit-development/evals/cases/check-denylisted-command-refused.json"
+      ],
+      "planned": true
+    },
+    {
+      "id": "FR-003",
+      "implemented_by": [
+        "skills/speckit-development/scripts/dev_state.py"
+      ],
+      "verified_by": [
+        "skills/speckit-development/tests/test_dev_state.py::TestMark::test_requires_passing_check",
+        "skills/speckit-development/tests/test_dev_state.py::TestMark::test_flips_single_line",
+        "skills/speckit-development/evals/cases/mark-requires-passing-check.json",
+        "skills/speckit-development/evals/cases/mark-after-passing-check.json"
+      ],
+      "planned": true
+    },
+    {
+      "id": "FR-004",
+      "implemented_by": [
+        "skills/speckit-development/scripts/converge.py"
+      ],
+      "verified_by": [
+        "skills/speckit-development/tests/test_converge.py::TestConverge::test_deterministic_findings",
+        "skills/speckit-development/tests/test_converge.py::TestConverge::test_model_findings",
+        "skills/speckit-development/evals/cases/converge-model-findings-merged.json"
+      ],
+      "planned": true
+    },
+    {
+      "id": "FR-005",
+      "implemented_by": [
+        "skills/speckit-development/scripts/converge.py"
+      ],
+      "verified_by": [
+        "skills/speckit-development/tests/test_converge.py::TestConverge::test_clean_is_byte_identical",
+        "skills/speckit-development/tests/test_converge.py::TestConverge::test_append_only",
+        "skills/speckit-development/evals/cases/converge-clean-is-byte-identical.json",
+        "skills/speckit-development/evals/cases/converge-missing-requirement-appends-phase.json"
+      ],
+      "planned": true
+    },
+    {
+      "id": "FR-006",
+      "implemented_by": [
+        "skills/speckit-development/scripts/pr_body.py"
+      ],
+      "verified_by": [
+        "skills/speckit-development/tests/test_pr_body.py::TestPrBody::test_not_run_never_pass",
+        "skills/speckit-development/evals/cases/pr-body-not-run-never-pass.json"
+      ],
+      "planned": true
+    },
+    {
+      "id": "FR-007",
+      "implemented_by": [
+        "skills/speckit-development/scripts/review_request.py"
+      ],
+      "verified_by": [
+        "skills/speckit-development/tests/test_review_request.py::TestReviewRequest::test_deterministic_id",
+        "skills/speckit-development/tests/test_review_request.py::TestReviewRequest::test_rounds",
+        "skills/speckit-development/tests/test_review_request.py::TestReviewRequest::test_instructions",
+        "skills/speckit-development/evals/cases/review-request-round-1.json",
+        "skills/speckit-development/evals/cases/review-request-rounds-exhausted.json",
+        "skills/speckit-development/evals/cases/review-request-forbids-live-keys.json"
+      ],
+      "planned": true
+    },
+    {
+      "id": "FR-008",
+      "implemented_by": [
+        "skills/speckit-development/scripts/review_collect.py",
+        "skills/speckit-development/references/review-comment-format.md"
+      ],
+      "verified_by": [
+        "skills/speckit-development/tests/test_review_collect.py::TestReviewCollect::test_approve_current_head",
+        "skills/speckit-development/tests/test_review_collect.py::TestReviewCollect::test_stale",
+        "skills/speckit-development/tests/test_review_collect.py::TestReviewCollect::test_independence",
+        "skills/speckit-development/tests/test_review_collect.py::TestReviewCollect::test_run_health_required",
+        "skills/speckit-development/evals/cases/collect-approve-current-head.json",
+        "skills/speckit-development/evals/cases/collect-stale-head.json",
+        "skills/speckit-development/evals/cases/collect-reviewer-is-author.json",
+        "skills/speckit-development/evals/cases/collect-missing-run-health.json",
+        "skills/speckit-development/evals/cases/collect-ambiguous-two-blocks.json"
+      ],
+      "planned": true
+    },
+    {
+      "id": "FR-009",
+      "implemented_by": [
+        "skills/speckit-development/scripts/review_local.py"
+      ],
+      "verified_by": [
+        "skills/speckit-development/tests/test_review_local.py::TestReviewLocal::test_plan",
+        "skills/speckit-development/tests/test_review_local.py::TestReviewLocal::test_missing_cli",
+        "skills/speckit-development/evals/cases/review-local-plan.json",
+        "skills/speckit-development/evals/cases/review-local-no-claude.json"
+      ],
+      "planned": true
+    },
+    {
+      "id": "FR-010",
+      "implemented_by": [
+        "skills/speckit-development/scripts/delivery_plan.py"
+      ],
+      "verified_by": [
+        "skills/speckit-development/tests/test_delivery_plan.py::TestDeliveryPlan::test_plans",
+        "skills/speckit-development/tests/test_delivery_plan.py::TestDeliveryPlan::test_refused_at_shadow",
+        "skills/speckit-development/evals/cases/policy-worktree-create-refused-at-shadow.json",
+        "skills/speckit-development/evals/cases/policy-branch-create-refused-at-shadow.json",
+        "skills/speckit-development/evals/cases/policy-commit-refused-at-shadow.json",
+        "skills/speckit-development/evals/cases/policy-push-branch-refused-at-shadow.json",
+        "skills/speckit-development/evals/cases/policy-pr-create-refused-at-shadow.json",
+        "skills/speckit-development/evals/cases/policy-pr-review-request-refused-at-shadow.json",
+        "skills/speckit-development/evals/cases/policy-review-session-request-refused-at-shadow.json"
+      ],
+      "planned": true
+    },
+    {
+      "id": "FR-011",
+      "implemented_by": [
+        "skills/speckit-development/scripts/dev_state.py",
+        "skills/speckit-development/scripts/converge.py",
+        "skills/speckit-development/scripts/review_local.py"
+      ],
+      "verified_by": [
+        "skills/speckit-development/tests/test_dev_state.py::TestCheck::test_list_args_only",
+        "skills/speckit-development/tests/test_review_local.py::TestReviewLocal::test_env_scrub",
+        "skills/speckit-development/evals/cases/agentic-injected-task-text.json"
+      ],
+      "planned": true
+    },
+    {
+      "id": "FR-012",
+      "implemented_by": [
+        "skills/speckit-development/SKILL.md",
+        "skills/speckit-development/references/delivery-loop.md",
+        "skills/speckit-development/references/review-comment-format.md"
+      ],
+      "verified_by": [
+        "skills/speckit-development/evals/cases/trigger-run-tasks.json",
+        "skills/speckit-development/evals/cases/trigger-slash-invoke.json",
+        "skill-lab/tests/integration/test_us2_speckit_development.py"
+      ],
+      "planned": true
+    },
+    {
+      "id": "FR-013",
+      "implemented_by": [
+        "skills/speckit-development/evals/cases/"
+      ],
+      "verified_by": [
+        "skills/speckit-development/evals/cases/next-wave-golden.json",
+        "skills/speckit-development/evals/cases/agentic-no-mark-without-check.json",
+        "skills/speckit-development/evals/cases/trigger-null-kahn.json",
+        "skills/speckit-development/evals/cases/trigger-neg-plan-dag.json",
+        "skills/speckit-development/evals/cases/policy-worktree-create-refused-at-shadow.json"
+      ],
+      "planned": true
+    },
+    {
+      "id": "FR-014",
+      "implemented_by": [
+        "skills/speckit-development/scripts/dev_state.py",
+        "skills/speckit-development/references/delivery-loop.md"
+      ],
+      "verified_by": [
+        "skill-lab/tests/integration/test_us2_speckit_development.py"
+      ],
+      "planned": true
+    },
+    {
+      "id": "FR-015",
+      "implemented_by": [
+        "skills/speckit-development/scripts/delivery_record.py"
+      ],
+      "verified_by": [
+        "skills/speckit-development/tests/test_delivery_record.py::TestDeliveryRecord::test_step_order",
+        "skills/speckit-development/tests/test_delivery_record.py::TestDeliveryRecord::test_resume",
+        "skill-lab/tests/integration/test_r2_us4_resume.py",
+        "skills/speckit-development/evals/cases/resume-after-push.json"
+      ],
+      "planned": true
+    },
+    {
+      "id": "FR-016",
+      "implemented_by": [
+        "skills/speckit-development/scripts/delivery_record.py",
+        "skills/speckit-development/scripts/delivery_plan.py"
+      ],
+      "verified_by": [
+        "skills/speckit-development/tests/test_delivery_plan_apply.py::TestPreflight::test_lease_refusals"
+      ],
+      "planned": true
+    },
+    {
+      "id": "FR-017",
+      "implemented_by": [
+        "skills/speckit-development/scripts/delivery_plan.py"
+      ],
+      "verified_by": [
+        "skills/speckit-development/tests/test_delivery_plan_apply.py::TestDeliveryApply::test_steps",
+        "skills/speckit-development/tests/test_delivery_plan_apply.py::TestDeliveryApply::test_usage_without_step",
+        "skill-lab/tests/integration/test_r2_us4_golden_e2e.py",
+        "skills/speckit-development/evals/cases/worktree-applied.json",
+        "skills/speckit-development/evals/cases/worktree-rerun.json",
+        "skills/speckit-development/evals/cases/branch-applied.json",
+        "skills/speckit-development/evals/cases/branch-rerun.json",
+        "skills/speckit-development/evals/cases/commit-applied.json",
+        "skills/speckit-development/evals/cases/commit-rerun.json",
+        "skills/speckit-development/evals/cases/push-applied.json",
+        "skills/speckit-development/evals/cases/push-rerun.json",
+        "skills/speckit-development/evals/cases/pr-create-applied.json",
+        "skills/speckit-development/evals/cases/pr-create-rerun.json",
+        "skills/speckit-development/evals/cases/pr-update-applied.json",
+        "skills/speckit-development/evals/cases/pr-update-rerun.json"
+      ],
+      "planned": true
+    },
+    {
+      "id": "FR-018",
+      "implemented_by": [
+        "skills/speckit-development/scripts/delivery_record.py"
+      ],
+      "verified_by": [
+        "skills/speckit-development/tests/test_delivery_record.py::TestDeliveryRecord::test_not_converged",
+        "skills/speckit-development/evals/cases/not-converged.json"
+      ],
+      "planned": true
+    },
+    {
+      "id": "FR-019",
+      "implemented_by": [
+        "skills/speckit-development/scripts/delivery_plan.py",
+        "skills/speckit-development/assets/templates/pr-body.md"
+      ],
+      "verified_by": [
+        "skills/speckit-development/tests/test_delivery_plan_apply.py::TestDeliveryApply::test_forge_github",
+        "skills/speckit-development/evals/cases/forge-github-pr-request.json"
+      ],
+      "planned": true
+    },
+    {
+      "id": "FR-020",
+      "implemented_by": [
+        "skills/speckit-development/scripts/delivery_plan.py",
+        "skills/speckit-development/assets/templates/review-dispatch.md"
+      ],
+      "verified_by": [
+        "skills/speckit-development/tests/test_delivery_review_steps.py::TestReviewSteps::test_review_request",
+        "skills/speckit-development/tests/test_delivery_review_steps.py::TestReviewSteps::test_dispatch_and_round_limit",
+        "skills/speckit-development/evals/cases/review-request-applied.json",
+        "skills/speckit-development/evals/cases/review-request-rerun.json",
+        "skills/speckit-development/evals/cases/review-session-applied.json",
+        "skills/speckit-development/evals/cases/review-session-rerun.json",
+        "skills/speckit-development/evals/cases/rounds-exhausted.json"
+      ],
+      "planned": true
+    },
+    {
+      "id": "FR-021",
+      "implemented_by": [
+        "skills/speckit-development/scripts/delivery_record.py"
+      ],
+      "verified_by": [
+        "skills/speckit-development/tests/test_delivery_record.py::TestDeliveryRecord::test_handoff_no_merge",
+        "skills/speckit-development/evals/cases/never-merges.json",
+        "skills/speckit-development/evals/cases/agentic-r2-no-merge.json"
+      ],
+      "planned": true
+    },
+    {
+      "id": "FR-022",
+      "implemented_by": [
+        "skills/speckit-development/SKILL.md",
+        "skills/speckit-development/references/r2-delivery.md"
+      ],
+      "verified_by": [
+        "skills/speckit-development/evals/cases/pr-update-refused-at-shadow.json",
+        "skills/speckit-development/evals/cases/agentic-r2-resume-delivery.json",
+        "skills/speckit-development/evals/cases/trigger-r2-deliver-feature.json",
+        "skills/speckit-development/evals/cases/trigger-r2-neg-open-pr-only.json"
+      ],
+      "planned": true
+    },
+    {
+      "id": "FR-023",
+      "implemented_by": [
+        "skills/speckit-development/scripts/delivery_record.py"
+      ],
+      "verified_by": [
+        "skills/speckit-development/tests/test_handoff_r3.py::TestHandoff::test_modes",
+        "skills/speckit-development/evals/cases/handoff-event-loop-low-risk.json",
+        "skills/speckit-development/evals/cases/handoff-human-medium.json"
+      ],
+      "planned": true
+    },
+    {
+      "id": "FR-024",
+      "implemented_by": [
+        "skills/speckit-development/scripts/delivery_record.py"
+      ],
+      "verified_by": [
+        "skills/speckit-development/tests/test_handoff_r3.py::TestHandoff::test_no_merge_reference",
+        "skills/speckit-development/evals/cases/handoff-no-merge-reference.json",
+        "skill-lab/tests/integration/test_r3_us9_handoff_factory.py"
+      ],
+      "planned": true
+    },
+    {
+      "id": "FR-025",
+      "implemented_by": [
+        "skills/speckit-development/scripts/review_request.py"
+      ],
+      "verified_by": [
+        "skills/speckit-development/tests/test_review_request_r3.py::TestLiveRuns::test_streak_digests",
+        "skills/speckit-development/tests/test_review_request_r3.py::TestLiveRuns::test_non_consecutive",
+        "skills/speckit-development/evals/cases/review-request-live-runs-streak.json",
+        "skills/speckit-development/evals/cases/review-request-live-runs-non-consecutive-refused.json"
+      ],
+      "planned": true
+    },
+    {
+      "id": "FR-026",
+      "implemented_by": [
+        "skills/speckit-development/scripts/delivery_record.py"
+      ],
+      "verified_by": [
+        "skills/speckit-development/tests/test_handoff_r3.py::TestHandoff::test_issue_contract_preserved",
+        "skills/speckit-development/evals/cases/afv-handoff-keeps-issue-contract.json"
+      ],
+      "planned": true
+    },
+    {
+      "id": "FR-027",
+      "implemented_by": [
+        "skills/speckit-development/SKILL.md"
+      ],
+      "verified_by": [
+        "skills/speckit-development/evals/cases/agentic-r3-handoff-not-merge.json",
+        "skills/speckit-development/evals/cases/agentic-r3-handoff-human-for-medium.json",
+        "skills/speckit-development/evals/cases/trigger-r3-handoff.json",
+        "skills/speckit-development/evals/cases/trigger-r3-neg-auto-merge.json"
+      ],
+      "planned": true
+    }
+  ]
+}

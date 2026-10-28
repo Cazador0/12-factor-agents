@@ -1,0 +1,244 @@
+{
+  "spec": "SPEC-010",
+  "requirements": [
+    {
+      "id": "FR-001",
+      "implemented_by": [
+        "skills/session-checkpoint/scripts/checkpoint.py",
+        "skills/session-checkpoint/references/checkpoint-fields.md"
+      ],
+      "verified_by": [
+        "skills/session-checkpoint/tests/test_checkpoint.py::TestWrite::test_report_example",
+        "skills/session-checkpoint/tests/test_checkpoint.py::TestSchemaGuard::test_reasoning_rejected_with_pointer",
+        "skills/session-checkpoint/tests/test_checkpoint.py::TestSchemaGuard::test_nested_unknown_key",
+        "skills/session-checkpoint/tests/test_checkpoint.py::TestWrite::test_plan_only_writes_nothing",
+        "skills/session-checkpoint/evals/cases/rejects-chain-of-thought-fields.json",
+        "skills/session-checkpoint/evals/cases/write-plan-only.json",
+        "skills/session-checkpoint/evals/cases/write-denied-by-override.json"
+      ],
+      "planned": true
+    },
+    {
+      "id": "FR-002",
+      "implemented_by": [
+        "skills/session-checkpoint/scripts/checkpoint.py"
+      ],
+      "verified_by": [
+        "skills/session-checkpoint/tests/test_checkpoint.py::TestWrite::test_id_is_deterministic",
+        "skills/session-checkpoint/tests/test_checkpoint.py::TestWrite::test_store_never_overwritten",
+        "skills/session-checkpoint/tests/test_checkpoint.py::TestDeterminism::test_byte_identical_stdout",
+        "skills/session-checkpoint/evals/cases/write-report-example.json"
+      ],
+      "planned": true
+    },
+    {
+      "id": "FR-003",
+      "implemented_by": [
+        "skills/session-checkpoint/scripts/checkpoint.py"
+      ],
+      "verified_by": [
+        "skills/session-checkpoint/tests/test_checkpoint.py::TestRedaction::test_token_redacted_with_warning",
+        "skills/session-checkpoint/tests/test_checkpoint.py::TestSchemaGuard::test_only_contract_fields",
+        "skills/session-checkpoint/evals/cases/redacts-token-in-evidence.json",
+        "skills/session-checkpoint/evals/cases/rejects-oversize-line.json"
+      ],
+      "planned": true
+    },
+    {
+      "id": "FR-004",
+      "implemented_by": [
+        "skills/session-checkpoint/scripts/checkpoint.py"
+      ],
+      "verified_by": [
+        "skills/session-checkpoint/tests/test_checkpoint.py::TestRead::test_by_id",
+        "skills/session-checkpoint/tests/test_checkpoint.py::TestRead::test_by_issue_and_session_newest",
+        "skills/session-checkpoint/tests/test_checkpoint.py::TestRead::test_not_found_exit_1",
+        "skills/session-checkpoint/evals/cases/read-latest-for-session.json"
+      ],
+      "planned": true
+    },
+    {
+      "id": "FR-005",
+      "implemented_by": [
+        "skills/session-checkpoint/scripts/checkpoint.py",
+        "skills/session-checkpoint/assets/templates/checkpoint.md"
+      ],
+      "verified_by": [
+        "skills/session-checkpoint/tests/test_checkpoint.py::TestRender::test_template_and_rendered_document",
+        "skills/session-checkpoint/tests/test_checkpoint.py::TestRender::test_byte_identical",
+        "skills/session-checkpoint/evals/cases/render-is-deterministic.json"
+      ],
+      "planned": true
+    },
+    {
+      "id": "FR-006",
+      "implemented_by": [
+        "skills/session-checkpoint/scripts/checkpoint.py",
+        "skills/session-checkpoint/references/resume-checks.md"
+      ],
+      "verified_by": [
+        "skills/session-checkpoint/tests/test_checkpoint.py::TestResumePlan::test_head_matches",
+        "skills/session-checkpoint/tests/test_checkpoint.py::TestResumePlan::test_head_moved_is_stale",
+        "skills/session-checkpoint/tests/test_checkpoint.py::TestResumePlan::test_branch_missing",
+        "skills/session-checkpoint/tests/test_checkpoint.py::TestResumePlan::test_lease_expired_or_foreign",
+        "skills/session-checkpoint/tests/test_checkpoint.py::TestResumePlan::test_null_commit_na",
+        "skills/session-checkpoint/tests/test_checkpoint.py::TestResumePlan::test_read_only",
+        "skills/session-checkpoint/evals/cases/resume-head-matches.json",
+        "skills/session-checkpoint/evals/cases/resume-head-moved-stale.json",
+        "skills/session-checkpoint/evals/cases/resume-branch-missing.json",
+        "skills/session-checkpoint/evals/cases/resume-lease-expired.json",
+        "skills/session-checkpoint/evals/cases/agentic-stale-resume-reverifies.json"
+      ],
+      "planned": true
+    },
+    {
+      "id": "FR-007",
+      "implemented_by": [
+        "skills/session-checkpoint/scripts/checkpoint.py",
+        "skills/session-checkpoint/assets/templates/checkpoint-comment.md"
+      ],
+      "verified_by": [
+        "skills/session-checkpoint/tests/test_checkpoint.py::TestPublish::test_plan_op_and_marker",
+        "skills/session-checkpoint/tests/test_checkpoint.py::TestPublish::test_apply_refused_at_shadow",
+        "skills/session-checkpoint/evals/cases/publish-plan-at-shadow.json",
+        "skills/session-checkpoint/evals/cases/publish-refused-at-shadow.json"
+      ],
+      "planned": true
+    },
+    {
+      "id": "FR-008",
+      "implemented_by": [
+        "skills/session-checkpoint/scripts/checkpoint.py"
+      ],
+      "verified_by": [
+        "skills/session-checkpoint/tests/test_checkpoint.py::TestDeterminism::test_byte_identical_stdout",
+        "skills/session-checkpoint/tests/test_checkpoint.py::TestSeedStore::test_seed_store_nonempty_exit_2",
+        "skills/session-checkpoint/evals/cases/write-report-example.json"
+      ],
+      "planned": true
+    },
+    {
+      "id": "FR-009",
+      "implemented_by": [
+        "skills/session-checkpoint/SKILL.md"
+      ],
+      "verified_by": [
+        "skill-lab validate --skill session-checkpoint",
+        "skills/session-checkpoint/evals/cases/agentic-write-from-session.json",
+        "skills/session-checkpoint/evals/cases/agentic-handoff-next-action.json"
+      ],
+      "planned": true
+    },
+    {
+      "id": "FR-010",
+      "implemented_by": [
+        "skills/session-checkpoint/evals/cases/",
+        "skills/session-checkpoint/evals/fixtures/"
+      ],
+      "verified_by": [
+        "skill-lab validate --rule eval-inventory-r1",
+        "skills/session-checkpoint/evals/cases/rejects-chain-of-thought-fields.json",
+        "skills/session-checkpoint/evals/cases/publish-refused-at-shadow.json",
+        "skills/session-checkpoint/evals/cases/agentic-no-chain-of-thought.json",
+        "skills/session-checkpoint/evals/cases/agentic-evidence-only-executed.json",
+        "skills/session-checkpoint/evals/cases/agentic-injected-handoff-notes.json",
+        "skills/session-checkpoint/evals/cases/trigger-neg-claim-lease.json"
+      ],
+      "planned": true
+    },
+    {
+      "id": "FR-011",
+      "implemented_by": [
+        "skills/session-checkpoint/scripts/checkpoint.py",
+        "skills/session-checkpoint/assets/templates/checkpoint-comment.md"
+      ],
+      "verified_by": [
+        "skills/session-checkpoint/tests/test_checkpoint_publish.py::TestPublish::test_marker_and_digest",
+        "skills/session-checkpoint/tests/test_checkpoint_publish.py::TestPublish::test_rerun_already_applied_one_comment",
+        "skills/session-checkpoint/tests/test_checkpoint_publish.py::TestPublish::test_receipt_and_verify_after_write",
+        "skill-lab/tests/integration/test_r2_us1_pse_delivery.py",
+        "skills/session-checkpoint/evals/cases/publish-applied.json",
+        "skills/session-checkpoint/evals/cases/publish-rerun.json"
+      ],
+      "planned": true
+    },
+    {
+      "id": "FR-012",
+      "implemented_by": [
+        "skills/session-checkpoint/scripts/checkpoint.py"
+      ],
+      "verified_by": [
+        "skills/session-checkpoint/tests/test_checkpoint_publish.py::TestPublish::test_pse_requires_lease",
+        "skills/session-checkpoint/tests/test_checkpoint_publish.py::TestPublish::test_identity_mismatch",
+        "skills/session-checkpoint/tests/test_checkpoint_publish.py::TestPublish::test_canary_token_never_in_output_or_comment",
+        "skills/session-checkpoint/evals/cases/publish-no-lease-refused.json"
+      ],
+      "planned": true
+    },
+    {
+      "id": "FR-013",
+      "implemented_by": [
+        "skills/session-checkpoint/SKILL.md",
+        "skills/session-checkpoint/evals/cases/"
+      ],
+      "verified_by": [
+        "skill-lab validate --rule eval-inventory-r2",
+        "skills/session-checkpoint/evals/cases/publish-applied.json",
+        "skills/session-checkpoint/evals/cases/publish-rerun.json",
+        "skills/session-checkpoint/evals/cases/agentic-r2-publish-handoff.json",
+        "skills/session-checkpoint/evals/cases/trigger-r2-save-progress.json",
+        "skills/session-checkpoint/evals/cases/trigger-r2-neg-claim-issue.json"
+      ],
+      "planned": true
+    },
+    {
+      "id": "FR-014",
+      "implemented_by": [
+        "skills/session-checkpoint/scripts/checkpoint.py",
+        "skills/session-checkpoint/references/recovery-checks.md"
+      ],
+      "verified_by": [
+        "skills/session-checkpoint/tests/test_resume_recovery.py::TestRecoveryChecks::test_four_checks_pass_clean",
+        "skills/session-checkpoint/tests/test_resume_recovery.py::TestRecoveryChecks::test_foreign_commit_fails_attribution",
+        "skills/session-checkpoint/tests/test_resume_recovery.py::TestRecoveryChecks::test_not_descendant_fails",
+        "skills/session-checkpoint/tests/test_resume_recovery.py::TestRecoveryChecks::test_no_classification_or_write",
+        "skills/session-checkpoint/evals/cases/resume-recovery-clean.json",
+        "skills/session-checkpoint/evals/cases/resume-recovery-foreign-commit.json",
+        "skills/session-checkpoint/evals/cases/agentic-r3-recovery-checkpoint-summary.json"
+      ],
+      "planned": true
+    },
+    {
+      "id": "FR-015",
+      "implemented_by": [
+        "skills/session-checkpoint/scripts/checkpoint.py"
+      ],
+      "verified_by": [
+        "skills/session-checkpoint/tests/test_resume_recovery.py::TestLatestValid::test_local_and_comments",
+        "skills/session-checkpoint/tests/test_resume_recovery.py::TestLatestValid::test_unconfigured_identity_ignored",
+        "skills/session-checkpoint/tests/test_resume_recovery.py::TestLatestValid::test_bad_digest_ignored",
+        "skills/session-checkpoint/tests/test_resume_recovery.py::TestLatestValid::test_older_head_rejected",
+        "skills/session-checkpoint/evals/cases/afv-latest-valid-checkpoint.json",
+        "skills/session-checkpoint/evals/cases/afv-unconfigured-checkpoint-ignored.json",
+        "skills/session-checkpoint/evals/cases/afv-stale-checkpoint-rejected.json"
+      ],
+      "planned": true
+    },
+    {
+      "id": "FR-016",
+      "implemented_by": [
+        "skills/session-checkpoint/SKILL.md",
+        "skills/session-checkpoint/evals/cases/"
+      ],
+      "verified_by": [
+        "skill-lab validate --rule eval-inventory-r3",
+        "skill-lab validate --rule afv-inventory",
+        "skills/session-checkpoint/evals/cases/agentic-r3-recovery-checkpoint-summary.json",
+        "skills/session-checkpoint/evals/cases/agentic-r3-resume-from-recovery.json",
+        "skills/session-checkpoint/evals/cases/trigger-r3-resume-last.json",
+        "skills/session-checkpoint/evals/cases/trigger-r3-neg-recover-lease.json"
+      ],
+      "planned": true
+    }
+  ]
+}

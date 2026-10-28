@@ -1,0 +1,230 @@
+{
+  "spec": "SPEC-014",
+  "requirements": [
+    {
+      "id": "FR-001",
+      "implemented_by": [
+        "skills/run-monitor/scripts/snapshot.py"
+      ],
+      "verified_by": [
+        "skills/run-monitor/tests/test_snapshot.py::TestContainer::test_cpu_from_two_samples",
+        "skills/run-monitor/tests/test_snapshot.py::TestContainer::test_memory_disk_processes",
+        "skills/run-monitor/evals/cases/snapshot-ok-below-limits.json"
+      ],
+      "planned": true
+    },
+    {
+      "id": "FR-002",
+      "implemented_by": [
+        "skills/run-monitor/scripts/snapshot.py"
+      ],
+      "verified_by": [
+        "skills/run-monitor/tests/test_snapshot.py::TestProcFallback::test_nulls_with_notes",
+        "skills/run-monitor/evals/cases/snapshot-without-proc-is-null.json",
+        "skills/run-monitor/evals/cases/agentic-null-not-a-problem.json"
+      ],
+      "planned": true
+    },
+    {
+      "id": "FR-003",
+      "implemented_by": [
+        "skills/run-monitor/scripts/snapshot.py"
+      ],
+      "verified_by": [
+        "skills/run-monitor/tests/test_snapshot.py::TestRunLog::test_api_percentiles",
+        "skills/run-monitor/tests/test_snapshot.py::TestRunLog::test_skill_filter",
+        "skills/run-monitor/tests/test_snapshot.py::TestRunLog::test_malformed_line",
+        "skills/run-monitor/evals/cases/snapshot-api-percentiles-from-log.json",
+        "skills/run-monitor/evals/cases/snapshot-skill-filter.json",
+        "skills/run-monitor/evals/cases/snapshot-malformed-log-line-skipped.json"
+      ],
+      "planned": true
+    },
+    {
+      "id": "FR-004",
+      "implemented_by": [
+        "skills/run-monitor/scripts/snapshot.py"
+      ],
+      "verified_by": [
+        "skills/run-monitor/tests/test_snapshot.py::TestRunLog::test_sessions",
+        "skills/run-monitor/evals/cases/snapshot-degraded-session-stalled.json"
+      ],
+      "planned": true
+    },
+    {
+      "id": "FR-005",
+      "implemented_by": [
+        "skills/run-monitor/scripts/snapshot.py",
+        "skills/run-monitor/references/metrics.md"
+      ],
+      "verified_by": [
+        "skills/run-monitor/tests/test_snapshot.py::TestLimits::test_each_limit",
+        "skills/run-monitor/tests/test_snapshot.py::TestLimits::test_boundaries",
+        "skills/run-monitor/tests/test_snapshot.py::TestLimits::test_null_never_degraded",
+        "skills/run-monitor/evals/cases/snapshot-degraded-memory.json",
+        "skills/run-monitor/evals/cases/snapshot-degraded-disk-low.json",
+        "skills/run-monitor/evals/cases/snapshot-degraded-api-error-rate.json",
+        "skills/run-monitor/evals/cases/snapshot-limit-boundaries.json",
+        "skills/run-monitor/evals/cases/snapshot-missing-limits-exit-2.json"
+      ],
+      "planned": true
+    },
+    {
+      "id": "FR-006",
+      "implemented_by": [
+        "skills/run-monitor/scripts/snapshot.py"
+      ],
+      "verified_by": [
+        "skills/run-monitor/tests/test_snapshot_local_container.py::TestCgroupV2::test_limited",
+        "skills/run-monitor/tests/test_snapshot_local_container.py::TestCgroupV2::test_unlimited",
+        "skills/run-monitor/tests/test_snapshot_local_container.py::TestCgroupV1::test_v1_files",
+        "skills/run-monitor/tests/test_snapshot_local_container.py::TestUnavailable::test_null_with_note",
+        "skills/run-monitor/tests/test_snapshot_local_container.py::TestTargetId::test_hostname",
+        "skills/run-monitor/evals/cases/snapshot-local-container-cgroup-v2.json",
+        "skills/run-monitor/evals/cases/snapshot-local-container-cgroup-v2-no-limit.json",
+        "skills/run-monitor/evals/cases/snapshot-local-container-cgroup-v1.json",
+        "skills/run-monitor/evals/cases/snapshot-local-container-cgroup-unavailable.json",
+        "skills/run-monitor/evals/cases/snapshot-local-container-degraded-memory.json"
+      ],
+      "planned": true
+    },
+    {
+      "id": "FR-007",
+      "implemented_by": [
+        "skills/run-monitor/scripts/snapshot.py"
+      ],
+      "verified_by": [
+        "skills/run-monitor/tests/test_snapshot.py::TestHygiene::test_no_environment_values",
+        "skills/run-monitor/tests/test_snapshot.py::TestHygiene::test_allowed_files_only",
+        "skills/run-monitor/tests/test_snapshot_local_container.py::TestAllowedPaths::test_no_socket_no_cli",
+        "skills/run-monitor/evals/cases/snapshot-no-environment-values.json",
+        "skills/run-monitor/evals/cases/snapshot-out-path-escape-refused.json"
+      ],
+      "planned": true
+    },
+    {
+      "id": "FR-008",
+      "implemented_by": [
+        "skills/run-monitor/scripts/snapshot.py",
+        "skills/run-monitor/assets/templates/health-comment.md"
+      ],
+      "verified_by": [
+        "skills/run-monitor/tests/test_snapshot.py::TestOut::test_directory_taken_at",
+        "skills/run-monitor/tests/test_snapshot.py::TestOut::test_collision_suffix",
+        "skills/run-monitor/evals/cases/snapshot-out-dir-writes-taken-at-file.json",
+        "skills/run-monitor/evals/cases/snapshot-reviewer-session-target.json"
+      ],
+      "planned": true
+    },
+    {
+      "id": "FR-009",
+      "implemented_by": [
+        "skills/run-monitor/SKILL.md",
+        "skills/run-monitor/references/assessment.md",
+        "skills/run-monitor/assets/templates/health-comment.md"
+      ],
+      "verified_by": [
+        "skills/run-monitor/evals/cases/assessment-keeps-status.json",
+        "skills/run-monitor/evals/cases/agentic-assessment-explains-degraded.json",
+        "skills/run-monitor/evals/cases/agentic-assessment-ok-run.json",
+        "skills/run-monitor/evals/cases/agentic-injected-run-log.json",
+        "skills/run-monitor/evals/cases/trigger-snapshot-after-skill.json",
+        "skill-lab/tests/integration/test_us10_run_monitor.py"
+      ],
+      "planned": true
+    },
+    {
+      "id": "FR-010",
+      "implemented_by": [
+        "skills/run-monitor/scripts/snapshot.py"
+      ],
+      "verified_by": [
+        "skills/run-monitor/tests/test_snapshot.py::TestDeterminism::test_byte_identical",
+        "skills/run-monitor/tests/test_snapshot.py::TestHygiene::test_no_write_in_skill_folder",
+        "skills/run-monitor/evals/cases/snapshot-ok-below-limits.json"
+      ],
+      "planned": true
+    },
+    {
+      "id": "FR-011",
+      "implemented_by": [
+        "skills/run-monitor/evals/cases",
+        "skills/run-monitor/evals/fixtures"
+      ],
+      "verified_by": [
+        "skills/run-monitor/evals/cases/snapshot-ok-below-limits.json",
+        "skills/run-monitor/evals/cases/snapshot-degraded-memory.json",
+        "skills/run-monitor/evals/cases/snapshot-no-environment-values.json",
+        "skills/run-monitor/evals/cases/snapshot-without-proc-is-null.json",
+        "skills/run-monitor/evals/cases/snapshot-local-container-cgroup-v2.json",
+        "skills/run-monitor/evals/cases/assessment-keeps-status.json",
+        "skills/run-monitor/evals/cases/trigger-neg-scaffold-skill.json",
+        "skills/run-monitor/evals/cases/trigger-null-docker-stop.json",
+        "skills/run-monitor/evals/cases/trigger-null-hpa.json"
+      ],
+      "planned": true
+    },
+    {
+      "id": "FR-012",
+      "implemented_by": [
+        "skills/run-monitor/SKILL.md",
+        "skills/CATALOG.json",
+        "skills/README.md"
+      ],
+      "verified_by": [
+        "skills/run-monitor/evals/cases/trigger-slash-invoke.json",
+        "skill-lab/tests/test_configs.py"
+      ],
+      "planned": true
+    },
+    {
+      "id": "FR-013",
+      "implemented_by": [
+        "skills/run-monitor/SKILL.md"
+      ],
+      "verified_by": [
+        "skill-lab/tests/test_bench_local_monitoring.py",
+        "skills/run-monitor/evals/cases/agentic-local-container-assessment.json",
+        "skills/run-monitor/evals/cases/trigger-local-container-health.json"
+      ],
+      "planned": true
+    },
+    {
+      "id": "FR-014",
+      "implemented_by": [
+        "skills/run-monitor/scripts/snapshot.py",
+        "skills/run-monitor/SKILL.md"
+      ],
+      "verified_by": [
+        "skill-lab/tests/test_skills_r3.py",
+        "skills/run-monitor/evals/cases/snapshot-gateway-no-run-log.json"
+      ],
+      "planned": true
+    },
+    {
+      "id": "FR-015",
+      "implemented_by": [
+        "skills/run-monitor/scripts/snapshot.py"
+      ],
+      "verified_by": [
+        "skills/gitea-event-normalizer/tests/test_serve.py",
+        "skills/run-monitor/evals/cases/snapshot-gateway-no-run-log.json"
+      ],
+      "planned": true
+    },
+    {
+      "id": "FR-016",
+      "implemented_by": [
+        "skills/run-monitor/scripts/snapshot.py",
+        "skills/run-monitor/assets/templates/health-comment.md"
+      ],
+      "verified_by": [
+        "skills/speckit-development/tests/test_review_request_r3.py",
+        "skills/speckit-development/tests/test_review_collect.py",
+        "skills/run-monitor/evals/cases/snapshot-reviewer-session-target.json",
+        "skills/run-monitor/evals/cases/trigger-reviewer-health-report.json"
+      ],
+      "planned": true
+    }
+  ]
+}

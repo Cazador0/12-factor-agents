@@ -1,0 +1,225 @@
+{
+  "spec": "SPEC-004",
+  "requirements": [
+    {
+      "id": "FR-001",
+      "implemented_by": [
+        "skills/speckit-gitea-taskstoissues/scripts/tasks_to_issues.py"
+      ],
+      "verified_by": [
+        "skills/speckit-gitea-taskstoissues/tests/test_tasks_to_issues.py::TestTasksToIssues::test_creates_only_missing",
+        "skills/speckit-gitea-taskstoissues/tests/test_tasks_to_issues.py::TestTasksToIssues::test_rerun_is_byte_identical",
+        "skills/speckit-gitea-taskstoissues/evals/cases/plan-creates-missing-only.json"
+      ],
+      "planned": true
+    },
+    {
+      "id": "FR-002",
+      "implemented_by": [
+        "skills/speckit-gitea-taskstoissues/scripts/tasks_to_issues.py",
+        "skills/speckit-gitea-taskstoissues/references/plan-and-dedupe.md"
+      ],
+      "verified_by": [
+        "skills/speckit-gitea-taskstoissues/tests/test_tasks_to_issues.py::TestTasksToIssues::test_map_first_dedupe",
+        "skills/speckit-gitea-taskstoissues/tests/test_tasks_to_issues.py::TestTasksToIssues::test_closed_issue_counts_as_present",
+        "skills/speckit-gitea-taskstoissues/evals/cases/plan-map-first-dedupe.json",
+        "skills/speckit-gitea-taskstoissues/evals/cases/plan-creates-missing-only.json"
+      ],
+      "planned": true
+    },
+    {
+      "id": "FR-003",
+      "implemented_by": [
+        "skills/speckit-gitea-taskstoissues/scripts/tasks_to_issues.py"
+      ],
+      "verified_by": [
+        "skills/speckit-gitea-taskstoissues/tests/test_tasks_to_issues.py::TestTasksToIssues::test_dependencies_from_markers",
+        "skills/speckit-gitea-taskstoissues/tests/test_tasks_to_issues.py::TestTasksToIssues::test_unknown_dependency_warns",
+        "skills/speckit-gitea-taskstoissues/tests/test_tasks_to_issues.py::TestTasksToIssues::test_cycle_refused",
+        "skills/speckit-gitea-taskstoissues/evals/cases/plan-dependencies-from-markers.json",
+        "skills/speckit-gitea-taskstoissues/evals/cases/plan-unknown-dependency-warns.json",
+        "skills/speckit-gitea-taskstoissues/evals/cases/plan-cycle-refused.json"
+      ],
+      "planned": true
+    },
+    {
+      "id": "FR-004",
+      "implemented_by": [
+        "skills/speckit-gitea-taskstoissues/scripts/tasks_to_issues.py",
+        "skills/speckit-gitea-taskstoissues/references/label-vocabulary.md"
+      ],
+      "verified_by": [
+        "skills/speckit-gitea-taskstoissues/tests/test_tasks_to_issues.py::TestLabels::test_vocabulary_only",
+        "skills/speckit-gitea-taskstoissues/tests/test_tasks_to_issues.py::TestLabels::test_define_label_only_for_missing",
+        "skills/speckit-gitea-taskstoissues/tests/test_tasks_to_issues.py::TestLabels::test_milestone_flag",
+        "skills/speckit-gitea-taskstoissues/evals/cases/plan-label-vocabulary.json",
+        "skills/speckit-gitea-taskstoissues/evals/cases/plan-milestone-flag.json",
+        "skills/speckit-gitea-taskstoissues/evals/cases/agentic-label-vocabulary.json"
+      ],
+      "planned": true
+    },
+    {
+      "id": "FR-005",
+      "implemented_by": [
+        "skills/speckit-gitea-taskstoissues/scripts/tasks_to_issues.py"
+      ],
+      "verified_by": [
+        "skills/speckit-gitea-taskstoissues/tests/test_tasks_to_issues.py::TestKeys::test_idempotency_key_derivation",
+        "skills/speckit-gitea-taskstoissues/tests/test_tasks_to_issues.py::TestKeys::test_plan_records_source_digest",
+        "skills/speckit-gitea-taskstoissues/evals/cases/plan-idempotency-keys-stable.json"
+      ],
+      "planned": true
+    },
+    {
+      "id": "FR-006",
+      "implemented_by": [
+        "skills/speckit-gitea-taskstoissues/scripts/tasks_to_issues.py"
+      ],
+      "verified_by": [
+        "skills/speckit-gitea-taskstoissues/tests/test_tasks_to_issues.py::TestReadOnlyClient::test_only_get_requests",
+        "skills/speckit-gitea-taskstoissues/tests/test_tasks_to_issues.py::TestReadOnlyClient::test_paging",
+        "skills/speckit-gitea-taskstoissues/tests/test_tasks_to_issues.py::TestReadOnlyClient::test_credentialed_url_refused",
+        "skills/speckit-gitea-taskstoissues/evals/cases/plan-credentialed-url-refused.json"
+      ],
+      "planned": true
+    },
+    {
+      "id": "FR-007",
+      "implemented_by": [
+        "skills/speckit-gitea-taskstoissues/scripts/tasks_to_issues.py"
+      ],
+      "verified_by": [
+        "skills/speckit-gitea-taskstoissues/tests/test_tasks_to_issues.py::TestPolicy::test_apply_refused_at_shadow",
+        "skills/speckit-gitea-taskstoissues/tests/test_tasks_to_issues.py::TestPolicy::test_deny_override",
+        "skills/speckit-gitea-taskstoissues/tests/test_tasks_to_issues.py::TestPolicy::test_nothing_written_on_refusal",
+        "skills/speckit-gitea-taskstoissues/evals/cases/apply-refused-at-shadow.json",
+        "skills/speckit-gitea-taskstoissues/evals/cases/agentic-apply-refused-escalate.json"
+      ],
+      "planned": true
+    },
+    {
+      "id": "FR-008",
+      "implemented_by": [
+        "skills/speckit-gitea-taskstoissues/assets/templates/issue-body.md",
+        "skills/speckit-gitea-taskstoissues/scripts/tasks_to_issues.py"
+      ],
+      "verified_by": [
+        "skills/speckit-gitea-taskstoissues/tests/test_tasks_to_issues.py::TestBody::test_template_fields",
+        "skills/speckit-gitea-taskstoissues/tests/test_tasks_to_issues.py::TestBody::test_description_is_quoted",
+        "skills/speckit-gitea-taskstoissues/tests/test_tasks_to_issues.py::TestBody::test_title_truncation",
+        "skills/speckit-gitea-taskstoissues/evals/cases/agentic-injected-task-text.json"
+      ],
+      "planned": true
+    },
+    {
+      "id": "FR-009",
+      "implemented_by": [
+        "skills/speckit-gitea-taskstoissues/scripts/tasks_to_issues.py",
+        "skills/speckit-gitea-taskstoissues/SKILL.md"
+      ],
+      "verified_by": [
+        "skills/speckit-gitea-taskstoissues/tests/test_tasks_to_issues.py::TestInputs::test_no_tasks",
+        "skills/speckit-gitea-taskstoissues/tests/test_tasks_to_issues.py::TestInputs::test_duplicate_task_id",
+        "skills/speckit-gitea-taskstoissues/tests/test_tasks_to_issues.py::TestInputs::test_bad_map",
+        "skills/speckit-gitea-taskstoissues/evals/cases/plan-empty-tasks-refused.json"
+      ],
+      "planned": true
+    },
+    {
+      "id": "FR-010",
+      "implemented_by": [
+        "skills/speckit-gitea-taskstoissues/evals/cases/",
+        "skills/speckit-gitea-taskstoissues/evals/fixtures/"
+      ],
+      "verified_by": [
+        "skills/speckit-gitea-taskstoissues/evals/cases/plan-creates-missing-only.json",
+        "skills/speckit-gitea-taskstoissues/evals/cases/apply-refused-at-shadow.json",
+        "skills/speckit-gitea-taskstoissues/evals/cases/agentic-plan-summary.json",
+        "skills/speckit-gitea-taskstoissues/evals/cases/trigger-create-issues.json",
+        "skills/speckit-gitea-taskstoissues/evals/cases/trigger-null-capital.json",
+        "skills/speckit-gitea-taskstoissues/evals/cases/trigger-neg-drift.json"
+      ],
+      "planned": true
+    },
+    {
+      "id": "FR-011",
+      "implemented_by": [
+        "skills/speckit-gitea-taskstoissues/scripts/tasks_to_issues.py"
+      ],
+      "verified_by": [
+        "skills/speckit-gitea-taskstoissues/tests/test_tasks_to_issues_apply.py::TestApply::test_create_counts_equal_plan_ops",
+        "skills/speckit-gitea-taskstoissues/tests/test_tasks_to_issues_apply.py::TestApply::test_rerun_zero_writes",
+        "skills/speckit-gitea-taskstoissues/tests/test_tasks_to_issues_apply.py::TestApply::test_closed_issue_dedupe",
+        "skills/speckit-gitea-taskstoissues/tests/test_tasks_to_issues_apply.py::TestApply::test_map_journaled_after_every_op",
+        "skills/speckit-gitea-taskstoissues/evals/cases/apply-applied.json",
+        "skills/speckit-gitea-taskstoissues/evals/cases/apply-rerun.json",
+        "skills/speckit-gitea-taskstoissues/evals/cases/dedupe-closed.json"
+      ],
+      "planned": true
+    },
+    {
+      "id": "FR-012",
+      "implemented_by": [
+        "skills/speckit-gitea-taskstoissues/scripts/tasks_to_issues.py"
+      ],
+      "verified_by": [
+        "skills/speckit-gitea-taskstoissues/tests/test_tasks_to_issues_apply.py::TestApply::test_plan_stale",
+        "skills/speckit-gitea-taskstoissues/tests/test_tasks_to_issues_apply.py::TestApply::test_fault_at_every_op",
+        "skills/speckit-gitea-taskstoissues/evals/cases/plan-stale.json",
+        "skills/speckit-gitea-taskstoissues/evals/cases/apply-resume-after-fault.json"
+      ],
+      "planned": true
+    },
+    {
+      "id": "FR-013",
+      "implemented_by": [
+        "skills/speckit-gitea-taskstoissues/scripts/tasks_to_issues.py"
+      ],
+      "verified_by": [
+        "skills/speckit-gitea-taskstoissues/tests/test_tasks_to_issues_apply.py::TestApply::test_label_not_exclusive",
+        "skills/speckit-gitea-taskstoissues/tests/test_tasks_to_issues_apply.py::TestRefreshTitles::test_open_mapped_only",
+        "skills/speckit-gitea-taskstoissues/tests/test_tasks_to_issues_apply.py::TestRefreshTitles::test_title_and_body_only",
+        "skills/speckit-gitea-taskstoissues/evals/cases/label-not-exclusive.json",
+        "skills/speckit-gitea-taskstoissues/evals/cases/refresh-titles-applied.json",
+        "skills/speckit-gitea-taskstoissues/evals/cases/refresh-titles-rerun.json"
+      ],
+      "planned": true
+    },
+    {
+      "id": "FR-014",
+      "implemented_by": [
+        "skills/speckit-gitea-taskstoissues/scripts/tasks_to_issues.py"
+      ],
+      "verified_by": [
+        "skills/speckit-gitea-taskstoissues/tests/test_tasks_to_issues_apply.py::TestApply::test_identity_mismatch",
+        "skills/speckit-gitea-taskstoissues/tests/test_tasks_to_issues_apply.py::TestApply::test_token_canary_absent"
+      ],
+      "planned": true
+    },
+    {
+      "id": "FR-015",
+      "implemented_by": [
+        "skills/speckit-gitea-taskstoissues/SKILL.md",
+        "skills/speckit-gitea-taskstoissues/evals/cases/"
+      ],
+      "verified_by": [
+        "skills/speckit-gitea-taskstoissues/evals/cases/issue-update-refused-at-shadow.json",
+        "skills/speckit-gitea-taskstoissues/evals/cases/agentic-r2-resume-apply.json",
+        "skills/speckit-gitea-taskstoissues/evals/cases/trigger-r2-apply-plan.json",
+        "skills/speckit-gitea-taskstoissues/evals/cases/trigger-r2-neg-drift-comments.json"
+      ],
+      "planned": true
+    },
+    {
+      "id": "FR-016",
+      "implemented_by": [
+        "skills/speckit-gitea-taskstoissues/SKILL.md"
+      ],
+      "verified_by": [
+        "skills/speckit-gitea-taskstoissues/evals/cases/apply-refused-at-shadow.json",
+        "skills/speckit-gitea-taskstoissues/evals/cases/plan-creates-missing-only.json"
+      ],
+      "planned": true
+    }
+  ]
+}

@@ -1,0 +1,404 @@
+{
+  "spec": "SPEC-009",
+  "requirements": [
+    {
+      "id": "FR-001",
+      "implemented_by": [
+        "skills/merge-policy-gate/scripts/merge_decision.py",
+        "skills/merge-policy-gate/assets/risk-tables.json",
+        "skills/merge-policy-gate/references/risk-classes.md"
+      ],
+      "verified_by": [
+        "skills/merge-policy-gate/tests/test_merge_decision.py::TestRisk::test_docs_low",
+        "skills/merge-policy-gate/tests/test_merge_decision.py::TestRisk::test_class_is_maximum_of_path_contract_label",
+        "skills/merge-policy-gate/tests/test_merge_decision.py::TestRisk::test_rename_classifies_both_paths",
+        "skills/merge-policy-gate/tests/test_merge_decision.py::TestRisk::test_text_never_lowers",
+        "skills/merge-policy-gate/tests/test_merge_decision.py::TestRisk::test_line_threshold",
+        "skills/merge-policy-gate/evals/cases/docs-change-low-capped-at-shadow.json",
+        "skills/merge-policy-gate/evals/cases/medium-source-change-human-required.json",
+        "skills/merge-policy-gate/evals/cases/high-auth-change-human-required.json",
+        "skills/merge-policy-gate/evals/cases/label-raises-class-text-cannot-lower.json"
+      ],
+      "planned": true
+    },
+    {
+      "id": "FR-002",
+      "implemented_by": [
+        "skills/merge-policy-gate/scripts/merge_decision.py",
+        "skills/merge-policy-gate/assets/risk-tables.json"
+      ],
+      "verified_by": [
+        "skills/merge-policy-gate/tests/test_merge_decision.py::TestRisk::test_every_policy_path_is_critical",
+        "skills/merge-policy-gate/tests/test_merge_decision.py::TestRisk::test_secret_patterns_critical",
+        "skills/merge-policy-gate/evals/cases/policy-file-change-is-critical.json",
+        "skills/merge-policy-gate/evals/cases/criteria-and-limits-are-critical.json",
+        "skills/merge-policy-gate/evals/cases/workflow-and-config-are-critical.json",
+        "skills/merge-policy-gate/evals/cases/review-verifier-own-gates-critical.json",
+        "skills/merge-policy-gate/evals/cases/agentic-explain-critical-policy-path.json"
+      ],
+      "planned": true
+    },
+    {
+      "id": "FR-003",
+      "implemented_by": [
+        "skills/merge-policy-gate/scripts/merge_decision.py"
+      ],
+      "verified_by": [
+        "skills/merge-policy-gate/tests/test_merge_decision.py::TestGates::test_missing_verdict_not_run",
+        "skills/merge-policy-gate/tests/test_merge_decision.py::TestGates::test_other_head_not_evidence",
+        "skills/merge-policy-gate/tests/test_merge_decision.py::TestGates::test_stale_branch_fails",
+        "skills/merge-policy-gate/tests/test_merge_decision.py::TestDecision::test_blocked_exit_1",
+        "skills/merge-policy-gate/evals/cases/missing-verdict-blocked.json",
+        "skills/merge-policy-gate/evals/cases/stale-branch-blocked.json",
+        "skills/merge-policy-gate/evals/cases/verdict-other-head-blocked.json",
+        "skills/merge-policy-gate/evals/cases/agentic-blocked-missing-verdict.json"
+      ],
+      "planned": true
+    },
+    {
+      "id": "FR-004",
+      "implemented_by": [
+        "skills/merge-policy-gate/scripts/merge_decision.py"
+      ],
+      "verified_by": [
+        "skills/merge-policy-gate/tests/test_merge_decision.py::TestDecision::test_never_auto_merge_below_guarded",
+        "skills/merge-policy-gate/tests/test_merge_decision.py::TestUncapped::test_low_risk_uncapped_auto_merge",
+        "skills/merge-policy-gate/evals/cases/docs-change-low-capped-at-shadow.json",
+        "skills/merge-policy-gate/evals/cases/agentic-never-act-on-uncapped.json",
+        "skills/merge-policy-gate/evals/cases/agentic-docs-still-human.json",
+        "skill-lab/tests/integration/test_us5_review_flow.py"
+      ],
+      "planned": true
+    },
+    {
+      "id": "FR-005",
+      "implemented_by": [
+        "skills/merge-policy-gate/scripts/merge_plan.py"
+      ],
+      "verified_by": [
+        "skills/merge-policy-gate/tests/test_merge_plan.py::TestPlan::test_no_operation_when_capped",
+        "skills/merge-policy-gate/tests/test_merge_plan.py::TestPolicy::test_apply_refused_at_shadow",
+        "skills/merge-policy-gate/tests/test_merge_plan.py::TestPolicy::test_no_immediate_merge_path",
+        "skills/merge-policy-gate/evals/cases/merge-plan-no-operation-at-shadow.json",
+        "skills/merge-policy-gate/evals/cases/merge-plan-apply-refused-at-shadow.json"
+      ],
+      "planned": true
+    },
+    {
+      "id": "FR-006",
+      "implemented_by": [
+        "skills/merge-policy-gate/SKILL.md",
+        "skills/merge-policy-gate/references/risk-classes.md"
+      ],
+      "verified_by": [
+        "skills/merge-policy-gate/evals/cases/agentic-advisory-at-shadow.json",
+        "skills/merge-policy-gate/evals/cases/agentic-never-act-on-uncapped.json",
+        "skill-lab/tests/test_skills_r1.py"
+      ],
+      "planned": true
+    },
+    {
+      "id": "FR-007",
+      "implemented_by": [
+        "skills/merge-policy-gate/SKILL.md"
+      ],
+      "verified_by": [
+        "skill-lab/tests/test_skills_r1.py",
+        "skills/merge-policy-gate/evals/cases/trigger-classify-risk.json",
+        "skills/merge-policy-gate/evals/cases/trigger-merge-decision.json",
+        "skills/merge-policy-gate/evals/cases/trigger-policy-paths.json",
+        "skills/merge-policy-gate/evals/cases/trigger-merge-advice.json",
+        "skills/merge-policy-gate/evals/cases/trigger-merge-gate-checks.json",
+        "skills/merge-policy-gate/evals/cases/trigger-neg-board-move.json",
+        "skills/merge-policy-gate/evals/cases/trigger-neg-next-issue.json",
+        "skills/merge-policy-gate/evals/cases/trigger-neg-open-pr.json",
+        "skills/merge-policy-gate/evals/cases/trigger-null-fast-forward.json",
+        "skills/merge-policy-gate/evals/cases/trigger-null-lunch.json"
+      ],
+      "planned": true
+    },
+    {
+      "id": "FR-008",
+      "implemented_by": [
+        "skills/merge-policy-gate/scripts/merge_decision.py",
+        "skills/merge-policy-gate/scripts/merge_plan.py"
+      ],
+      "verified_by": [
+        "skills/merge-policy-gate/tests/test_merge_decision_r2.py::TestCap::test_reason_when_uncapped_auto_merge",
+        "skills/merge-policy-gate/tests/test_merge_decision_r2.py::TestCap::test_merge_plan_still_exit_4",
+        "skills/merge-policy-gate/evals/cases/cap-low-risk.json",
+        "skills/merge-policy-gate/evals/cases/merge-plan-refused.json",
+        "skills/merge-policy-gate/evals/cases/agentic-r2-explain-cap.json"
+      ],
+      "planned": true
+    },
+    {
+      "id": "FR-009",
+      "implemented_by": [
+        "skills/merge-policy-gate/scripts/merge_decision.py"
+      ],
+      "verified_by": [
+        "skills/merge-policy-gate/tests/test_merge_decision_r2.py::TestGates::test_missing_review_post_blocked",
+        "skills/merge-policy-gate/tests/test_merge_decision_r2.py::TestAudit::test_noncompliant_audit_advisory_reason",
+        "skills/merge-policy-gate/tests/test_merge_decision_r2.py::TestAudit::test_audit_not_in_gates",
+        "skills/merge-policy-gate/tests/test_merge_decision_r2.py::TestSchema::test_every_decision_validates",
+        "skills/merge-policy-gate/evals/cases/blocked-missing-review.json",
+        "skills/merge-policy-gate/evals/cases/noncompliant-audit-advisory.json",
+        "skill-lab/tests/integration/test_r2_us2_review_merge.py"
+      ],
+      "planned": true
+    },
+    {
+      "id": "FR-010",
+      "implemented_by": [
+        "skills/merge-policy-gate/scripts/branch_audit.py",
+        "skills/merge-policy-gate/assets/branch-policy-map.json",
+        "skills/merge-policy-gate/references/branch-protection-rules.md"
+      ],
+      "verified_by": [
+        "skills/merge-policy-gate/tests/test_branch_audit.py::TestAudit::test_recommended_compliant",
+        "skills/merge-policy-gate/tests/test_branch_audit.py::TestAudit::test_single_field_deviations",
+        "skills/merge-policy-gate/tests/test_branch_audit.py::TestAudit::test_unknown_never_passes",
+        "skills/merge-policy-gate/tests/test_branch_audit.py::TestAudit::test_bp10_self_audit",
+        "skills/merge-policy-gate/evals/cases/branch-audit-recommended.json",
+        "skills/merge-policy-gate/evals/cases/branch-audit-bp01-direct-push.json",
+        "skills/merge-policy-gate/evals/cases/branch-audit-bp02-force-push.json",
+        "skills/merge-policy-gate/evals/cases/branch-audit-bp03-admin-bypass.json",
+        "skills/merge-policy-gate/evals/cases/branch-audit-bp04-no-required-approval.json",
+        "skills/merge-policy-gate/evals/cases/branch-audit-bp05-changes-not-blocking.json",
+        "skills/merge-policy-gate/evals/cases/branch-audit-bp06-stale-approval-kept.json",
+        "skills/merge-policy-gate/evals/cases/branch-audit-bp07-base-not-required.json",
+        "skills/merge-policy-gate/evals/cases/branch-audit-bp08-no-ci-context.json",
+        "skills/merge-policy-gate/evals/cases/branch-audit-bp11-review-requests-not-blocking.json",
+        "skills/merge-policy-gate/evals/cases/branch-audit-bp12-sensitive-files-unprotected.json",
+        "skills/merge-policy-gate/evals/cases/branch-audit-unknown-field.json"
+      ],
+      "planned": true
+    },
+    {
+      "id": "FR-011",
+      "implemented_by": [
+        "skills/merge-policy-gate/SKILL.md",
+        "skills/merge-policy-gate/scripts/merge_decision.py"
+      ],
+      "verified_by": [
+        "skill-lab/tests/test_skills_r2.py",
+        "skills/merge-policy-gate/evals/cases/skill-gitea-json-is-critical.json",
+        "skills/merge-policy-gate/evals/cases/cap-low-risk.json",
+        "skills/merge-policy-gate/evals/cases/blocked-missing-review.json",
+        "skills/merge-policy-gate/evals/cases/merge-plan-refused.json",
+        "skills/merge-policy-gate/evals/cases/agentic-r2-explain-cap.json",
+        "skills/merge-policy-gate/evals/cases/trigger-r2-audit-protection.json",
+        "skills/merge-policy-gate/evals/cases/trigger-r2-neg-review-pr.json",
+        "skills/merge-policy-gate/evals/cases/branch-audit-recommended.json"
+      ],
+      "planned": true
+    },
+    {
+      "id": "FR-012",
+      "implemented_by": [
+        "skills/merge-policy-gate/scripts/merge_decision.py",
+        "skills/merge-policy-gate/references/auto-merge-gates.md"
+      ],
+      "verified_by": [
+        "skills/merge-policy-gate/tests/test_merge_decision_r3.py::TestGates::test_thirteen_gates_each_fail",
+        "skills/merge-policy-gate/tests/test_merge_decision_r3.py::TestCaps::test_six_caps",
+        "skills/merge-policy-gate/tests/test_merge_decision_r3.py::TestOracle::test_level_matrix",
+        "skills/merge-policy-gate/tests/test_merge_decision_r3.py::TestRecord::test_record_at_every_level",
+        "skills/merge-policy-gate/evals/cases/r3-decision-auto-merge-golden.json",
+        "skills/merge-policy-gate/evals/cases/r3-demoted-cap.json",
+        "skills/merge-policy-gate/evals/cases/afv-intent-chain-spec-mismatch.json",
+        "skills/merge-policy-gate/evals/cases/afv-intent-chain-ac-not-passed.json",
+        "skills/merge-policy-gate/evals/cases/afv-evidence-other-head.json",
+        "skills/merge-policy-gate/evals/cases/agentic-r3-explain-human-merge.json",
+        "skill-lab/tests/integration/test_r3_us1_auto_merge.py"
+      ],
+      "planned": true
+    },
+    {
+      "id": "FR-013",
+      "implemented_by": [
+        "skills/merge-policy-gate/scripts/merge_decision.py",
+        "skills/merge-policy-gate/references/risk-classes.md"
+      ],
+      "verified_by": [
+        "skills/merge-policy-gate/tests/test_merge_decision_r3.py::TestRisk::test_low_risk_paths_extension_never_overrides_builtin",
+        "skills/merge-policy-gate/tests/test_merge_decision_r3.py::TestRisk::test_max_changed_lines",
+        "skills/merge-policy-gate/tests/test_merge_decision_r3.py::TestCaps::test_factory_repository",
+        "skills/merge-policy-gate/tests/test_merge_decision_r3.py::TestCaps::test_not_agent_pr",
+        "skills/merge-policy-gate/tests/test_merge_decision_r3.py::TestCaps::test_no_github_merge_path",
+        "skills/merge-policy-gate/evals/cases/r3-factory-repository-capped.json",
+        "skills/merge-policy-gate/evals/cases/r3-not-agent-pr-capped.json",
+        "skills/merge-policy-gate/evals/cases/afv-pr-body-risk-low-ignored.json",
+        "skills/merge-policy-gate/evals/cases/agentic-r3-injected-risk-low.json"
+      ],
+      "planned": true
+    },
+    {
+      "id": "FR-014",
+      "implemented_by": [
+        "skills/merge-policy-gate/scripts/merge_plan.py",
+        "skills/merge-policy-gate/assets/schemas/merge-execution.v1.schema.json"
+      ],
+      "verified_by": [
+        "skills/merge-policy-gate/tests/test_merge_plan_apply.py::TestSchedule::test_body_keys_exact",
+        "skills/merge-policy-gate/tests/test_merge_plan_apply.py::TestSchedule::test_capped_exit_4",
+        "skills/merge-policy-gate/tests/test_merge_plan_apply.py::TestSchedule::test_blocked_exit_1",
+        "skills/merge-policy-gate/tests/test_merge_plan_apply.py::TestSchedule::test_head_moved",
+        "skills/merge-policy-gate/tests/test_merge_plan_apply.py::TestSchedule::test_identity_and_live_guards",
+        "skills/merge-policy-gate/tests/test_merge_plan_apply.py::TestSchedule::test_scheduled_is_not_merged",
+        "skills/merge-policy-gate/tests/test_merge_plan_apply.py::TestEvaluate::test_not_eligible_exit_0",
+        "skills/merge-policy-gate/evals/cases/merge-when-checks-succeed-applied.json",
+        "skills/merge-policy-gate/evals/cases/merge-when-checks-succeed-rerun.json",
+        "skills/merge-policy-gate/evals/cases/merge-when-checks-succeed-refused-agent-implementation.json",
+        "skills/merge-policy-gate/evals/cases/merge-when-checks-succeed-refused-demoted.json",
+        "skills/merge-policy-gate/evals/cases/r3-evaluate-not-eligible.json",
+        "skills/merge-policy-gate/evals/cases/afv-scheduled-is-not-merged.json",
+        "skills/merge-policy-gate/evals/cases/afv-admin-identity-refused.json",
+        "skills/merge-policy-gate/evals/cases/afv-force-merge-body-refused.json",
+        "skills/merge-policy-gate/evals/cases/afv-rerun-schedule-no-write.json",
+        "skills/merge-policy-gate/evals/cases/afv-gitea-503-during-schedule.json",
+        "skills/merge-policy-gate/evals/cases/agentic-r3-scheduled-not-merged.json"
+      ],
+      "planned": true
+    },
+    {
+      "id": "FR-015",
+      "implemented_by": [
+        "skills/merge-policy-gate/scripts/merge_plan.py",
+        "skills/merge-policy-gate/assets/templates/schedule-expired-comment.md"
+      ],
+      "verified_by": [
+        "skills/merge-policy-gate/tests/test_merge_plan_apply.py::TestCancel::test_every_trigger",
+        "skills/merge-policy-gate/tests/test_merge_plan_apply.py::TestCancel::test_sweep_expired_ttl",
+        "skills/merge-policy-gate/tests/test_merge_plan_apply.py::TestCancel::test_reevaluate_open",
+        "skills/merge-policy-gate/tests/test_merge_plan_apply.py::TestCancel::test_idempotent_and_reread",
+        "skills/merge-policy-gate/evals/cases/merge-schedule-cancel-applied.json",
+        "skills/merge-policy-gate/evals/cases/merge-schedule-cancel-rerun.json",
+        "skills/merge-policy-gate/evals/cases/merge-schedule-cancel-refused-shadow.json",
+        "skills/merge-policy-gate/evals/cases/afv-cancel-verified-by-reread.json",
+        "skills/merge-policy-gate/evals/cases/afv-schedule-versus-push-race.json",
+        "skills/merge-policy-gate/evals/cases/afv-ci-pending-ttl-cancel.json",
+        "skill-lab/tests/integration/test_r3_concurrency.py"
+      ],
+      "planned": true
+    },
+    {
+      "id": "FR-016",
+      "implemented_by": [
+        "skills/merge-policy-gate/scripts/branch_audit.py",
+        "skills/merge-policy-gate/assets/branch-policy-map.json"
+      ],
+      "verified_by": [
+        "skills/merge-policy-gate/tests/test_branch_audit_r3.py::TestBp09::test_required_at_guarded",
+        "skills/merge-policy-gate/tests/test_branch_audit_r3.py::TestBp09::test_unknown_fails",
+        "skills/merge-policy-gate/tests/test_branch_audit_r3.py::TestBp09::test_gate_blocks_decision"
+      ],
+      "planned": true
+    },
+    {
+      "id": "FR-017",
+      "implemented_by": [
+        "skills/merge-policy-gate/scripts/autonomy_scorecard.py",
+        "skills/merge-policy-gate/references/autonomy-promotion.md"
+      ],
+      "verified_by": [
+        "skills/merge-policy-gate/tests/test_autonomy_scorecard.py::TestWindow::test_default_window",
+        "skills/merge-policy-gate/tests/test_autonomy_scorecard.py::TestCoverage::test_source_coverage_explicit",
+        "skills/merge-policy-gate/tests/test_autonomy_scorecard.py::TestPromotion::test_p1_to_p8",
+        "skills/merge-policy-gate/tests/test_autonomy_scorecard.py::TestPromotion::test_29_versus_30_candidates",
+        "skills/merge-policy-gate/tests/test_autonomy_scorecard.py::TestDeterminism::test_same_now_same_bytes"
+      ],
+      "planned": true
+    },
+    {
+      "id": "FR-018",
+      "implemented_by": [
+        "skills/merge-policy-gate/scripts/autonomy_guard.py",
+        "skills/merge-policy-gate/assets/templates/demotion-comment.md"
+      ],
+      "verified_by": [
+        "skills/merge-policy-gate/tests/test_autonomy_guard.py::TestDetect::test_sources",
+        "skills/merge-policy-gate/tests/test_autonomy_guard.py::TestDemote::test_apply_order",
+        "skills/merge-policy-gate/tests/test_autonomy_guard.py::TestDemote::test_mirror_failure_keeps_latch",
+        "skills/merge-policy-gate/tests/test_autonomy_guard.py::TestDemote::test_rerun_writes_nothing",
+        "skills/merge-policy-gate/evals/cases/autonomy-demote-applied.json",
+        "skills/merge-policy-gate/evals/cases/autonomy-demote-rerun.json",
+        "skills/merge-policy-gate/evals/cases/guard-mirror-comment-applied.json",
+        "skills/merge-policy-gate/evals/cases/guard-mirror-comment-rerun.json",
+        "skills/merge-policy-gate/evals/cases/guard-mirror-comment-refused-shadow.json",
+        "skills/merge-policy-gate/evals/cases/guard-mirror-label-applied.json",
+        "skills/merge-policy-gate/evals/cases/guard-mirror-label-rerun.json",
+        "skills/merge-policy-gate/evals/cases/guard-mirror-label-refused-shadow.json",
+        "skills/merge-policy-gate/evals/cases/guard-define-label-applied.json",
+        "skills/merge-policy-gate/evals/cases/guard-define-label-rerun.json",
+        "skills/merge-policy-gate/evals/cases/guard-define-label-refused-shadow.json",
+        "skills/merge-policy-gate/evals/cases/afv-rerun-guard-no-write.json",
+        "skill-lab/tests/integration/test_r3_us4_demotion.py"
+      ],
+      "planned": true
+    },
+    {
+      "id": "FR-019",
+      "implemented_by": [
+        "skills/merge-policy-gate/scripts/autonomy_guard.py"
+      ],
+      "verified_by": [
+        "skills/merge-policy-gate/tests/test_autonomy_guard.py::TestAuditMerge::test_head_risk_approval_ci",
+        "skills/merge-policy-gate/tests/test_autonomy_guard.py::TestAuditMerge::test_mismatch_records_gate_integrity"
+      ],
+      "planned": true
+    },
+    {
+      "id": "FR-020",
+      "implemented_by": [
+        "skills/merge-policy-gate/scripts/merge_decision.py"
+      ],
+      "verified_by": [
+        "skills/merge-policy-gate/tests/test_merge_decision_r3.py::TestDemotedCap::test_label_incident_or_missing_issue",
+        "skills/merge-policy-gate/evals/cases/r3-demoted-cap.json",
+        "skill-lab/tests/integration/test_r3_us4_demotion.py"
+      ],
+      "planned": true
+    },
+    {
+      "id": "FR-021",
+      "implemented_by": [
+        "skills/merge-policy-gate/scripts/merge_decision.py",
+        "skills/merge-policy-gate/scripts/autonomy_guard.py",
+        "skills/merge-policy-gate/assets/risk-tables.json"
+      ],
+      "verified_by": [
+        "skills/merge-policy-gate/tests/test_merge_decision_r3.py::TestRisk::test_r3_critical_paths",
+        "skills/merge-policy-gate/tests/test_autonomy_guard.py::TestSelfProtection::test_no_policy_or_latch_write",
+        "skills/merge-policy-gate/evals/cases/r3-release-diff-self-classification.json",
+        "skill-lab/tests/test_skills_r3.py"
+      ],
+      "planned": true
+    },
+    {
+      "id": "FR-022",
+      "implemented_by": [
+        "skills/merge-policy-gate/SKILL.md",
+        "skills/merge-policy-gate/references/auto-merge-gates.md"
+      ],
+      "verified_by": [
+        "skills/merge-policy-gate/evals/cases/merge-when-checks-succeed-applied.json",
+        "skills/merge-policy-gate/evals/cases/merge-schedule-cancel-applied.json",
+        "skills/merge-policy-gate/evals/cases/guard-mirror-comment-applied.json",
+        "skills/merge-policy-gate/evals/cases/autonomy-demote-applied.json",
+        "skills/merge-policy-gate/evals/cases/afv-intent-chain-spec-mismatch.json",
+        "skills/merge-policy-gate/evals/cases/afv-evidence-other-head.json",
+        "skills/merge-policy-gate/evals/cases/agentic-r3-explain-human-merge.json",
+        "skills/merge-policy-gate/evals/cases/agentic-r3-injected-risk-low.json",
+        "skills/merge-policy-gate/evals/cases/agentic-r3-scheduled-not-merged.json",
+        "skills/merge-policy-gate/evals/cases/trigger-r3-auto-merge.json",
+        "skills/merge-policy-gate/evals/cases/trigger-r3-why-demoted.json",
+        "skills/merge-policy-gate/evals/cases/trigger-r3-neg-move-to-review.json",
+        "skills/merge-policy-gate/evals/cases/trigger-r3-neg-save-progress.json",
+        "skill-lab/tests/test_skills_r3.py"
+      ],
+      "planned": true
+    }
+  ]
+}

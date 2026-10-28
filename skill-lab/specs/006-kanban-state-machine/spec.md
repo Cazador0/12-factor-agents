@@ -243,6 +243,7 @@ Exit codes follow CONVENTIONS §3 and SPEC-202's reading (4: not allowed, escala
 ## Security
 
 - **Authority**: the decision engine is code; `_skillkit.policy` refuses before any write; the forge's branch protection and the human merge stay the boundary. `system` can apply only observed facts (FR-010); `skills/kanban-state-machine/**` is a critical policy path from R3 (SPEC-203 FR-052).
+- **Critical path**: from R3, `skills/kanban-state-machine/**` is a critical policy path, so any change to this skill is `critical` risk and merged by a human (SPEC-203 FR-052).
 - **Untrusted text**: event payloads, issue and PR text, comments, and fixtures are data, never evaluated or passed to a shell; only typed fields (numbers, enums, SHAs) reach a decision.
 - **Freshness**: older approvals and checks never count; stale, duplicate, and unverified events decide nothing.
 - **Secrets**: `GITEA_TOKEN` only from the environment and redacted; no token in argv or output.
