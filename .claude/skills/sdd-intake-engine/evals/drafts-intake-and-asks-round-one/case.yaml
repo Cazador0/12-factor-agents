@@ -1,0 +1,6 @@
+schema_version: "1.1"
+name: drafts-intake-and-asks-round-one
+expected_outcome: |
+  A Draft intake is written under .specify/intakes/<slug>/intake.md through bin/sdd intake start, with
+  the idea quoted verbatim, and round 1 is asked with AskUserQuestion using the engine's cards
+  (generic scaffolds sharpened to the idea first).

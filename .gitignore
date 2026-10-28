@@ -1,5 +1,21 @@
+# Dependencies and build output
+node_modules/
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+.ruff_cache/
+
 # skill-lab: per-project skill state, benchmark output, Python bytecode
 .skill-state/
 skill-lab/benchmarks/runs/
 __pycache__/
 *.pyc
+
+# Spec Kit derived state (rebuilt from the repository; never a source of truth)
+.specify/index/
+.specify/sessions/
+
+# Claude Code machine-local settings
+.claude/settings.local.json
+

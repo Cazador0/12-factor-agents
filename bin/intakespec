@@ -1,0 +1,44 @@
+#!/usr/bin/env python3
+"""intakespec — this repository hosts the skill catalog (an intakeSpec host checkout).
+
+`python3 bin/intakespec find '<task terms>'` and `python3 bin/intakespec check` are the contract the
+speckit-intake-route command relies on. The work is done by sdd_harness.router in
+packages/sdd-harness; this shim re-executes under that package's virtualenv (or `uv run`).
+"""
+
+import os
+import shutil
+import sys
+from pathlib import Path
+
+ROOT = Path(__file__).resolve().parent.parent
+PKG = ROOT / "packages" / "sdd-harness"
+VENV_PY = PKG / ".venv" / "bin" / "python"
+CODE = (
+    "import sys; from sdd_harness.router.cli import main; "
+    "raise SystemExit(main(['--root', sys.argv[1], *sys.argv[2:]], prog='intakespec'))"
+)
+
+
+def main() -> int:
+    args = [str(ROOT), *sys.argv[1:]]
+    if os.environ.get("INTAKESPEC_INNER") == "1":
+        sys.path.insert(0, str(PKG / "src"))
+        from sdd_harness.router.cli import main as route_main
+
+        return route_main(["--root", str(ROOT), *sys.argv[1:]], prog="intakespec")
+    env = {**os.environ, "INTAKESPEC_INNER": "1"}
+    if VENV_PY.exists():
+        os.execve(str(VENV_PY), [str(VENV_PY), __file__, *sys.argv[1:]], env)
+    uv = shutil.which("uv")
+    if uv:
+        os.execve(uv, [uv, "run", "--quiet", "--project", str(PKG), "python", "-c", CODE, *args], env)
+    sys.stderr.write(
+        "intakespec: packages/sdd-harness has no virtualenv and uv is not installed.\n"
+        "Fix: install uv, then run `uv sync --project packages/sdd-harness`.\n"
+    )
+    return 2
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())
