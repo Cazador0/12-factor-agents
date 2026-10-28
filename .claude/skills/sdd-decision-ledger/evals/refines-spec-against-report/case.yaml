@@ -1,0 +1,7 @@
+schema_version: "1.1"
+name: refines-spec-against-report
+expected_outcome: |
+  The ledger is built with --source docs/research/agent-engineering-team.md, a ledger table and
+  sidecar are written before any question, one round of at most 4 cards is asked (conflicts first if
+  any), the answers are recorded, and the reply reports Backed / Delegated / open counts and the next
+  phase without starting it.
