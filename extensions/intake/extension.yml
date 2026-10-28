@@ -1,0 +1,90 @@
+schema_version: "1.0"
+
+extension:
+  id: intake
+  name: "Spec Intake"
+  version: "0.6.0"
+  description: "Settle an idea's unknowns in multiple-choice rounds before Spec Kit guesses, route tasks to catalog skills, and refine what each phase decided alone."
+  category: "process"
+  effect: "read-write"
+  author: Cazador0
+  repository: https://github.com/Cazador0/12-factor-agents
+  license: MIT
+
+requires:
+  speckit_version: ">=1.2.0"
+
+provides:
+  commands:
+    - name: speckit.intake.start
+      file: commands/start.md
+      description: "Turn a rough idea into an answered intake via multiple-choice rounds."
+    - name: speckit.intake.route
+      file: commands/route.md
+      description: "Find the right skill for a spec-driven task in the intakeSpec catalog."
+    - name: speckit.intake.refine
+      file: commands/refine.md
+      description: "Put unconfirmed decisions back as multiple-choice questions; write into intake."
+
+  templates:
+    - name: intake-template
+      file: templates/intake-template.md
+      description: "Intake file: idea, sufficiency check, question bank, clarifications, session log."
+
+  config:
+    - name: "intake-config.yml"
+      template: "intake-config.template.yml"
+      description: "Intake folder, per-round question cap, catalog root, retrieval and trace settings."
+      required: true
+
+hooks:
+  before_constitution:
+    command: speckit.intake.start
+    optional: false
+    description: "Settle the project's principles with the person before the constitution is written"
+  before_specify:
+    command: speckit.intake.start
+    optional: false
+    description: "Settle the feature's unknowns with the person before the spec is written"
+  after_constitution:
+    command: speckit.intake.refine
+    optional: true
+    prompt: "Refine what the constitution decided without your backing?"
+    description: "Put the constitution's unbacked decisions to the person"
+  after_specify:
+    command: speckit.intake.refine
+    optional: true
+    prompt: "Refine what the spec decided without your backing?"
+    description: "Put the spec's unbacked decisions to the person"
+  after_plan:
+    command: speckit.intake.refine
+    optional: true
+    prompt: "Refine what the plan decided without your backing?"
+    description: "Put the plan's technology and design choices to the person"
+  after_checklist:
+    command: speckit.intake.refine
+    optional: true
+    prompt: "Walk through the unchecked checklist items?"
+    description: "Unchecked checklist items belong to a human reviewer"
+  after_tasks:
+    command: speckit.intake.refine
+    optional: true
+    prompt: "Refine the task order and scope the tasks phase chose?"
+    description: "Put the tasks phase's ordering and scope choices to the person"
+  after_analyze:
+    command: speckit.intake.refine
+    optional: true
+    prompt: "Resolve the CRITICAL and HIGH analysis findings?"
+    description: "Each CRITICAL or HIGH finding becomes a multiple-choice question"
+  after_implement:
+    command: speckit.intake.refine
+    optional: true
+    prompt: "Refine the small calls implementation made that the plan never named?"
+    description: "Put implementation's unplanned decisions to the person"
+
+tags:
+  - "intake"
+  - "clarification"
+  - "discovery"
+  - "multiple-choice"
+  - "routing"

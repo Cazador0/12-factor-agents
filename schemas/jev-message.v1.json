@@ -1,0 +1,131 @@
+{
+  "$defs": {
+    "JevKind": {
+      "enum": [
+        "health.ok",
+        "health.unknown",
+        "health.warn",
+        "health.stuck",
+        "session.stop"
+      ],
+      "title": "JevKind",
+      "type": "string"
+    },
+    "NextAction": {
+      "enum": [
+        "none",
+        "nudge_session",
+        "request_stop",
+        "hard_stop",
+        "notify_lead",
+        "page_person",
+        "park"
+      ],
+      "title": "NextAction",
+      "type": "string"
+    },
+    "Reason": {
+      "enum": [
+        "dead",
+        "hung",
+        "spinning",
+        "loop.action_error",
+        "loop.action_observation",
+        "loop.alternation",
+        "command.timeouts",
+        "ci.not_converging",
+        "commands.failing",
+        "unobservable"
+      ],
+      "title": "Reason",
+      "type": "string"
+    }
+  },
+  "$id": "https://github.com/Cazador0/12-factor-agents/schemas/jev-message.v1.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "description": "What Jev says about one session in one scan.",
+  "properties": {
+    "episode_id": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "description": "Stall episode this message belongs to",
+      "title": "Episode Id"
+    },
+    "evidence": {
+      "default": [],
+      "description": "Short, human-readable facts the verdict rests on",
+      "items": {
+        "type": "string"
+      },
+      "title": "Evidence",
+      "type": "array"
+    },
+    "idempotency_key": {
+      "pattern": "^jev-[0-9a-f]{24}$",
+      "title": "Idempotency Key",
+      "type": "string"
+    },
+    "issue": {
+      "anyOf": [
+        {
+          "minimum": 1,
+          "type": "integer"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "description": "Gitea issue index the session works on",
+      "title": "Issue"
+    },
+    "kind": {
+      "$ref": "#/$defs/JevKind"
+    },
+    "next_action": {
+      "$ref": "#/$defs/NextAction",
+      "default": "none"
+    },
+    "reasons": {
+      "default": [],
+      "items": {
+        "$ref": "#/$defs/Reason"
+      },
+      "title": "Reasons",
+      "type": "array"
+    },
+    "scan_id": {
+      "description": "The UTC scan slot, e.g. 2026-10-22T10:20Z",
+      "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}Z$",
+      "title": "Scan Id",
+      "type": "string"
+    },
+    "schema_version": {
+      "const": 1,
+      "default": 1,
+      "title": "Schema Version",
+      "type": "integer"
+    },
+    "session_id": {
+      "minLength": 1,
+      "title": "Session Id",
+      "type": "string"
+    }
+  },
+  "required": [
+    "kind",
+    "scan_id",
+    "session_id",
+    "idempotency_key"
+  ],
+  "title": "JevMessage",
+  "type": "object"
+}

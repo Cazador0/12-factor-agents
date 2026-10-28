@@ -1,0 +1,20 @@
+#!/usr/bin/env bash
+# sdd — one entry point for the Spec-Driven Development engines in packages/sdd-harness.
+#
+#   bin/sdd intake start "an idea" [--draft draft.json]   # sdd-intake-engine skill
+#   bin/sdd route find 'plan the storage layer'            # sdd-skill-router skill
+#   bin/sdd refine start specify                            # sdd-decision-ledger skill
+#   bin/sdd index query 'lease expiry'                      # hybrid RAG over the repository
+set -euo pipefail
+ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+PKG="$ROOT/packages/sdd-harness"
+cmd="${1:-}"; shift || true
+case "$cmd" in
+  intake|route|refine|index) bin="sdd-$cmd" ;;
+  *) echo "usage: bin/sdd {intake|route|refine|index} …" >&2; exit 2 ;;
+esac
+if [[ -x "$PKG/.venv/bin/$bin" ]]; then
+  exec "$PKG/.venv/bin/$bin" --root "$ROOT" "$@"
+fi
+command -v uv >/dev/null || { echo "sdd: install uv, then run: uv sync --project packages/sdd-harness" >&2; exit 2; }
+exec uv run --quiet --project "$PKG" "$bin" --root "$ROOT" "$@"
