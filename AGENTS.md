@@ -39,6 +39,16 @@ Cloud sessions run `.claude/hooks/session-start.sh`, which does all of the above
 `sdd-decision-ledger`) puts what the phase decided alone back to the person. Not sure which skill
 fits? `/speckit-intake-route` (engine: `sdd-skill-router`, `python3 bin/intakespec find '…'`).
 
+## Skills and the skill lab
+
+Portable agent skills live in `skills/` and the lab that specifies, validates, benchmarks (TypeSafe Jev as
+grader) and scores them lives in `skill-lab/`. Start at `skill-lab/README.md`; conventions are in
+`skill-lab/docs/CONVENTIONS.md`, specs in `skill-lab/specs/`, decisions in `skill-lab/docs/adr/`.
+Check with `python3 skill-lab/bin/skill-lab validate` and `python3 skill-lab/bin/skill-lab test`. Live
+benchmarks: [Jev setup](skill-lab/docs/runbooks/setup-jev.md). Handoffs use `session-checkpoint.v1`.
+Note: "Jev" in `packages/sdd-harness` is the progress watchdog (spec 008), a different thing from
+TypeSafe's Jev model used by the lab.
+
 ## What is this repository?
 
 The *12-Factor Agents* guide (`README.md`, `content/`, `workshops/`), plus a Spec-Driven Development

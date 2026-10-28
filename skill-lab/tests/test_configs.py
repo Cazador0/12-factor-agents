@@ -730,7 +730,12 @@ class TestSkillNamesAcrossFiles(unittest.TestCase):
         self.assertEqual(len(rows), len(catalog()), "each skill listed once")
 
     def test_backticked_invocations_name_real_skills(self):
-        allowed = set(catalog()) | SPEC_KIT_COMMANDS | {"create-skill"}
+        installed = set()
+        for root in (".claude/skills", ".agents/skills"):
+            folder = os.path.join(REPO_ROOT, root)
+            if os.path.isdir(folder):
+                installed |= set(os.listdir(folder))
+        allowed = set(catalog()) | SPEC_KIT_COMMANDS | {"create-skill"} | installed
         for path in OWNED_DOCS:
             for name in re.findall(r"`[/$]([a-z0-9]+(?:-[a-z0-9]+)+)`", read_text(path)):
                 with self.subTest(doc=os.path.relpath(path, REPO_ROOT), name=name):
@@ -740,19 +745,11 @@ class TestSkillNamesAcrossFiles(unittest.TestCase):
 class TestEntryDocs(unittest.TestCase):
     def test_agents_md_is_a_short_map(self):
         text = read_text(AGENTS_MD)
-        self.assertLessEqual(len(text.splitlines()), 60)
-        for heading in (
-            "## What this repository is",
-            "## Principles",
-            "## Where things live",
-            "## Validate, test, benchmark",
-            "## Roles",
-            "## Never",
-            "## Handoff",
-        ):
-            with self.subTest(heading=heading):
-                self.assertIn(heading, text)
-        self.assertIn("session-checkpoint.v1", text)
+        # The root file is shared with the SDD workstation (about 80 lines); it stays a map, not a manual.
+        self.assertLessEqual(len(text.splitlines()), 100)
+        for needle in ("## Skills and the skill lab", "skill-lab/README.md", "skill-lab/docs/CONVENTIONS.md", "session-checkpoint.v1"):
+            with self.subTest(needle=needle):
+                self.assertIn(needle, text)
 
     def test_agents_md_is_the_instruction_file_zed_loads(self):
         """Zed loads the first of these; any of them at the root would shadow AGENTS.md."""
