@@ -737,11 +737,16 @@
       "id": "FR-058",
       "implemented_by": [
         "skills/CATALOG.json",
-        "skills/run-monitor/scripts/_skillkit/__init__.py"
+        "skills/run-monitor/scripts/_skillkit/__init__.py",
+        "skills/gitea-event-normalizer/scripts/normalize.py",
+        "skill-lab/docs/runbooks/webhook-gateway.md"
       ],
       "verified_by": [
         "skill-lab/tests/test_skills_r3.py::TestSkillsR3::test_fourteen_skills_and_28_symlinks",
-        "skill-lab/tests/test_skills_r3.py::TestSkillsR3::test_run_monitor_unchanged"
+        "skill-lab/tests/test_skills_r3.py::TestSkillsR3::test_run_monitor_script_unchanged",
+        "skills/gitea-event-normalizer/tests/test_serve.py::TestServe::test_reconcile_tick_local_container_snapshot",
+        "skills/gitea-event-normalizer/tests/test_serve.py::TestServe::test_degraded_health_changes_no_decision",
+        "skills/gitea-event-normalizer/tests/test_serve.py::TestServe::test_health_reads_no_socket_or_host_path"
       ],
       "planned": true
     }

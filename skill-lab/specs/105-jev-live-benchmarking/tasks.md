@@ -20,7 +20,7 @@
 - [ ] T003 Write contract tests first for benchmark-streak.v1, run-health.v1 and the additive fields in skill-lab/tests/test_contracts_live.py (they fail until T004–T006 land)
 - [ ] T004 Add skill-lab/contracts/schemas/benchmark-streak.v1.schema.json and run-health.v1.schema.json with examples in skill-lab/contracts/examples/ (depends on T003)
 - [ ] T005 Extend skill-lab/contracts/schemas/benchmark-result.v1.schema.json, benchmark-run.v1.schema.json and success-criteria.v1.schema.json additively per data-model.md, and update their examples (depends on T003)
-- [ ] T006 Add the two new contracts to the CONVENTIONS §4 catalog in skill-lab/docs/CONVENTIONS.md and to skill-lab/contracts/README.md (depends on T004)
+- [ ] T006 Add the two new contracts to the CONVENTIONS §4 catalog in skill-lab/docs/CONVENTIONS.md and to skill-lab/contracts/README.md, with `run-health`'s target kinds including `local-container` (depends on T004)
 - [ ] T007 Add `lab/runlog.py` (redacting JSONL event sink) with tests in skill-lab/tests/test_runlog.py
 
 **Checkpoint**: contracts and the run log exist; producers can be built.
@@ -65,6 +65,8 @@
 
 - [ ] T025 [P] [US3] Write snapshot tests (container metrics from fake /proc files; null with notes without /proc; API p50/p95/error rate from a run log; session turns, context and stalls; limits produce problems and degraded) in skills/run-monitor/tests/test_snapshot.py
 - [ ] T026 [US3] Implement skills/run-monitor/scripts/snapshot.py per research R-9 and R-10, vendor `_skillkit` and the run-health schema with `skill-lab sync` (depends on T025, T004)
+- [ ] T041 [P] [US3] Write `local-container` snapshot tests (the person's answer, 2026-10-22) in skills/run-monitor/tests/test_snapshot_local_container.py over fake cgroup trees: cgroup v2 `cpu.stat` read twice against `cpu.max` (quota and `max`), `memory.current` against `memory.max` (bytes and `max`); the cgroup v1 fallback; neither readable gives `null` CPU and memory with note `CGROUP_UNAVAILABLE` and never `degraded`; `container.cgroup` recorded; `target.kind: local-container` with the container hostname as id; no Docker or containerd socket, no container CLI, and no path outside `/sys/fs/cgroup`, `/proc`, and the working directory opened (depends on T025)
+- [ ] T042 [US3] Implement `--target local-container` in skills/run-monitor/scripts/snapshot.py per research R-9 until T041 passes, keeping every other target unchanged (depends on T041, T026)
 - [ ] T027 [P] [US3] Write run-log and periodic-check tests (events logged without bodies; a snapshot after each skill; a crossed limit marks the run degraded and the run completes; the advisory assessment is stored, and its failure changes nothing) in skill-lab/tests/test_live_monitor.py
 - [ ] T028 [US3] Add request hooks to skill-lab/lab/runtimes/transport.py and skill-lab/lab/jev.py that emit run-log events (depends on T007)
 - [ ] T029 [US3] Run the snapshot after each skill and make the advisory agent call in skill-lab/lab/bench.py, storing health reports under the run folder (depends on T026, T027, T028)
@@ -83,7 +85,7 @@
 
 - [ ] T033 [P] Update skill-lab/docs/runbooks/setup-jev.md and skill-lab/docs/runbooks/live-benchmarks.md for the re-ask, outage and degraded rules, `--strict`, `streak`, `report`, prices.json and monitor-limits.json
 - [ ] T034 [P] Update SPEC-102, SPEC-103 and SPEC-104 specs and traceability for the changed behaviour in skill-lab/specs/102-bench-runtimes-graders/, 103-jev-grader/ and 104-scoring-gates/
-- [ ] T035 Run the full lab suite on Python 3.9 and the current Python and record the results in skill-lab/specs/105-jev-live-benchmarking/evidence/offline.md (depends on T017, T019, T021, T024, T030, T032)
+- [ ] T035 Run the full lab suite on Python 3.9 and the current Python and record the results in skill-lab/specs/105-jev-live-benchmarking/evidence/offline.md (depends on T017, T019, T021, T024, T030, T032, T042)
 - [ ] T036 Mark every FR in skill-lab/specs/105-jev-live-benchmarking/traceability.json as implemented, removing `planned`, and run `skill-lab validate --specs` (depends on T035)
 - [ ] T037 Live (network and keys): choose the one cloud model per research R-14 and record it in skill-lab/config/zed/cloud-models.json and skill-lab/docs/research/SOURCES.md
 - [ ] T038 Live: run `skill-lab bench --tag smoke --runtime ollama-cloud --model <model> --jev live --record skill-lab/benchmarks/cassettes` and render its report for the person (depends on T037, T032, T029)
@@ -94,6 +96,6 @@
 
 ## Dependencies & Execution Order
 
-- Setup (T001–T002) → Foundational (T003–T007) → US1 (T008–T021) → US2 (T022–T024) and US3 (T025–T030) → US4 (T031–T032) → Polish (T033–T040).
+- Setup (T001–T002) → Foundational (T003–T007) → US1 (T008–T021) → US2 (T022–T024) and US3 (T025–T030, T041–T042) → US4 (T031–T032) → Polish (T033–T040).
 - US2 and US3 can proceed in parallel after US1's implementation tasks they depend on.
 - T037–T040 need `api.typesafe.ai` and `ollama.com` allowlisted and `TYPESAFE_API_KEY` and `OLLAMA_API_KEY` set. Until then they stay open, and SPEC-201's live gates stay `not_run`.

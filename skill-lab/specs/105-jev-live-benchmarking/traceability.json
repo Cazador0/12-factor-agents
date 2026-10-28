@@ -205,7 +205,10 @@
         "skills/run-monitor/scripts/snapshot.py"
       ],
       "verified_by": [
-        "skills/run-monitor/tests/test_snapshot.py::TestSnapshot::test_container_api_session_sections"
+        "skills/run-monitor/tests/test_snapshot.py::TestSnapshot::test_container_api_session_sections",
+        "skills/run-monitor/tests/test_snapshot_local_container.py::TestLocalContainer::test_cgroup_v2_limits_and_use",
+        "skills/run-monitor/tests/test_snapshot_local_container.py::TestLocalContainer::test_cgroup_v1_fallback_and_null",
+        "skills/run-monitor/tests/test_snapshot_local_container.py::TestLocalContainer::test_no_socket_or_host_path_opened"
       ],
       "planned": true
     },

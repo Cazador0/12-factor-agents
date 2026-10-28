@@ -1,0 +1,265 @@
+{
+  "spec": "SPEC-001",
+  "requirements": [
+    {
+      "id": "FR-001",
+      "implemented_by": [
+        "skills/lead-architect/scripts/spec_readiness.py",
+        "skills/lead-architect/references/readiness-checks.md"
+      ],
+      "verified_by": [
+        "skills/lead-architect/tests/test_spec_readiness.py::TestReadiness::test_golden_ready",
+        "skills/lead-architect/tests/test_spec_readiness.py::TestReadiness::test_clarification_marker_outside_code",
+        "skills/lead-architect/evals/cases/readiness-golden-ready.json",
+        "skills/lead-architect/evals/cases/readiness-needs-clarification.json",
+        "skills/lead-architect/evals/cases/readiness-missing-plan.json"
+      ],
+      "planned": true
+    },
+    {
+      "id": "FR-002",
+      "implemented_by": [
+        "skills/lead-architect/scripts/spec_readiness.py"
+      ],
+      "verified_by": [
+        "skills/lead-architect/tests/test_spec_readiness.py::TestReadiness::test_uncovered_requirement",
+        "skills/lead-architect/tests/test_spec_readiness.py::TestReadiness::test_release_spec_fr_ranges",
+        "skills/lead-architect/evals/cases/readiness-untraced-fr.json"
+      ],
+      "planned": true
+    },
+    {
+      "id": "FR-003",
+      "implemented_by": [
+        "skills/lead-architect/scripts/plan_dag.py",
+        "skills/lead-architect/references/dag-and-waves.md"
+      ],
+      "verified_by": [
+        "skills/lead-architect/tests/test_plan_dag.py::TestPlanDag::test_golden_edges_and_conflict",
+        "skills/lead-architect/tests/test_plan_dag.py::TestPlanDag::test_cycle_refused",
+        "skills/lead-architect/evals/cases/dag-golden-edges.json",
+        "skills/lead-architect/evals/cases/dag-flags-write-conflict.json",
+        "skills/lead-architect/evals/cases/dag-cycle-refused.json",
+        "skills/lead-architect/evals/cases/dag-unknown-dependency.json"
+      ],
+      "planned": true
+    },
+    {
+      "id": "FR-004",
+      "implemented_by": [
+        "skills/lead-architect/scripts/issue_contract.py",
+        "skills/lead-architect/assets/templates/issue-body.md"
+      ],
+      "verified_by": [
+        "skills/lead-architect/tests/test_issue_contract.py::TestIssueContract::test_golden_us1_contract",
+        "skills/lead-architect/tests/test_issue_contract.py::TestIssueContract::test_render_marked_block",
+        "skills/lead-architect/evals/cases/issue-contract-golden-us1.json",
+        "skills/lead-architect/evals/cases/issue-contract-unknown-task.json"
+      ],
+      "planned": true
+    },
+    {
+      "id": "FR-005",
+      "implemented_by": [
+        "skills/lead-architect/scripts/dispatch_recommend.py"
+      ],
+      "verified_by": [
+        "skills/lead-architect/tests/test_dispatch_recommend.py::TestDispatch::test_lease_held_deferred",
+        "skills/lead-architect/evals/cases/dispatch-defers-lease-held.json",
+        "skills/lead-architect/evals/cases/agentic-dispatch-recommend.json"
+      ],
+      "planned": true
+    },
+    {
+      "id": "FR-006",
+      "implemented_by": [
+        "skills/lead-architect/scripts/dispatch_recommend.py",
+        "skills/lead-architect/scripts/arbitrate.py"
+      ],
+      "verified_by": [
+        "skills/lead-architect/tests/test_dispatch_recommend.py::TestDispatch::test_apply_refused_at_shadow",
+        "skills/lead-architect/evals/cases/dispatch-assign-refused-at-shadow.json",
+        "skills/lead-architect/evals/cases/dispatch-mirror-refused-at-shadow.json",
+        "skills/lead-architect/evals/cases/arbitrate-publish-refused-at-shadow.json"
+      ],
+      "planned": true
+    },
+    {
+      "id": "FR-007",
+      "implemented_by": [
+        "skills/lead-architect/scripts/dispatch_recommend.py"
+      ],
+      "verified_by": [
+        "skills/lead-architect/tests/test_dispatch_recommend_events.py::TestEventHints::test_recommendation_follows_reread_state",
+        "skills/lead-architect/tests/test_dispatch_recommend_events.py::TestEventHints::test_flagged_events_recommend_nothing",
+        "skills/lead-architect/tests/test_dispatch_recommend_events.py::TestEventHints::test_event_without_gitea_url_refused",
+        "skills/lead-architect/evals/cases/dispatch-event-stale-no-recommendation.json",
+        "skills/lead-architect/evals/cases/dispatch-event-requires-gitea-url.json"
+      ],
+      "planned": true
+    },
+    {
+      "id": "FR-008",
+      "implemented_by": [
+        "skills/lead-architect/scripts/arbitrate.py",
+        "skills/lead-architect/assets/templates/arbitration-comment.md"
+      ],
+      "verified_by": [
+        "skills/lead-architect/tests/test_arbitrate.py::TestArbitrate::test_valid_record",
+        "skills/lead-architect/tests/test_arbitrate.py::TestArbitrate::test_unresolved_spec_ref",
+        "skills/lead-architect/evals/cases/arbitrate-record-valid.json",
+        "skills/lead-architect/evals/cases/agentic-arbitrate-against-spec.json"
+      ],
+      "planned": true
+    },
+    {
+      "id": "FR-009",
+      "implemented_by": [
+        "skills/lead-architect/SKILL.md",
+        "skills/lead-architect/evals/cases"
+      ],
+      "verified_by": [
+        "skills/lead-architect/evals/cases/agentic-dag-wave-plan.json",
+        "skills/lead-architect/evals/cases/trigger-plan-dag-waves.json",
+        "skills/lead-architect/evals/cases/agentic-injected-issue-body.json",
+        "skills/lead-architect/evals/cases/trigger-neg-execute-tasks.json",
+        "skills/lead-architect/evals/cases/trigger-null-weather.json"
+      ],
+      "planned": true
+    },
+    {
+      "id": "FR-010",
+      "implemented_by": [
+        "skills/lead-architect/scripts/dispatch_recommend.py",
+        "skills/lead-architect/references/dispatch.md"
+      ],
+      "verified_by": [
+        "skills/lead-architect/tests/test_dispatch_apply.py::TestDispatch::test_claiming_sequence",
+        "skills/lead-architect/tests/test_dispatch_apply.py::TestDispatch::test_resume_after_fault",
+        "skills/lead-architect/evals/cases/dispatch-applied.json",
+        "skills/lead-architect/evals/cases/dispatch-rerun.json",
+        "skills/lead-architect/evals/cases/dispatch-mirror-applied.json",
+        "skills/lead-architect/evals/cases/dispatch-dependency-open.json",
+        "skills/lead-architect/evals/cases/dispatch-write-set-conflict.json"
+      ],
+      "planned": true
+    },
+    {
+      "id": "FR-011",
+      "implemented_by": [
+        "skills/lead-architect/scripts/arbitrate.py"
+      ],
+      "verified_by": [
+        "skills/lead-architect/tests/test_arbitrate_publish.py::TestPublish::test_marker_dedupe",
+        "skills/lead-architect/evals/cases/arbitrate-publish-applied.json",
+        "skills/lead-architect/evals/cases/arbitrate-publish-rerun.json"
+      ],
+      "planned": true
+    },
+    {
+      "id": "FR-012",
+      "implemented_by": [
+        "skills/lead-architect/scripts/complete_issue.py"
+      ],
+      "verified_by": [
+        "skills/lead-architect/tests/test_complete_issue.py::TestComplete::test_done_and_close_pending",
+        "skills/lead-architect/tests/test_complete_issue.py::TestComplete::test_not_merged",
+        "skills/lead-architect/evals/cases/complete-done-applied.json",
+        "skills/lead-architect/evals/cases/complete-done-rerun.json",
+        "skills/lead-architect/evals/cases/complete-close-pending.json",
+        "skills/lead-architect/evals/cases/complete-pr-not-merged.json"
+      ],
+      "planned": true
+    },
+    {
+      "id": "FR-013",
+      "implemented_by": [
+        "skills/lead-architect/SKILL.md",
+        "skills/lead-architect/evals/cases"
+      ],
+      "verified_by": [
+        "skills/lead-architect/evals/cases/labels-set-refused-at-shadow.json",
+        "skills/lead-architect/evals/cases/agentic-r2-dispatch-choice.json",
+        "skills/lead-architect/evals/cases/trigger-r2-claim-dispatch.json",
+        "skills/lead-architect/evals/cases/trigger-r2-neg-move-review.json"
+      ],
+      "planned": true
+    },
+    {
+      "id": "FR-014",
+      "implemented_by": [
+        "skills/lead-architect/scripts/dispatch_recommend.py"
+      ],
+      "verified_by": [
+        "skills/lead-architect/tests/test_dispatch_on_event.py::TestDispatchOnEvent::test_capacity_and_budget",
+        "skills/lead-architect/tests/test_dispatch_on_event.py::TestDispatchOnEvent::test_drift_deferred",
+        "skills/lead-architect/evals/cases/dispatch-capacity-deferred.json",
+        "skills/lead-architect/evals/cases/dispatch-drift-deferred.json",
+        "skills/lead-architect/evals/cases/agentic-r3-dispatch-limits.json"
+      ],
+      "planned": true
+    },
+    {
+      "id": "FR-015",
+      "implemented_by": [
+        "skills/lead-architect/scripts/dispatch_session.py",
+        "skills/lead-architect/assets/templates/pse-dispatch-prompt.md",
+        "skills/lead-architect/assets/templates/review-dispatch-prompt.md"
+      ],
+      "verified_by": [
+        "skills/lead-architect/tests/test_dispatch_session.py::TestDispatchSession::test_write_run_and_narrowing",
+        "skills/lead-architect/evals/cases/dispatch-session-start-applied.json",
+        "skills/lead-architect/evals/cases/review-dispatch-applied.json",
+        "skills/lead-architect/evals/cases/afv-narrowing-domains-outside-lease.json",
+        "skills/lead-architect/evals/cases/afv-narrowing-pse-spawns-lead.json",
+        "skills/lead-architect/evals/cases/agentic-r3-injected-dispatch.json"
+      ],
+      "planned": true
+    },
+    {
+      "id": "FR-016",
+      "implemented_by": [
+        "skills/lead-architect/scripts/dispatch_session.py"
+      ],
+      "verified_by": [
+        "skills/lead-architect/tests/test_dispatch_session.py::TestDispatchSession::test_claude_cli_unverified_refused",
+        "skills/lead-architect/tests/test_dispatch_session.py::TestDispatchSession::test_expiry_and_attempts",
+        "skills/lead-architect/evals/cases/dispatch-session-start-rerun.json"
+      ],
+      "planned": true
+    },
+    {
+      "id": "FR-017",
+      "implemented_by": [
+        "skills/lead-architect/scripts/complete_issue.py"
+      ],
+      "verified_by": [
+        "skills/lead-architect/tests/test_complete_issue_r3.py::TestCompleteIssueR3::test_close_at_guarded",
+        "skills/lead-architect/tests/test_complete_issue_r3.py::TestCompleteIssueR3::test_close_pending_when_demoted",
+        "skills/lead-architect/evals/cases/issue-close-applied.json",
+        "skills/lead-architect/evals/cases/issue-close-refused-demoted.json",
+        "skills/lead-architect/evals/cases/afv-close-verified.json"
+      ],
+      "planned": true
+    },
+    {
+      "id": "FR-018",
+      "implemented_by": [
+        "skills/lead-architect/SKILL.md",
+        "skills/lead-architect/evals/cases"
+      ],
+      "verified_by": [
+        "skills/lead-architect/evals/cases/dispatch-session-start-refused-agent-implementation.json",
+        "skills/lead-architect/evals/cases/dispatch-session-start-refused-demoted.json",
+        "skills/lead-architect/evals/cases/issue-close-refused-agent-implementation.json",
+        "skills/lead-architect/evals/cases/review-dispatch-refused-shadow.json",
+        "skills/lead-architect/evals/cases/afv-dispatch-prompt-carries-contract.json",
+        "skills/lead-architect/evals/cases/afv-rerun-dispatch-no-write.json",
+        "skills/lead-architect/evals/cases/afv-two-dispatches-one-issue.json",
+        "skills/lead-architect/evals/cases/trigger-r3-dispatch-unblocked.json",
+        "skills/lead-architect/evals/cases/trigger-r3-neg-claim.json"
+      ],
+      "planned": true
+    }
+  ]
+}

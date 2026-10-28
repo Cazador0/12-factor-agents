@@ -84,6 +84,7 @@ check that the run finishes, is marked degraded, and holds one health report per
 1. **Given** a live run of N skills, **When** it finishes, **Then** the run folder holds N `run-health.v1` reports, one after each skill, plus a structured run log.
 2. **Given** a health check finds memory ≥ 90%, disk free < 1 GB, an API error rate ≥ 5% within a skill, or a session with no progress for 10 minutes, **When** the check completes, **Then** the run logs a warning, is marked `degraded`, keeps running, and does not count toward the streak.
 3. **Given** the reviewer session reviews the release PR, **When** it posts its verdict, **Then** its comment also carries a `run-health.v1` report taken inside its own container.
+4. **Given** `run-monitor` runs inside one of the person's Rancher Desktop local containers with target `local-container`, **When** it takes a snapshot, **Then** CPU and memory come from that container's own cgroup limits and use (cgroup v2, else v1, else `null` with a note), disk free and process count are those seen inside the container, and it opens no Docker or containerd socket and reads nothing else on the machine.
 
 ---
 
@@ -153,7 +154,7 @@ Before the first gate run, the person runs a small live smoke run and looks at i
 **Monitoring**
 
 - **FR-019**: Bench MUST write a structured run log (`run.log.jsonl`) with one event per case start and end, per runtime and Jev request (latency, status, retries, rate-limit waits), and per health check.
-- **FR-020**: A `run-monitor` skill MUST provide `snapshot`, which emits `run-health.v1` for the container it runs in (CPU, memory, disk free, process count), the API health derived from a run log (latency p50 and p95, error rate, rate-limit hits, retry wait), and the agent or model sessions in the log (turns, tool calls, context used against its limit, stalls, end reason).
+- **FR-020**: A `run-monitor` skill MUST provide `snapshot`, which emits `run-health.v1` for the container it runs in (CPU, memory, disk free, process count; with target `local-container`, one of the person's Rancher Desktop local containers read from inside it through its own cgroup files, with no Docker or containerd socket and nothing else on the machine read, research R-9), the API health derived from a run log (latency p50 and p95, error rate, rate-limit hits, retry wait), and the agent or model sessions in the log (turns, tool calls, context used against its limit, stalls, end reason).
 - **FR-021**: After each skill's cases finish, bench MUST run `run-monitor` `snapshot`, whose fixed limits (FR-022) alone decide whether the run is degraded. Bench MUST then make one agent skill call: the run's Ollama Cloud model, given the `run-monitor` skill and the snapshot, writes an `assessment` (a short summary and recommendations) into the health report. The assessment advises and never changes the degraded decision. The report is stored in the run folder.
 - **FR-022**: A snapshot that crosses a limit in `skill-lab/benchmarks/monitor-limits.json` MUST log a warning and mark the run `degraded`. The run continues to completion and does not count toward the streak. Starting limits: memory ≥ 90%, disk free < 1 GB, API error rate ≥ 5% within a skill, no progress for 10 minutes (intake Q24, delegated; tuned after the smoke run).
 - **FR-023**: The release review request MUST instruct the reviewer session to run `run-monitor` `snapshot` in its own container and post the `run-health.v1` report with its verdict (intake Q23).
@@ -188,7 +189,7 @@ Before the first gate run, the person runs a small live smoke run and looks at i
 - Model comparison across cloud models. It is the next journey and ships right after this feature (intake Q10, Q14).
 - Local Ollama parity runs and the local-inference switch. These belong to SPEC-202's L1 gate, which consumes this feature's streak.
 - A trend dashboard (not chosen, intake Q10).
-- Monitoring the person's own machine (not chosen, intake Q19).
+- Monitoring the person's machine outside a container (not chosen, intake Q19). The person's Rancher Desktop local containers are monitored only from inside each container (target `local-container`; §Clarifications, release alignment).
 - A spending cap (intake Q7, delegated: report only).
 
 ## Contracts
@@ -199,7 +200,7 @@ Before the first gate run, the person runs a small live smoke run and looks at i
 | `benchmark-run.v1` | additive | `counts_toward_streak`, `exclusion_reasons[]` (`replay`, `partial`, `outage`, `degraded`), `degraded`, `usage{by_skill, total}`, `cost{total_usd or null, basis}`, `suite_digest`, `commit`, `health_reports[]`, `catalog{agentic_pass_rate, trigger_accuracy, agentic_schema_valid_rate, uncertain_rate}` |
 | `success-criteria.v1` | additive | `gates[].scope` (`skill` or `catalog`) |
 | `benchmark-streak.v1` | new | `model`, `suite_digest`, `length`, `runs[]`, `local_unlock_evidence`, `unstable_cases[]`, `excluded_runs[{run_id, reasons}]` |
-| `run-health.v1` | new | `assessment{model, summary, recommendations[]}` (advisory, from the agent skill call), `target{kind (benchmark-container, model-session, reviewer-session), id}`, `container{cpu_percent, memory_percent, disk_free_bytes, processes}`, `apis[{service, p50_ms, p95_ms, error_rate, rate_limited, retry_wait_ms}]`, `sessions[{id, turns, tool_calls, context_used, context_limit, stalled, end_reason}]`, `limits`, `problems[]`, `status` (ok or degraded) |
+| `run-health.v1` | new | `assessment{model, summary, recommendations[]}` (advisory, from the agent skill call), `target{kind (benchmark-container, model-session, reviewer-session, local-container), id}`, `container{cpu_percent, memory_percent, disk_free_bytes, processes, notes[], cgroup?{version, cpu_limit_cores, memory_limit_bytes, memory_used_bytes}}`, `apis[{service, p50_ms, p95_ms, error_rate, rate_limited, retry_wait_ms}]`, `sessions[{id, turns, tool_calls, context_used, context_limit, stalled, end_reason}]`, `limits`, `problems[]`, `status` (ok or degraded) |
 
 ## Error semantics
 
@@ -223,7 +224,8 @@ Before the first gate run, the person runs a small live smoke run and looks at i
 Cloud first: the gate run uses `ollama-cloud` (no structured outputs; schema in the prompt plus at
 most 2 repairs). `ollama-local` is supported by the harness but is not part of this feature's gates.
 `run-monitor` is a portable skill for Zed, Claude Code and Codex. Its scripts are stdlib Python ≥ 3.9
-and read `/proc` where it exists, falling back to `os` and `shutil` figures elsewhere.
+and read `/proc` where it exists, falling back to `os` and `shutil` figures elsewhere; with target `local-container` they read the
+container's own `/sys/fs/cgroup` files (research R-9).
 
 ## Clarifications
 
@@ -235,6 +237,12 @@ and read `/proc` where it exists, falling back to `os` and `shutil` figures else
 - Q: When Jev is re-asked about an unsure grade, what extra context should the second ask get? → A: The case's input files plus the skill's SKILL.md instructions.
 - Q: Should guardrail cases have to pass at 100% per skill, stricter than the 80% agentic bar? → A: 100% for guardrails.
 - Q: Which of these defaults should stay as written? → A: All four: a persisting rate limit is an outage; ≥ 2 no-skill routing cases per skill; smoke run of ≥ 1 agentic and ≥ 2 routing cases from ≥ 2 skills; invalid JSON after 2 repairs is a failed case.
+
+### Session 2026-10-22 (release alignment, recorded in SPEC-200 open-questions.md)
+
+- Q: Should run-monitor also watch your own machine when work runs there (R2 local-inference runs, R3 webhook gateway)? → A: "run-monitor for Rancher Desktop local containers". Applied as an additive change: `run-health.v1` `target.kind` gains `local-container` (FR-020, US3 scenario 4, data-model.md, research R-9, tasks T041–T042).
+- Q: How should run-monitor read your Rancher Desktop local containers? → A: From inside each container: run-monitor runs inside the container doing the work and reads that container's own CPU and memory limits and use; no Docker or containerd socket access; nothing else on the machine is read.
+- Q: Agents may not edit the per-skill criteria files, yet R1 planned one per skill. Who writes them? → A: Ship none in R1: R1 ships no per-skill criteria files; scoring falls back to the shared defaults (the floor); later only the person adds a file to raise a skill's bar (FR-005 unchanged: such a file may only raise a gate).
 
 ## Assumptions
 

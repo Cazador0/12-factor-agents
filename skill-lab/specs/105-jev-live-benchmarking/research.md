@@ -91,6 +91,33 @@ person.
   and processes are `null` with a note, and disk still comes from `shutil`.
 - **Why**: ADR-0006 (stdlib only, Python ≥ 3.9). A `null` figure can never cross a limit, so it can
   never fabricate a degraded run; the note keeps the gap visible.
+- **Decision, target `local-container`** (*the person's answer, 2026-10-22, release alignment*: "run-monitor for
+  Rancher Desktop local containers", read from inside each container): an additive target kind for the person's
+  Rancher Desktop local containers, where SPEC-202's local-inference runs and SPEC-203's webhook gateway run.
+  `snapshot.py --target local-container` runs inside the container doing the work (bench or the gateway starts it as a
+  child process there) and reads only that container's own figures:
+  - **cgroup v2** (`/sys/fs/cgroup/cgroup.controllers` exists): CPU from `cpu.stat` `usage_usec`, read twice 0.5 s
+    apart, against the limit in `cpu.max` (`<quota> <period>` gives quota ÷ period cores; `max` means no limit, so the
+    CPUs visible inside the container, `os.cpu_count()`, with note `CPU_LIMIT_UNSET`); `cpu_percent` = Δusage ÷
+    (0.5 s × cores) × 100. Memory: `memory.current` over `memory.max`; `max` means no limit, so `MemTotal` from the
+    container's own `/proc/meminfo`, with note `MEMORY_LIMIT_UNSET`.
+  - **cgroup v1 fallback**: `cpuacct.usage` (ns) with `cpu.cfs_quota_us` and `cpu.cfs_period_us` (quota −1 = no
+    limit), and `memory.usage_in_bytes` with `memory.limit_in_bytes`, under `/sys/fs/cgroup/cpu,cpuacct/` (or
+    `cpuacct/` and `cpu/`) and `/sys/fs/cgroup/memory/`.
+  - **Neither readable**: `cpu_percent` and `memory_percent` are `null` with note `CGROUP_UNAVAILABLE`, so they cannot
+    mark a run degraded.
+  - Disk free: `shutil.disk_usage` of the working directory as seen inside the container. Processes: the numeric
+    entries of the container's own `/proc`.
+  - `container.cgroup` records the version read and the limits and use behind the percentages (data-model.md).
+  - It opens no Docker or containerd socket, runs no container CLI, and reads no path outside `/sys/fs/cgroup`,
+    `/proc`, and the working directory; a test asserts this over the files the script opens. Tests point the reader at
+    fake cgroup v2 and v1 trees the same way they point it at fake `/proc` files.
+- **Why**: the person's answer: monitoring runs inside each container and reads that container's own CPU and memory
+  limits and use, with no socket access and nothing else on the machine. A container's cgroup files are where it sees
+  its own limits from inside. The change is additive (one enum value, one optional object), so `run-health.v1` stays v1.
+- **Rejected**: a Docker or containerd socket (not chosen; it would expose every container and the host); the host's
+  `/proc` (nothing else on the machine is read); turning the container figures off on local runs (the earlier
+  `--host-metrics off` design, withdrawn because it left memory and disk trouble undetected).
 
 ## R-10 Session metrics from the run log
 

@@ -37,7 +37,7 @@ Each goal is measurable. `spec.md` §Release goals maps every goal to FRs, SCs, 
 | ID | Goal | Measure (threshold) |
 |---|---|---|
 | RG-1 | Shadow containment is enforced by policy code, not by prompts | Containment suite: 0 consequential effects (non-GET requests to the double, git ref changes, working-tree writes outside `--out`/`--state-dir`) across 100 % of (skill, action) pairs above `shadow`; ≥ 40 hostile policy files all yield `shadow` |
-| RG-2 | 14 skills ship at R1 capability on Zed, Claude Code, and Codex | `validate` 0 errors × 3 runtimes; unit tests 100 % on Python 3.9 and current; deterministic cases 100 % (≥ 56 plus refusal cases); eval inventory 0 violations (≥ 4 deterministic, ≥ 5 agentic with ≥ 1 `guardrail`, ≥ 10 trigger with ≥ 2 `expect_skill: null` per skill); 0 criteria files below the floor |
+| RG-2 | 14 skills ship at R1 capability on Zed, Claude Code, and Codex | `validate` 0 errors × 3 runtimes; unit tests 100 % on Python 3.9 and current; deterministic cases 100 % (≥ 56 plus refusal cases); eval inventory 0 violations (≥ 4 deterministic, ≥ 5 agentic with ≥ 1 `guardrail`, ≥ 10 trigger with ≥ 2 `expect_skill: null` per skill); no per-skill criteria file shipped (scoring uses `_defaults.json`, the floor) and 0 below the floor |
 | RG-3 | Every requirement is traced | SPEC-001..014, SPEC-105, and SPEC-201: 0 FRs without an existing `verified_by`; 0 `planned: true` at merge |
 | RG-4 | Inference is cloud-first, and R1 merges only after one fully passing, counting live run | Zed config rules 0 errors (3 of 3 profiles on one Ollama Cloud model through the local Ollama app signed in to ollama.com, no local model in the template, local file present but not installable); on the newest recorded live gate run matching the tree: agentic pass rate ≥ 0.80, trigger accuracy ≥ 0.90, agentic schema-valid rate ≥ 0.95, and Jev uncertain rate after one re-ask < 0.10, per skill and catalog-wide; guardrail agentic cases 100 % per skill; 0 errored, skipped, or missing cases; the run counts (live, complete, not degraded) and is recorded in a committed `benchmark-streak.v1` |
 | RG-5 | The release is delivered by `/speckit-development` | After T054 every task is checked by `dev_state.py mark`; `converge.py` on SPEC-201 reports 0 findings; PR body and review request are produced by the skill and schema-valid |
@@ -87,8 +87,10 @@ ADR-0010): a live gate that is `not_run` blocks the merge exactly like a `fail`.
 
 R1 defines no gate at the `complete` stage. R1 is complete when it is merged, because its live gates already passed.
 
-**Effect on the next release**: R2 enters when R1 is merged with an `APPROVE` verdict and its live gates passed;
-R3 enters when R2 is merged (SPEC-200 §Sequencing). R1's counting live runs are committed with their suite digest
+**Effect on the next release**: the releases ship as stacked PRs (intake A4; SPEC-200 §Sequencing). R2 enters when
+the R1 PR has an independent `APPROVE` verdict and its live gates passed: R2's branch is created from
+`release/r1-shadow`, its PR targets `release/r1-shadow`, and it is retargeted to `main` when R1 merges. R3 enters the
+same way on R2. Merges happen in order R1 → R2 → R3, each by a human. R1's counting live runs are committed with their suite digest
 and recorded in `benchmark-streak.v1`, so they count toward SPEC-202's 3-run L1 streak only on the same model and
 suite.
 
@@ -169,7 +171,7 @@ user's explicit instruction under Claude Code's permission system. It is not a s
 | Item | Value | Note |
 |---|---|---|
 | Release branch | `release/r1-shadow` | Named in SPEC-200's release table |
-| PR base | `main` of `Cazador0/skill-factory` | R2 branches from `main` only after this PR is merged (R2 entry = R1 merged with `APPROVE` and live gates passed) |
+| PR base | `main` of `Cazador0/skill-factory` | R2 stacks on `release/r1-shadow` once this PR has `APPROVE` and its live gates passed; the R2 PR is retargeted to `main` when R1 merges |
 | Live runs | `skill-lab/benchmarks/runs/<run_id>/` | Committed on the release branch before the PR (SPEC-105 FR-015); referenced from `evidence/live-runs.json` by digest |
 | Evidence folder | `skill-lab/specs/201-release-shadow/evidence/` | Created at T001 |
 | ADR numbers | 0101–0109 reserved for R1 (0101–0107 used) | SPEC-202 reserved 0201–0209; R3 is expected to use 0301–0309 |

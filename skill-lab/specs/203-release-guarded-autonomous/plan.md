@@ -34,7 +34,7 @@ R3 makes the 7 `guarded-autonomous` actions of SPEC-201's catalog executable and
    exhaustive ordering test, crash injection, and a soak test become release gates (D-23, D-28). The live gates are
    SPEC-105's floor gates per skill and catalog-wide, in the `merge` stage, on 3 consecutive counting runs (D-24, D-25).
 
-The catalog has 14 skills; `run-monitor` (SPEC-014) is re-vendored and re-validated with no R3 change (D-29).
+The catalog has 14 skills; `run-monitor` (SPEC-014) is re-vendored and re-validated with no R3 script change; the gateway runs its `local-container` snapshot inside the gateway's Rancher Desktop container on every reconcile tick (D-29, FR-058).
 
 ## Technical Context
 
@@ -318,6 +318,21 @@ crash points C1..C6 are injected by `test_skillkit_webhook.py` (in-process) and 
 the test-only wrapper `skill-lab/tests/integration/crashing_serve.py`, which patches the module's named hook points before
 calling `serve`). `_skillkit` itself reads no test variable.
 
+### Gateway health (`normalize.py serve`, T071–T072; FR-058)
+
+The gateway runs inside one of the person's Rancher Desktop local containers (answers recorded 2026-10-22, Q-13). After the routes of
+every `reconcile.tick` record, `serve` runs the sibling script `<skills root>/run-monitor/scripts/snapshot.py --target
+local-container --skill gitea-event-normalizer --limits <monitor-limits.json> --out <state>/gateway/health/` as a
+subprocess with list arguments, in the same container and with the same filtered environment as the handlers
+(FR-006). The script is resolved and digest-checked at start like a route target (`ROUTE_TARGET_MISSING`,
+`ROUTE_TARGET_DRIFT`); T002 records how the gateway locates the person's `monitor-limits.json`. The snapshot is
+**not a route**: it never retries, dead-letters, or changes the record, any route, any decision, or the gateway's
+state, and no advisory model call is made. A `degraded` report logs warning `RUN_DEGRADED` on stderr. It reads only
+the container's own cgroup v2 files (`cpu.stat`, `cpu.max`, `memory.current`, `memory.max`; cgroup v1 fallback; `null`
+plus a note when unavailable), disk free, and the process count seen inside the container (SPEC-105 R-9); it opens no
+Docker or containerd socket and reads nothing else on the machine. `run_id` is `null` (no benchmark run) and `apis[]`
+and `sessions[]` are empty, because the gateway writes no `run.log.jsonl`.
+
 ### Routing table (`_skillkit/eventloop.py` `ROUTES`, T048)
 
 Event types are R1's normalizer vocabulary (T002 records the exact names, X-10). `P` = progress route (skipped for
@@ -433,7 +448,9 @@ lease, the purpose, and (for `resume`) the recovery record, quoting all reposito
 "untrusted data" header. `run --role <r>` checks `GET /user` against the role's login, takes eligible `written` dispatches
 for that role, and starts them: runner `none` leaves them for a human (Zed); `stub` runs the test stub; `claude-cli` (after
 T004) runs `claude -p <prompt file contents> --output-format json` with the flags T004 verified, detached, recording the pid.
-Dispatch expiry equals the lease TTL; attempts ≤ 3 per issue per 24 h.
+Dispatch expiry equals the lease TTL; attempts ≤ 3 per issue per 24 h. The configured runner is `none`: the person chose
+no headless edit sessions, so dispatches go to the outbox and a human starts each session (Q-7, answers recorded
+2026-10-22); `claude-cli` stays disabled.
 
 ### Scorecard metrics (`_skillkit/autonomy.py`, T034)
 
@@ -477,8 +494,9 @@ model or Jev. P-8's other input is `--release-gate-report <file>`: the factory's
 SPEC-203; it passes when every merge-stage gate passed (live gates included) and its `commit` equals the factory commit
 the installed skills came from (the installer's source record, whose name T002 confirms). P-8 passes only when both
 inputs pass; without either the criterion is `not_run`. The profiles' model is read from the installed Zed profiles
-(T151 records where), and a streak on another model leaves P-8 `fail` (Q-14). A failing counting run or a new unstable
-case after the promotion sets `recommendation: hold`; it adds no demotion trigger (Q-14).
+(T151 records where), and a streak on another model leaves P-8 `fail` (Q-14 a, the person's answer). A failing counting
+run or a new unstable case after the promotion sets `recommendation: hold`; it adds no demotion trigger (Q-14 b, the
+person's answer; answers recorded 2026-10-22).
 
 ### Demotion procedure (`autonomy_guard.py`, T088)
 
@@ -673,7 +691,7 @@ skills/merge-policy-gate/
 │   test_autonomy_scorecard.py, test_autonomy_guard.py               CREATE
 └── evals/cases/*.json, evals/fixtures/r3/                           CREATE
 skills/gitea-event-normalizer/
-├── scripts/normalize.py           MODIFY  serve | ingest | process | reconcile | status (FR-017..FR-024)
+├── scripts/normalize.py           MODIFY  serve | ingest | process | reconcile | status (FR-017..FR-024); reconcile-tick `local-container` health snapshot (FR-058)
 ├── references/gateway.md, references/event-routing.md (generated from ROUTES)   CREATE
 ├── SKILL.md                       MODIFY
 ├── tests/test_serve.py, tests/test_ingest_process.py              CREATE
@@ -701,9 +719,9 @@ skills/pse-implementer/{SKILL.md, tests/test_rebase.py, evals/cases/*.json}   MO
 skills/speckit-development/scripts/delivery_record.py                MODIFY  merge handoff (FR-051)
 skills/speckit-development/scripts/review_request.py                 MODIFY  --live-runs: digests of every streak run and of the streak record (FR-057)
 skills/speckit-development/{SKILL.md, tests/test_handoff_r3.py, tests/test_review_request_r3.py, evals/cases/*.json}   MODIFY/CREATE
-skills/{speckit-gitea-taskstoissues,twelve-factor-audit,skill-forge,run-monitor}/   re-vendored only (T136; run-monitor: D-29, FR-058)
+skills/{speckit-gitea-taskstoissues,twelve-factor-audit,skill-forge,run-monitor}/   re-vendored only (T136; run-monitor: no script change, the gateway calls its snapshot, D-29, FR-058)
 skills/CATALOG.json                                                  REGENERATE (14 skills)
-skill-lab/benchmarks/criteria/<14 skills>.json, _defaults.json       UNCHANGED  person-maintained; at or above SPEC-105's floor; agents never edit them (G-OFF-06)
+skill-lab/benchmarks/criteria/_defaults.json                        UNCHANGED  the floor; no per-skill criteria file ships in R1–R3, only the person may add one to raise a bar; agents never edit them (G-OFF-06)
 skill-lab/benchmarks/monitor-limits.json, prices.json                UNCHANGED  person-maintained (a limits change needs the person's approval)
 skill-lab/benchmarks/runs/<run_id>/, benchmark-streak record         CREATE by the live runs (T142), committed; referenced by digest
 
@@ -745,7 +763,7 @@ Phase numbers are those of tasks.md.
 
 | Phase | Tasks | Content | Exit check |
 |---|---|---|---|
-| 1 Setup | T001–T016, T151 | Entry evidence (R2 merged); R2 alignment; R1 and SPEC-105 alignment (X-11..X-15); Gitea and runner facts (V-1..V-11); checklist; ADRs; CONVENTIONS; readiness | `entry-check.json`, `r2-alignment.json`, readiness `ready: true` |
+| 1 Setup | T001–T016, T151 | Entry evidence (R2 `APPROVE` with its live gates passed; branch stacked on `release/r2-agent-implementation`); R2 alignment; R1 and SPEC-105 alignment (X-11..X-15); Gitea and runner facts (V-1..V-11); checklist; ADRs; CONVENTIONS; readiness | `entry-check.json`, `r2-alignment.json`, readiness `ready: true` |
 | 2 Foundational | T017–T059, T154 | 11 schemas + 9 additive; gates; fixtures; policy; authority; autonomy; merge policy; client rows; double; leases and recovery; webhook; event loop; git, delivery, and redaction; lab commands including the SPEC-105 live-gate evaluation; harness | Phase 2 tests green; `sync --check` clean; constitution re-check (T051) |
 | 3 US1 auto-merge (MVP) | T060–T069 | merge decision, merge plan, branch audit, SKILL.md, evals, integration | `test_r3_us1_auto_merge.py` green |
 | 4 US2 gateway | T070–T076 | serve/ingest/process/reconcile, docs, SKILL.md, evals, integration | `test_r3_us2_gateway.py` green |
@@ -903,7 +921,7 @@ Every live step uses SPEC-105's harness as R1 delivered it; R3 changes none of i
    configuration or case bugs, fixed before a re-run. A case that passed and then fails breaks the streak; editing or
    adding any case (for example in a review fix) or changing the model restarts it (SPEC-105 FR-010..FR-012).
 4. **Local inference**: unchanged; SPEC-202's M-L1 governs it (entry: this same `benchmark-streak.v1` evidence for the
-   cloud model plus the person's sign-off), and R3 adds no local gate and runs nothing on the person's machine.
+   cloud model plus the person's sign-off), and R3 adds no local gate.
 5. **Cost and latency**: SPEC-105 records model and Jev tokens per case, per skill, and in total; cost comes only from
    `skill-lab/benchmarks/prices.json`, and a run with any missing price reports `usage-only`. No cap stops a run (intake
    Q7). The run log records latency, status, retries, and rate-limit waits.
@@ -916,7 +934,8 @@ Every live step uses SPEC-105's harness as R1 delivered it; R3 changes none of i
 
 **Rollout**:
 
-1. A human merges R3 into the factory's `main`. No project changes level: guarded autonomy needs a promotion.
+1. A human merges R3 into the factory's `main`, after R2 has merged and the stacked R3 PR was retargeted from
+   `release/r2-agent-implementation` to `main` (E-7). No project changes level: guarded autonomy needs a promotion.
 2. Per project at `agent-implementation` (human): reinstall the skills. `merge_decision.py --record` now accrues
    calibration decisions; R2's polling flow continues.
 3. Gitea setup (human, Q-2): a non-admin `system` account distinct from PSE; branch protection meeting BP-01..BP-12
@@ -928,8 +947,9 @@ Every live step uses SPEC-105's harness as R1 delivered it; R3 changes none of i
 5. Create the webhook (human-only) pointing at the gateway over TLS (or loopback), with a random secret of at least 32
    bytes; rotate with `GITEA_WEBHOOK_SECRET_PREVIOUS` and `GITEA_WEBHOOK_SECRET_ROTATED_AT` (accepted for 7 days); start
    `normalize.py serve` as an operator service (runbook `webhook-gateway.md`, which points at R1's
-   `references/webhook-hygiene.md`). Review `skill-lab autonomy status` weekly. The gateway host is not monitored by
-   `run-monitor` (D-29; Q-13).
+   `references/webhook-hygiene.md`). Review `skill-lab autonomy status` weekly. Run the gateway inside a Rancher Desktop local
+   container; on every reconcile tick it writes a `run-monitor` `local-container` report of that container to
+   `gateway/health/` (D-29, FR-058).
 
 **Rollback** (fastest first; none needs an agent):
 
@@ -950,5 +970,5 @@ Every live step uses SPEC-105's harness as R1 delivered it; R3 changes none of i
 | 6 new `_skillkit` modules vendored into 14 skills | One tested implementation of the decision, ordering, recovery, and authority logic | Per-skill copies drift; skills cannot import each other |
 | A long-running server in a skill | The report's webhook gateway [R §Gitea as the real-time engineering control plane] | Polling by sessions (R2) cannot react to events or recover lost state promptly |
 | Exhaustive matrix, ordering schedules, crash injection, soak | Auto-merge is irreversible without a human revert | Sampled tests leave untested combinations of exactly the gates that matter |
-| 3 consecutive counting live runs before the merge (G-LIVE-08) | R3 is the first release where model output can lead to an unattended merge; the user's definition of reliable is 3 in a row | One run, as for R1, is open as Q-12; the conservative default stays until the person answers |
+| 3 consecutive counting live runs before the merge (G-LIVE-08) | The person's answer: three in a row, the same bar that unlocks local inference (Q-12, answers recorded 2026-10-22); R3 is the first release where model output can lead to an unattended merge | One run, as for R1 (declined by the person) |
 | Latch location outside `--state-dir` | An override flag would be an escape from demotion | Keeping the convention would make demotion advisory |

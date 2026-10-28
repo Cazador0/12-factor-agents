@@ -33,7 +33,7 @@ All of it is stdlib Python ≥ 3.9 inside `skill-lab/lab/` and one new skill, `s
 **Primary Dependencies**: none; `skill-lab/shared/_skillkit` (vendored into `run-monitor`)
 **Storage**: files committed in git: `skill-lab/benchmarks/runs/<run_id>/` (results, run summary, run log, health reports, PR comment), `skill-lab/benchmarks/cassettes/`, and `prices.json` and `monitor-limits.json` (intake Q9)
 **Testing**: unittest with the existing fake TypeSafe and Ollama servers (`skill-lab/tests/test_bench_fakes.py`), plus one live smoke run the person reviews (intake Q12)
-**Target Platform**: Claude Code cloud containers (live runs after allowlisting) and the person's machine; CI runs only the offline tiers (SPEC-201 refinement)
+**Target Platform**: Claude Code cloud containers (live runs after allowlisting) and the person's machine, including the person's Rancher Desktop local containers, which `run-monitor` reads only from inside each container (target `local-container`, research R-9); CI runs only the offline tiers (SPEC-201 refinement)
 **Project Type**: CLI lab plus one portable agent skill
 **Performance Goals**: no time limit; runs go to completion (Q17). One extra advisory model call per skill. A health check costs about 0.5 s of CPU sampling per skill
 **Constraints**: never fabricate results; only skill-factory fixtures are sent (Q4); keys only from environment variables; Ollama Cloud has no structured outputs
@@ -157,7 +157,12 @@ update. Contract tests must pass before any producer code exists.
   through a hook, so bodies are never logged (R-13).
 - `skills/run-monitor/scripts/snapshot.py`: `--target`, `--run-log`, `--limits`, `--skill`, `--out` →
   `run-health.v1`. Container metrics per R-9, API and session metrics per R-10, and limits decide
-  `status`.
+  `status`. `--target local-container` (additive, the person's answer, 2026-10-22) reads the container's own cgroup v2
+  files (`cpu.stat`, `cpu.max`, `memory.current`, `memory.max`), falls back to cgroup v1, records `null` plus a note
+  when neither is readable, and adds `container.cgroup`; disk free and process count are those seen inside the
+  container. It opens no Docker or containerd socket and reads nothing else on the machine. Callers run it inside the
+  container doing the work: SPEC-202's bench on `--runtime ollama-local` runs, and SPEC-203's webhook gateway on every
+  reconcile tick.
 - Bench, after each skill: run the snapshot, set `degraded` and `exclusion_reasons += ["degraded"]` on
   a problem, then make the advisory call (R-11) and store `assessment` or `assessment_error`.
 - Reviewer instructions: the `speckit-development` review request adds the snapshot command for
@@ -182,7 +187,7 @@ update. Contract tests must pass before any producer code exists.
 | Layer | What | Where |
 |---|---|---|
 | Contract | schemas parse, use only the subset, examples valid, invalid fixtures rejected | `test_contracts.py` (extended) |
-| Unit | floor comparator, re-ask selection, outage mapping, cost math, streak walk, limits evaluation, `/proc` fallbacks | `test_score_floor.py`, `test_live_reask.py`, `test_live_usage.py`, `test_streak.py`, `skills/run-monitor/tests/test_snapshot.py` |
+| Unit | floor comparator, re-ask selection, outage mapping, cost math, streak walk, limits evaluation, `/proc` fallbacks, `local-container` cgroup v2 and v1 readers and their `null` fallback, no socket or host path opened | `test_score_floor.py`, `test_live_reask.py`, `test_live_usage.py`, `test_streak.py`, `skills/run-monitor/tests/test_snapshot.py` |
 | Integration | full fake-server bench: re-ask, outage, degraded, usage totals, committed files without secrets, PR report | `test_live_gate.py`, `test_live_storage.py`, `test_live_monitor.py`, `test_live_report.py` |
 | Live smoke | 1 agentic + 2 routing cases on Ollama Cloud with Jev live | manual, recorded under `benchmarks/runs/` |
 | Live gate | full run, both levels | R1 gate |

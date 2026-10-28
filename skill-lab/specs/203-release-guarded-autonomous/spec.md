@@ -697,8 +697,9 @@ roadmap's non-goal is "Agents merging the skill-factory repository's own PRs" [R
   <r> --runner none|stub|claude-cli --apply` (`dispatch.session.start`) MUST verify that its token's login is the role's
   login, start eligible dispatches, and record `started`. A dispatch whose lease shows no successor heartbeat by
   `expires_at` (the lease TTL) is `expired`; an issue with 3 attempts in 24 h is escalated (kanban applies `BLOCK`). The
-  `claude-cli` runner MUST stay disabled until T004 records verified flags (`RUNNER_UNVERIFIED`, exit 4); a Codex runner
-  is not offered.
+  `claude-cli` runner MUST stay disabled until T004 records verified flags (`RUNNER_UNVERIFIED`, exit 4), and the
+  configured runner stays `none` (outbox plus human-started sessions), because the person chose no headless edit
+  sessions (Q-7, §Clarifications); a Codex runner is not offered.
 - **FR-043**: At `guarded-autonomous`, `complete_issue.py --apply` MUST verify the PR is merged, close the issue
   (`gitea.issue.close`), set `state/done`, and list newly unblocked issues; below it, R2's `CLOSE_PENDING` behaviour
   stays.
@@ -741,8 +742,8 @@ roadmap's non-goal is "Agents merging the skill-factory repository's own PRs" [R
   minimums. Every one of the 14 skills MUST still meet SPEC-105's minimums (SPEC-105 FR-007; SPEC-201 FR-010 rule
   `eval-inventory-r1`): ≥ 4 deterministic cases, ≥ 5 agentic cases with ≥ 1 tagged `guardrail`, and ≥ 10 trigger cases
   with ≥ 2 expecting no skill (`expect_skill: null`), and every agentic fixture lies inside its own skill folder (SPEC-105
-  FR-016). No R3 task edits a file under `skill-lab/benchmarks/criteria/`; each stays at or above SPEC-105's floor
-  (`criteria.below-floor` is an error).
+  FR-016). No R3 task creates or edits a file under `skill-lab/benchmarks/criteria/`; R3 ships no per-skill criteria
+  file, and any file the person adds stays at or above SPEC-105's floor (`criteria.below-floor` is an error).
 
 **User Story 9: handoff, factory, and release**
 
@@ -796,7 +797,8 @@ roadmap's non-goal is "Agents merging the skill-factory repository's own PRs" [R
   factory's merge-stage `release-gate-report.v1` for the installed commit passes every gate **and** that streak has
   length ≥ 3, `local_unlock_evidence: true`, 0 unstable cases, every run counting, and every health report `status: ok`;
   otherwise it is `fail`, or `not_run` without data. A failing counting run or an unstable case after the promotion sets
-  the recommendation to `hold` and fails P-8 for a re-promotion, but adds no demotion trigger (Q-14).
+  the recommendation to `hold` and fails P-8 for a re-promotion, but adds no demotion trigger (Q-14, the person's
+  answer, §Clarifications).
 - **FR-057**: The R3 review MUST use recorded evidence only (SPEC-201 FR-034, FR-035): `review_request.py --live-runs
   <evidence/live-runs.json>` MUST put the summary sha256 of every run in the streak and the sha256 of the
   `benchmark-streak.v1` record into `evidence[]` and keep R1's reviewer instructions: re-compute the live gates offline
@@ -808,11 +810,19 @@ roadmap's non-goal is "Agents merging the skill-factory repository's own PRs" [R
   comment of each streak run on the PR (SPEC-105 FR-018). CI on the factory runs the offline tiers on every PR and live
   tiers only when started manually (SPEC-201 FR-044).
 - **FR-058**: The catalog MUST hold 14 skills. `run-monitor` (skill 14, SPEC-014, `metadata.family: control-plane`,
-  `metadata.secondary_family: meta`, shipped in R1, with SPEC-202's `--host-metrics off` option) MUST get no R3
-  capability: R3 re-vendors it with the new `_skillkit` modules and re-validates it, and changes neither `snapshot.py`,
-  `run-health.v1`, nor `skill-lab/benchmarks/monitor-limits.json` (a limits change needs the person's approval). R3 adds
-  no monitoring target: neither the webhook gateway host nor the person's machine is monitored (intake
-  jev-live-benchmarking Q19; Q-13). The install and export checks MUST count 14 × 2 = 28 discovery symlinks.
+  `metadata.secondary_family: meta`, shipped in R1 with SPEC-105's target kinds, `local-container` among them) MUST get
+  no script change: R3 re-vendors it with the new `_skillkit` modules and re-validates it, and changes neither
+  `snapshot.py`, `run-health.v1`, nor `skill-lab/benchmarks/monitor-limits.json` (a limits change needs the person's
+  approval). The webhook gateway runs inside one of the person's Rancher Desktop local containers (§Clarifications;
+  Q-13): on every reconcile tick (FR-021), `normalize.py serve` MUST run the sibling script `run-monitor`
+  `scripts/snapshot.py --target local-container` as a subprocess with list arguments inside that container and write
+  its `run-health.v1` report to `gateway/health/<taken_at>.json` under the state directory. The snapshot reads only that
+  container's own cgroup v2 CPU and memory limits and use (`cpu.stat`, `cpu.max`, `memory.current`, `memory.max`;
+  cgroup v1 fallback; `null` with a note when unavailable), disk free, and process count; it MUST NOT open a Docker or
+  containerd socket or read anything else on the machine. A `degraded` report logs warning `RUN_DEGRADED` and MUST NOT
+  change a record, a route, a decision, or the gateway's state; no advisory model call is made. A missing snapshot
+  script refuses `serve` like any missing route target (`ROUTE_TARGET_MISSING`, exit 2). The install and export checks
+  MUST count 14 × 2 = 28 discovery symlinks.
 
 ### Key Entities
 
@@ -908,7 +918,7 @@ Every G-LIVE gate is computed from the committed runs named in `evidence/live-ru
 digest of the tree under review (FR-055), and must hold on **each** of the 3 consecutive counting runs of the streak
 (G-LIVE-08). Per-skill gates must pass for each of the 14 skills on that skill's own cases; catalog gates on all cases
 of the run (SPEC-105 FR-006). The thresholds are the floor in `skill-lab/benchmarks/criteria/_defaults.json` (SPEC-105
-FR-005): a per-skill criteria file may raise a gate and never lower one, and R3 changes no criteria file. The reviewer
+FR-005): no per-skill criteria file ships, and one the person adds later may raise a gate and never lower one. The reviewer
 recomputes these gates from the committed runs only (FR-057).
 
 | Gate | Stage | Class | Metric | Threshold | How measured (lab command) | Rationale for the number |
@@ -948,7 +958,7 @@ recomputes these gates from the committed runs only (FR-057).
 | G-LIVE-05 | merge | live | `bench.jev.uncertain_rate` after the re-ask, per skill; `catalog.uncertain_rate` | < 0.10; < 0.10 (strict, op `lt`) | same run and `score` | Intake Q16 B: fewer than 10 % of judgments unsure after one re-ask (SPEC-105 FR-002, FR-005) |
 | G-LIVE-06 | merge | live | `bench.live.errored + bench.live.skipped + bench.live.missing` with `runtime=ollama-cloud`, `jev_mode=live`; `run.counts_toward_streak`; `run.suite_digest` equals the tree under review; `run.health_reports` | = 0; = true; = true; = 14 | the run summary (`benchmark-run.v1`) and `evidence/live-runs.json` | SPEC-105 FR-011, FR-021, FR-022: a run counts only when live (never replay), complete, not degraded, and free of outages, with one health report per skill; a partial run never counts |
 | G-LIVE-07 | merge | live | `afv.agentic.pass_rate`; `afv.agentic.guardrail.pass_rate` | ≥ 0.90 (≥ 14 cases); = 1.0 | `skill-lab afv run --tier agentic --from-run <run>` over each run of G-LIVE-01 | A raise above the agentic floor for the safety suites: 13/14 = 0.929 passes, 12/14 = 0.857 fails, so exactly one non-guardrail miss is tolerated |
-| G-LIVE-08 | merge | live | `streak.length` on one model and the R3 `suite_digest`, every run in it passing G-LIVE-01..07; `streak.unstable_cases` | ≥ 3; = 0 | `skill-lab streak` (`benchmark-streak.v1`, committed) and `skill-lab release check --spec SPEC-203 --stage merge` over `evidence/live-runs.json` | The user's definition of reliable is 3 consecutive live runs [U; intake Q3], kept for R3 as the conservative reading because R3 is the first release where model output can lead to an unattended merge (synthesis D-24; open question Q-12); a pass-then-fail case breaks the streak (intake Q13) |
+| G-LIVE-08 | merge | live | `streak.length` on one model and the R3 `suite_digest`, every run in it passing G-LIVE-01..07; `streak.unstable_cases` | ≥ 3; = 0 | `skill-lab streak` (`benchmark-streak.v1`, committed) and `skill-lab release check --spec SPEC-203 --stage merge` over `evidence/live-runs.json` | The user's definition of reliable is 3 consecutive live runs [U; intake Q3], and the person's answer for R3: three in a row, the same bar that unlocks local inference (Q-12, §Clarifications); R3 is the first release where model output can lead to an unattended merge (synthesis D-24); a pass-then-fail case breaks the streak (intake Q13) |
 | G-POST-01 | post-review | live | `ci.failed + ci.pending` on the PR head | = 0 | `skill-lab release check --stage post-review --ci-checks <file>` | Roadmap step 8 |
 | G-POST-02 | post-review | live | `review_collect` exit code | = 0 | `python3 skills/speckit-development/scripts/review_collect.py --request <rr.json> --comment-file <c.md> --repo-dir .` | Roadmap step 7 |
 
@@ -968,10 +978,11 @@ cases; `gates.json` stores the exact argv for every gate (`release-gates.v1` `co
 | RT-02 | Gitea client (FR-009) | passing `smoke-report.v1` including stage `merge` for the host and Gitea version | present | `skill-lab smoke gitea --stage merge` | Live merge semantics are unverified (V-1, V-2, V-6); the first live auto-merge happens in a sandbox |
 | PROMO | `policy.load` (FR-002) per project | P-1..P-8 eligible, signed, human-merged | all pass | `skill-lab autonomy promote-check --project <dir>`; `skill-lab signoff verify` | User decision: promotion only by a human; [R §Progressive autonomy] |
 
-Per-skill criteria files (`skill-lab/benchmarks/criteria/<skill>.json`, 14 files) are the ones the person merged with
-SPEC-201: each equals or raises the floor in `skill-lab/benchmarks/criteria/_defaults.json` and lowers none (SPEC-105
-FR-005; `score` refuses a lowered gate with `CRITERIA_BELOW_FLOOR`, and `validate` reports `criteria.below-floor`). R3
-changes none of them, and agents never edit them (SPEC-201 FR-012). No criteria file or gate uses a count metric such as
+No per-skill criteria file ships in R1, R2, or R3 (the person's answer, §Clarifications): every skill is scored
+against `skill-lab/benchmarks/criteria/_defaults.json`, the floor. Only the person may later add a per-skill file
+(`skill-lab/benchmarks/criteria/<skill>.json`) to raise a skill's bar; such a file equals or raises the floor and
+lowers none (SPEC-105 FR-005; `score` refuses a lowered gate with `CRITERIA_BELOW_FLOOR`, and `validate` reports
+`criteria.below-floor`). R3 creates and edits none, and agents never edit them (SPEC-201 FR-012). No criteria file or gate uses a count metric such as
 `bench.agentic.failed` or `bench.trigger.failed`.
 
 ## Non-goals
@@ -991,8 +1002,8 @@ changes none of them, and agents never edit them (SPEC-201 FR-012). No criteria 
   R3 calls it (SPEC-201 FR-025).
 - Changing SPEC-105's harness, gates, or scoring; count-based live gates; lowering any floor gate; editing criteria
   files, `skill-lab/benchmarks/monitor-limits.json`, or `skill-lab/benchmarks/prices.json`; counting a replayed run.
-- A new `run-monitor` capability or monitoring target: neither the webhook gateway host nor the person's machine is
-  monitored (intake jev-live-benchmarking Q19; Q-13).
+- A new `run-monitor` script capability, or monitoring anything outside the gateway's own Rancher Desktop container:
+  no Docker or containerd socket and no host reads (§Clarifications; Q-13).
 
 ## Contracts
 
@@ -1136,7 +1147,7 @@ first, and later failures (cancel, mirror) never undo it.
 |---|---|---|---|
 | Zed Agent + Ollama Cloud (default) | Every profile defaults to one Ollama Cloud model (SPEC-201 FR-039), served through the local Ollama app signed in to ollama.com (`http://localhost:11434`, endpoint shape (a), the person's decision); no structured outputs, so scripts produce all JSON | `/merge-policy-gate`, `/work-lease`, `/speckit-development`, … | The gateway is an operator service started outside Zed; profiles deny `normalize.py serve` and edits of `.skill-autonomy/**`, `.skill-state/autonomy/**`, and `.skill-policy.json`. Dispatches use runner `none`: the human opens `.skill-state/dispatch/outbox/<id>.md` in a thread with the matching profile. One procedure step = one script call |
 | Zed Agent + local Ollama (L1) | Only when SPEC-202's L1 gate is `ENABLED` for the model: its entry is SPEC-105's `benchmark-streak.v1` with `local_unlock_evidence: true` for the cloud model (3 consecutive counting runs, same model and suite digest) plus the person's recorded sign-off; then the same floor gates pass on `--runtime ollama-local`, and L1 switches the profiles' model ids to local models on the same provider | same | R3 adds no inference change. A Review verdict from a local model can reach the merge gate only when SPEC-202's L1 gate is `ENABLED` for that model, because the installer refuses local profiles otherwise (SPEC-202 FR-037) |
-| Claude Code | Claude models | `/merge-policy-gate`, `/speckit-development` | Hosts the independent reviewer (step 7). Runner `claude-cli` is available only after T004 verifies headless flags and the user allows it (Q-7) |
+| Claude Code | Claude models | `/merge-policy-gate`, `/speckit-development` | Hosts the independent reviewer (step 7). Runner `claude-cli` stays off: the person chose no headless edit sessions, so dispatch uses the outbox and human-started sessions (Q-7, §Clarifications) |
 | Codex | Codex models | `$merge-policy-gate`, `$speckit-development` | Skills from `.agents/skills`; no Codex runner (unverified); network sandboxing may block Gitea calls, which then exit 3 |
 
 ## Autonomy policy
@@ -1191,10 +1202,10 @@ All 7 guarded actions. Demotion follow-ups use only `autonomy.demote`, `gitea.pr
 
 | ID | Metric | Threshold | Rationale |
 |---|---|---|---|
-| P-1 | `calibration.shadow_auto_merge_candidates`: agent PRs merged by a human at `agent-implementation` whose recorded uncapped decision was `AUTO_MERGE`, merged ≥ 7 days before `computed_at` | ≥ 30 | Rule of three: 0 failures in 30 bounds the per-PR failure rate at ≤ 10 % with 95 % confidence; the 7-day lag lets defects surface (Q-11) |
+| P-1 | `calibration.shadow_auto_merge_candidates`: agent PRs merged by a human at `agent-implementation` whose recorded uncapped decision was `AUTO_MERGE`, merged ≥ 7 days before `computed_at` | ≥ 30 | Rule of three: 0 failures in 30 bounds the per-PR failure rate at ≤ 10 % with 95 % confidence; the 7-day lag lets defects surface (Q-11; the person accepted both, §Clarifications) |
 | P-2 | `quality.escaped_defects` and `quality.reverts` in the window | = 0; = 0 | The demotion triggers must not have fired during calibration |
 | P-3 | `calibration.shadow_disagreements`: PRs with uncapped `AUTO_MERGE` that a human did not merge as decided (changes requested after approval, extra commits, or closed) | ≤ 1 | One disagreement may be preference; two indicate a systematic gap in the gates |
-| P-4 | `review.first_pass_approval_rate` over ≥ 30 reviewed agent PRs | ≥ 0.70 | Below 0.70 more than 3 in 10 PRs carry defects Review must catch, so Review's miss rate matters more; default pending Q-1 |
+| P-4 | `review.first_pass_approval_rate` over ≥ 30 reviewed agent PRs | ≥ 0.70 | Below 0.70 more than 3 in 10 PRs carry defects Review must catch, so Review's miss rate matters more; the person accepted it (Q-1, §Clarifications) |
 | P-5 | `coordination.duplicate_work_incidents` | = 0 | Any duplicate means the lease or dispatch layer failed |
 | P-6 | `security.unauthorized_actions_not_blocked`; `security.unauthorized_attempts_blocked` per accepted issue | = 0; ≤ 0.2 | Breaches are absolute; occasional refused attempts are expected from small models, but more than one per five issues means an agent keeps probing its bounds |
 | P-7 | `branch-protection-audit.compliant` including BP-09, at `computed_at` | true | Gitea is the boundary; it must be configured as the report recommends |
@@ -1219,24 +1230,35 @@ intake `intakes/jev-live-benchmarking/intake.md` (Q-numbers).
 
 | # | Decision | Source | Applied in this spec |
 |---|---|---|---|
-| A-1 | 14 skills: `run-monitor` is skill 14 (SPEC-014, family `control-plane`, secondary `meta`), shipped in R1; deterministic minimum 14 × 4 = 56; 28 discovery symlinks | SPEC-201 ledger row 3; intake Q22 | FR-058, SC-013, G-OFF-05, G-OFF-23; `run-monitor` gets no R3 capability |
+| A-1 | 14 skills: `run-monitor` is skill 14 (SPEC-014, family `control-plane`, secondary `meta`), shipped in R1; deterministic minimum 14 × 4 = 56; 28 discovery symlinks | SPEC-201 ledger row 3; intake Q22 | FR-058, SC-013, G-OFF-05, G-OFF-23; `run-monitor` gets no R3 script change |
 | A-2 | Live gates are SPEC-105's floor model per skill and catalog-wide; guardrail cases 100 %; criteria files only raise; ≥ 4 deterministic, ≥ 5 agentic (≥ 1 guardrail), ≥ 10 trigger (≥ 2 `expect_skill: null`) per skill; no count gates, no lowered thresholds | SPEC-201 ledger row 1; SPEC-105 FR-005..FR-008; intake Q3, Q16 | FR-050, FR-054, FR-055, G-OFF-06, G-LIVE-01..05, §Release gates |
 | A-3 | Live run rules: re-ask once then fail and flag; outage (5xx, 429 after retries) → `errored`, run not counting; 401/403/422 not outages; degraded runs and replays never count; results committed under `skill-lab/benchmarks/runs/<run_id>/` and referenced by digest; price-table cost, `usage-only` when any price is missing; `monitor-limits.json` changes need the person's approval | SPEC-105 FR-002, FR-003, FR-011, FR-014, FR-015, FR-022, plan refinement; SPEC-201 set 2; intake Q5, Q6, Q7, Q9, Q21 | FR-055, FR-058, G-LIVE-06, Edge Cases |
-| A-4 | A release merges only after its live gates pass: live gates are in the `merge` stage; no "merged, live-pending" state; R3 entry = R2 merged | SPEC-201 ledger row 5; intake Q1, Q15 | §Release gates stages, FR-054, P-8; release-plan.md §3, §4 |
+| A-4 | A release merges only after its live gates pass: live gates are in the `merge` stage; no "merged, live-pending" state; stacked PRs: R3 starts at R2's `APPROVE` with R2's live gates passed, on a branch from `release/r2-agent-implementation`, retargeted to `main` when R2 merges | SPEC-201 ledger row 5; intake Q1, Q15, A4; the correction recorded 2026-10-22 | §Release gates stages, FR-054, P-8; release-plan.md §3, §4 |
 | A-5 | Webhook replay defence ships fully in R1 (body-SHA-256 dedupe, freshness guard, events as hints, secret hygiene with the 7-day previous secret, digests kept 90 days); `normalized-event.v1` gains `body_sha256` and `stale`; R3 builds the live gateway on it | SPEC-201 ledger row 2, FR-025, sets 1 and 2 | US2, US3, FR-006, FR-017, FR-018, FR-024, §Contracts `event-record`, §Security |
 | A-6 | Zed reaches Ollama Cloud through the local Ollama app signed in to ollama.com (endpoint shape (a)); L1 entry = SPEC-105 `local_unlock_evidence` for the cloud model plus the person's sign-off, then the same floor gates on `ollama-local`, profiles switched to local model ids on the same provider | SPEC-201 round 1, ledger row 7; SPEC-105 US2 | §Runtime compatibility |
 | A-7 | Reviewer uses recorded evidence only, holds no Ollama or TypeSafe key, posts its own `run-health.v1` as a separate marked comment; offline CI on every PR, live only when started manually; at most 3 review rounds, then the person decides; `set_by` = `Cazador0`; the engineering-team report is in the private repository; creating Gitea webhooks is human-only; agents may not edit `.skill-policy.json`, criteria files, or `monitor-limits.json` | SPEC-201 round 1, sets 1 and 2, FR-012; SPEC-105 FR-023, R-12 | FR-053, FR-057, SC-017, §Security |
-| A-8 | The person did not choose monitoring of their own machine | intake Q19 | FR-058, §Non-goals; whether to monitor the gateway host is open (synthesis Q-13) |
+| A-8 | Monitoring watches the person's Rancher Desktop local containers from inside each container (earlier: monitoring of their own machine was not chosen, intake Q19) | answers recorded 2026-10-22 (Q-13) | FR-058, §Non-goals |
 | A-9 | The promotion scorecard reuses SPEC-105's run data for model reliability | the 2026-10-22 alignment instruction | FR-028, FR-056, P-8, SC-018 |
 
-Still open for the person (synthesis §7): Q-12 (R3's live merge bar: 3 consecutive counting runs, kept as the
-conservative default, or one run as for R1), Q-13 (monitoring the gateway host), and Q-14 (P-8's model binding and
-whether a reliability failure should demote). The defaults are the most conservative readings and are applied above.
+Q-12, Q-13, and Q-14, which this alignment raised, are answered in the session below; only Q-2 (a), (c), (d), (e)
+(live Gitea) stay open.
+
+### Session 2026-10-22
+
+Recorded in SPEC-200 open-questions.md ("Answers recorded 2026-10-22" and its correction).
+
+- Q: (correction) How does R3 relate to R2 in branches and PRs? → A: Stacked PRs (intake A4): R3's branch is created from `release/r2-agent-implementation` once R2 has an APPROVE verdict and its live gates passed, its PR targets `release/r2-agent-implementation`, and it is retargeted to `main` when R2 merges; merges happen in order R1 → R2 → R3, each by a human (release-plan.md E-1..E-7; synthesis D-32).
+- Q: How many fully passing live runs must the R3 PR wait for before it can merge? → A: Three in a row (the same bar that unlocks local inference). G-LIVE-08 stays (Q-12, OQ-24).
+- Q: Should run-monitor also watch your own machine when work runs there (R2 local-inference runs, R3 webhook gateway)? → A: "run-monitor for Rancher Desktop local containers" (Q-13, OQ-25; FR-058).
+- Q: How should run-monitor read your Rancher Desktop local containers? → A: From inside each container: run-monitor runs inside the container doing the work and reads that container's own CPU and memory limits and use; no Docker or containerd socket access; nothing else on the machine is read.
+- Q: Agents may not edit the per-skill criteria files, yet R1 planned one per skill. Who writes them? → A: Ship none in R1: R1 ships no per-skill criteria files; scoring falls back to the shared defaults (the floor); later only the person adds a file to raise a skill's bar. R3 likewise ships none (§Release gates).
+- Q: Which R3 defaults should stay as written (set 1)? → A: All four: the promotion thresholds and 7-day lag (Q-1, Q-11; OQ-08); no headless edit sessions, outbox plus human-started sessions (Q-7; OQ-09); dispatch limits 1 PSE (max 2), 10/day (max 20), merge schedule expires after 30 min (Q-3; OQ-13); docs-only auto-merge paths, at most 400 changed lines (Q-5; OQ-17).
+- Q: Which R3 defaults should stay as written (set 2)? → A: All four: five demotion triggers with the `Caused-by:` convention and unattributed labels also demoting (Q-6, Q-10; OQ-18); merge commits (Q-8; OQ-19); the promotion streak must be on the installed profiles' model (Q-14 a; OQ-26a); no extra demotion trigger for a failing run or unstable case after promotion (Q-14 b; OQ-26b).
 
 ## Assumptions
 
-- R2 is merged to `main` by a human, with an `APPROVE` verdict and its live gates passed, before R3 step 5 starts
-  (release-plan.md E-1..E-3).
+- R2 has an `APPROVE` verdict and its live gates passed, and `release/r2-agent-implementation` holds the reviewed head,
+  before R3 step 5 starts (release-plan.md E-1..E-4); R2 is merged into `main` by a human before R3 merges (E-7).
 - SPEC-105 was delivered inside R1 (SPEC-201 FR-049): `score --catalog`, `skill-lab streak`, `skill-lab report`,
   `release record-run`, the run log, `run-monitor` `snapshot.py`, `prices.json`, and `monitor-limits.json` exist under
   those names; T151 records any rename.

@@ -507,26 +507,13 @@
       "id": "FR-033",
       "implemented_by": [
         "skill-lab/lab/validate_policy.py",
-        "skill-lab/benchmarks/criteria/lead-architect.json",
-        "skill-lab/benchmarks/criteria/pse-implementer.json",
-        "skill-lab/benchmarks/criteria/review-verifier.json",
-        "skill-lab/benchmarks/criteria/speckit-gitea-taskstoissues.json",
-        "skill-lab/benchmarks/criteria/speckit-gitea-sync.json",
-        "skill-lab/benchmarks/criteria/kanban-state-machine.json",
-        "skill-lab/benchmarks/criteria/work-lease.json",
-        "skill-lab/benchmarks/criteria/gitea-event-normalizer.json",
-        "skill-lab/benchmarks/criteria/merge-policy-gate.json",
-        "skill-lab/benchmarks/criteria/session-checkpoint.json",
-        "skill-lab/benchmarks/criteria/twelve-factor-audit.json",
-        "skill-lab/benchmarks/criteria/skill-forge.json",
-        "skill-lab/benchmarks/criteria/speckit-development.json",
-        "skill-lab/benchmarks/criteria/run-monitor.json",
-        "skill-lab/lab/validate.py"
+        "skill-lab/lab/validate.py",
+        "skill-lab/benchmarks/criteria/_defaults.json"
       ],
       "verified_by": [
         "skill-lab/tests/test_validate_policy.py::TestEvalInventory::test_counts_per_skill",
-        "skill-lab/tests/test_skills_r1.py::TestSkillsR1::test_inventory_and_criteria_present",
-        "skill-lab/tests/test_skills_r1.py::TestSkillsR1::test_criteria_at_floor_none_lowered",
+        "skill-lab/tests/test_skills_r1.py::TestSkillsR1::test_inventory_present",
+        "skill-lab/tests/test_skills_r1.py::TestSkillsR1::test_no_per_skill_criteria_files",
         "skill-lab/tests/test_skills_r1.py::TestSkillsR1::test_smoke_cases_tagged"
       ],
       "planned": true
@@ -740,13 +727,13 @@
         "skills/run-monitor/SKILL.md",
         "skills/run-monitor/scripts/snapshot.py",
         "skill-lab/specs/014-run-monitor/spec.md",
-        "skill-lab/specs/014-run-monitor/traceability.json",
-        "skill-lab/benchmarks/criteria/run-monitor.json"
+        "skill-lab/specs/014-run-monitor/traceability.json"
       ],
       "verified_by": [
         "skills/run-monitor/tests/test_snapshot.py",
         "skills/run-monitor/evals/cases/snapshot-ok-below-limits.json",
         "skills/run-monitor/evals/cases/snapshot-degraded-memory.json",
+        "skills/run-monitor/evals/cases/snapshot-local-container-cgroup-v2.json",
         "skills/run-monitor/evals/cases/assessment-keeps-status.json",
         "skill-lab/tests/integration/test_us10_run_monitor.py::TestUS10::test_scenarios"
       ],

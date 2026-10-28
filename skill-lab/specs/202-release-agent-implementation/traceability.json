@@ -626,15 +626,14 @@
     {
       "id": "FR-048",
       "implemented_by": [
-        "skills/run-monitor/scripts/snapshot.py",
         "skill-lab/lab/bench.py",
         "skills/run-monitor/SKILL.md"
       ],
       "verified_by": [
-        "skills/run-monitor/tests/test_snapshot_host_metrics_off.py::TestHostMetricsOff::test_no_host_figures",
-        "skills/run-monitor/tests/test_snapshot_host_metrics_off.py::TestHostMetricsOff::test_api_and_session_figures_kept",
-        "skill-lab/tests/test_bench_local_monitoring.py::TestLocalMonitoring::test_option_passed_on_ollama_local_only",
-        "skills/run-monitor/evals/cases/host-metrics-off.json"
+        "skill-lab/tests/test_bench_local_monitoring.py::TestLocalMonitoring::test_local_container_target_on_ollama_local_only",
+        "skill-lab/tests/test_bench_local_monitoring.py::TestLocalMonitoring::test_cgroup_limit_marks_run_degraded",
+        "skill-lab/tests/test_bench_local_monitoring.py::TestLocalMonitoring::test_no_socket_or_host_path_read",
+        "skill-lab/tests/test_bench_local_monitoring.py::TestLocalMonitoring::test_api_and_session_figures_kept"
       ],
       "planned": true
     },

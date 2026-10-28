@@ -1,6 +1,6 @@
 # Open questions for the user: R1, R2, R3
 
-**Roadmap**: [SPEC-200](spec.md) | **Created**: 2026-10-22 | **Status**: Partly answered (2026-10-22)
+**Roadmap**: [SPEC-200](spec.md) | **Created**: 2026-10-22 | **Status**: Answered except OQ-02, OQ-06, and OQ-14's `signer` default (2026-10-22)
 
 This is the single list to answer. It merges the questions in the three release syntheses
 ([SPEC-201 §5](../201-release-shadow/synthesis.md), [SPEC-202 §7](../202-release-agent-implementation/synthesis.md),
@@ -10,7 +10,9 @@ No default ever turns a gate that did not run into a pass.
 
 On 2026-10-22 you answered the intake `intakes/jev-live-benchmarking/intake.md` (cited as "intake Qn"), SPEC-105, and
 the refinement of R1 (SPEC-201 §Clarifications, cited as "round 1", "set 1", "set 2"). Questions those answers settle are
-marked **Resolved** with their source; where an answer differs from the earlier default, the answer applies.
+marked **Resolved** with their source; where an answer differs from the earlier default, the answer applies. The
+release-alignment answers at the end of this file (rounds 1–2, cited as "answers recorded 2026-10-22") and the
+correction below them resolve OQ-05 (stacked PRs), OQ-07..OQ-09, OQ-11..OQ-13, OQ-17..OQ-20, and OQ-22..OQ-26.
 
 Priority:
 
@@ -27,28 +29,28 @@ Priority:
 | OQ-02 | P1 | Create `Cazador0/skill-factory` and grant push access | **R1 step 6** (T140), so every PR after it | Wait; T140 stays open | R1 Q3 |
 | OQ-03 | P1 | Are GitHub Actions allowed on the private repo? | **Resolved**: offline CI on every PR; live benchmarks only when started manually (round 1) | — | R1 Q5 |
 | OQ-04 | P1 | Is the live-run volume within your Ollama and TypeSafe plans? Cost cap? | **Resolved**: report cost only, no cap (intake Q7); cost from your price table, usage only when a price is missing (SPEC-105 FR-014) | — | R1 Q8, R3 Q-9 |
-| OQ-05 | P2 | Confirm one sequencing rule for every release pair | **Resolved**: R1 merges only after one fully passing counting live run; R2 entry = R1 merged with `APPROVE` and live gates passed; R3 entry = R2 merged (your decisions, 2026-10-22) | — | R2 Q-3, Q-5 (sequencing part); R3 Q-4 |
+| OQ-05 | P2 | Confirm one sequencing rule for every release pair | **Resolved** (stacked PRs, intake A4; correction recorded 2026-10-22): R1 merges only after one fully passing counting live run; R2's branch starts from `release/r1-shadow` once R1 has `APPROVE` and its live gates passed, its PR targets `release/r1-shadow` and is retargeted to `main` when R1 merges; R3 stacks on R2 the same way; merges in order R1 → R2 → R3, each by a human | — | R2 Q-3, Q-5 (sequencing part); R3 Q-4 |
 | OQ-06 | P2 | Live Gitea: URL, sandbox, bot accounts, webhook, branch protection, tracking issue | RT-01 (live writes, R2), RT-02 (live auto-merge, R3), P-7 (promotion) | Test double only; live writes refused | R2 Q-2, R3 Q-2 |
-| OQ-07 | P2 | Which local model(s), and how much VRAM? | **M-L1** only | None | R2 Q-1 |
-| OQ-08 | P2 | Accept the promotion thresholds and the 7-day observation lag? | **M-PROMO** only | The listed values | R3 Q-1, Q-11 |
-| OQ-09 | P2 | May role runners start headless `claude -p` sessions with edit rights? | The `claude-cli` runner only | No (outbox; human-started sessions) | R3 Q-7 |
+| OQ-07 | P2 | Which local model(s), and how much VRAM? | **Resolved** (answers recorded 2026-10-22): decided at unlock time; list what fits the GPU at 32k context with tool support, verify it, and you pick. Still gates **M-L1** until you pick | — | R2 Q-1 |
+| OQ-08 | P2 | Accept the promotion thresholds and the 7-day observation lag? | **Resolved** (answers recorded 2026-10-22): the listed values stand | — | R3 Q-1, Q-11 |
+| OQ-09 | P2 | May role runners start headless `claude -p` sessions with edit rights? | **Resolved** (answers recorded 2026-10-22): no; outbox plus human-started sessions | — | R3 Q-7 |
 | OQ-10 | P3 | Which Ollama Cloud model, and which Zed endpoint shape? | **Resolved**: one model for all roles, chosen by SPEC-105 research R-14 at SPEC-201 T112 (intake Q11); endpoint: the local Ollama app signed in to ollama.com (round 1) | — | R1 Q2 |
-| OQ-11 | P3 | Local parity: 3 consecutive local runs, or 1? | Nothing | 3 | R2 Q-4 |
-| OQ-12 | P3 | Enable L1 early on the R1 suite? | Nothing | Evaluate on the installed suite | R2 Q-9 |
-| OQ-13 | P3 | Dispatch limits and merge-schedule TTL | Nothing | 1 PSE (max 2), 10/day (max 20), 30 min | R3 Q-3 |
+| OQ-11 | P3 | Local parity: 3 consecutive local runs, or 1? | **Resolved** (answers recorded 2026-10-22): 3 | — | R2 Q-4 |
+| OQ-12 | P3 | Enable L1 early on the R1 suite? | **Resolved** (answers recorded 2026-10-22): L1 is measured on the suite installed at unlock time | — | R2 Q-9 |
+| OQ-13 | P3 | Dispatch limits and merge-schedule TTL | **Resolved** (answers recorded 2026-10-22): 1 PSE (max 2), 10/day (max 20), 30 min | — | R3 Q-3 |
 | OQ-14 | P3 | Which identity string names you in human-owned records? | **Resolved** for `set_by`: `Cazador0` (set 1). `signer` in `human-signoff.v1` keeps its default | `signer.name` from `git config user.name` plus `github_login: Cazador0` | R1 Q6, R2 Q-7 |
 | OQ-15 | P3 | May the reviewer session hold the live keys for a spot check? | **Resolved**: no; recorded evidence only (round 1) | — | R1 Q4 |
 | OQ-16 | P3 | Include your research report in the factory repo? | **Resolved**: include it (set 1) | — | R1 Q7 |
-| OQ-17 | P3 | Low-risk paths for auto-merge | Nothing | `docs/**` and Markdown outside agent and policy paths, ≤ 400 lines | R3 Q-5 |
-| OQ-18 | P3 | Demotion triggers and escaped-defect labelling | Nothing | Keep all 5 triggers; `Caused-by: #<pr>`; unattributed also demotes | R3 Q-6, Q-10 |
-| OQ-19 | P3 | Auto-merge style | Nothing | Merge commit | R3 Q-8 |
-| OQ-20 | P3 | One Gitea issue per task, or grouped issues? | Nothing | One per task | R2 Q-6 |
+| OQ-17 | P3 | Low-risk paths for auto-merge | **Resolved** (answers recorded 2026-10-22): `docs/**` and Markdown outside agent and policy paths, ≤ 400 changed lines; no built-in additions | — | R3 Q-5 |
+| OQ-18 | P3 | Demotion triggers and escaped-defect labelling | **Resolved** (answers recorded 2026-10-22): all 5 triggers; `Caused-by: #<pr>`; unattributed labels also demote | — | R3 Q-6, Q-10 |
+| OQ-19 | P3 | Auto-merge style | **Resolved** (answers recorded 2026-10-22): merge commit | — | R3 Q-8 |
+| OQ-20 | P3 | One Gitea issue per task, or grouped issues? | **Resolved** (answers recorded 2026-10-22): one per task | — | R2 Q-6 |
 | OQ-21 | P3 | Live benchmark artefacts in PR bodies? | **Resolved**: the release PR carries the live run's report (per-skill and catalog results, unsure and flagged cases, tokens and cost basis, suite digest), and every result file is committed in the private repo (intake Q2, Q9, Q16; SPEC-105 FR-018) | — | R2 Q-8 |
-| OQ-22 | P3 | Should run monitoring watch your own machine during R2's local parity runs? | Nothing with the default (concerns M-L1's local runs only) | No: the monitoring you chose watches the benchmark container, the model sessions under test, and the reviewer session (intake Q19) | R2 Q-10 |
-| OQ-23 | P3 | May L1 (local enablement) run alongside R3? | Nothing | Yes: L1 blocks neither the R2 merge nor R3 | R2 Q-5 (open part) |
-| OQ-24 | P2 | How many counting live runs before R3 may merge: 3 in a row, or 1 as for R1? | Nothing with the default (it sets how many live runs the R3 PR waits for) | 3 consecutive counting runs on one model and the R3 suite | R3 Q-12 |
-| OQ-25 | P3 | Should run monitoring watch the R3 webhook gateway host (possibly your machine)? | Nothing | No (intake Q19) | R3 Q-13 |
-| OQ-26 | P2 | Promotion criterion P-8: streak on the profiles' model, and demotion on a later failing run? | **M-PROMO** only | (a) The installed profiles' model; (b) no new demotion trigger, hold re-promotion only | R3 Q-14 |
+| OQ-22 | P3 | Should run monitoring watch your own machine during R2's local parity runs? | **Resolved** (answers recorded 2026-10-22): run-monitor for your Rancher Desktop local containers, from inside each container (target kind `local-container`: that container's own cgroup CPU and memory limits and use, disk free, process count; no Docker or containerd socket; nothing else on the machine) | — | R2 Q-10 |
+| OQ-23 | P3 | May L1 (local enablement) run alongside R3? | **Resolved** (answers recorded 2026-10-22): yes; L1 blocks neither the R2 merge nor R3 | — | R2 Q-5 (L1 part) |
+| OQ-24 | P2 | How many counting live runs before R3 may merge: 3 in a row, or 1 as for R1? | **Resolved** (answers recorded 2026-10-22): 3 consecutive counting runs on one model and the R3 suite (SPEC-203 G-LIVE-08) | — | R3 Q-12 |
+| OQ-25 | P3 | Should run monitoring watch the R3 webhook gateway host (possibly your machine)? | **Resolved** (answers recorded 2026-10-22): the gateway runs in a Rancher Desktop local container, and run-monitor watches that container from inside it on every reconcile tick (target kind `local-container`); nothing else on the machine | — | R3 Q-13 |
+| OQ-26 | P2 | Promotion criterion P-8: streak on the profiles' model, and demotion on a later failing run? | **Resolved** (answers recorded 2026-10-22): (a) the installed profiles' model; (b) no new demotion trigger, hold re-promotion only | — | R3 Q-14 |
 
 ## P1: blocks a release step or a release's "complete" state
 
@@ -69,8 +71,9 @@ Priority:
   and attach it to the build session with push access. Alternatively, authorize the orchestrator to push a bootstrap
   commit to an empty `main`. If this is already done, confirm that the session can push; T140 checks with
   `git ls-remote` before it pushes.
-- **Why it matters**: every release PR targets `main` of this repository. R2 branches from `main` after R1 is merged,
-  and R3 after R2 is merged, so all three PRs wait on it.
+- **Why it matters**: every release PR is opened on this repository. R1 targets `main`; R2 is stacked on
+  `release/r1-shadow` and R3 on `release/r2-agent-implementation`, each retargeted to `main` when the previous release
+  merges, so all three PRs wait on it.
 - **Blocks**: R1 step 6 (T140), and therefore R1 steps 7 and 8 and the PR steps of R2 and R3.
 - **Recommended default**: wait. T140 stays open, and steps 1–5 continue.
 
@@ -97,12 +100,17 @@ Priority:
 ### OQ-05 One sequencing rule for every release pair (resolved)
 
 - **Question**: Which sequencing rule applies between releases?
-- **Answer** (your decisions, 2026-10-22): R1 merges only after one fully passing, counting live run, with the live
-  gates at the merge stage; there is no "merged, live-pending" state. R2's entry is R1 merged with an independent
-  `APPROVE` and its live gates passed. R3's entry is R2 merged. A live gate that has not run blocks like a failed one.
-  No project is promoted to `guarded-autonomous` before R3 is merged.
-- **Consequence**: the earlier rule 1 ("merge on offline gates while live gates are pending") and the lenient start at
-  the previous release's `APPROVE` are withdrawn.
+- **Answer** (your decisions, 2026-10-22, with the correction recorded below the answers): R1 merges only after one
+  fully passing, counting live run, with the live gates at the merge stage; there is no "merged, live-pending" state.
+  The releases ship as **stacked PRs** (intake A4): R2's branch is created from `release/r1-shadow` once R1 has an
+  independent `APPROVE` and its live gates passed; the R2 PR targets `release/r1-shadow` and is retargeted to `main`
+  when R1 merges. R3 stacks on R2 the same way (it starts after R2's `APPROVE` and R2's live gates passed). Merges
+  happen in order R1 → R2 → R3, each by a human, and each release's own merge still requires its own live gates. A
+  live gate that has not run blocks like a failed one. No project is promoted to `guarded-autonomous` before R3 is
+  merged.
+- **Consequence**: the earlier rule 1 ("merge on offline gates while live gates are pending") is withdrawn, and so is
+  the alignment run's "branch from `main` after the previous release merges", which contradicted intake A4. A PR whose
+  diff changes on retargeting is reviewed again.
 
 ### OQ-06 Live Gitea
 
@@ -125,7 +133,7 @@ Priority:
   any release PR.
 - **Recommended default**: the Gitea test double only; live writes and live auto-merge stay refused.
 
-### OQ-07 Local model and GPU
+### OQ-07 Local model and GPU (resolved)
 
 - **Question**: Which local Ollama model(s) should the Lead, PSE, and Review profiles use, and exactly how much VRAM does
   the GPU have? The model must support tool calls in Zed and fit fully on the GPU with a 32k context.
@@ -134,8 +142,10 @@ Priority:
   `gpt-oss:20b` and `qwen3:8b` as examples only; neither is verified on your GPU.
 - **Blocks**: milestone M-L1 only.
 - **Recommended default**: none. The plans do not pick a model they cannot verify.
+- **Answer** (answers recorded 2026-10-22): decide at unlock time. List what fits the GPU at 32k context with tool support, verify it
+  (`skill-lab doctor --runtime ollama-local`), and you pick. M-L1 waits for your pick.
 
-### OQ-08 Promotion thresholds and observation lag
+### OQ-08 Promotion thresholds and observation lag (resolved)
 
 - **Question**: Do you accept these promotion criteria for moving a project to `guarded-autonomous`?
   - P-1: at least 30 agent PRs, merged by a human at `agent-implementation` at least 7 days before the scorecard, whose
@@ -150,8 +160,9 @@ Priority:
   confidence. The lag lets defects surface before a PR counts.
 - **Blocks**: milestone M-PROMO only (not the R3 PR).
 - **Recommended default**: the values above.
+- **Answer** (answers recorded 2026-10-22): the thresholds and the 7-day lag stand as listed.
 
-### OQ-09 Headless role runners
+### OQ-09 Headless role runners (resolved)
 
 - **Question**: May role runners start headless `claude -p` sessions with edit permissions in a target repository (PSE
   remediation and rebase, Review re-review), once their flags are verified (SPEC-203 V-10)?
@@ -160,8 +171,9 @@ Priority:
   role's token, and every write still passes policy, lease, identity, and scope checks.
 - **Blocks**: the `claude-cli` runner only.
 - **Recommended default**: no. Runner `none`, human-started sessions.
+- **Answer** (answers recorded 2026-10-22): no headless edit sessions; outbox plus human-started sessions.
 
-### OQ-24 Live runs before the R3 merge
+### OQ-24 Live runs before the R3 merge (resolved)
 
 - **Question**: Must R3 pass 3 consecutive counting live runs on one model and the R3 suite before it merges
   (`benchmark-streak.v1` length ≥ 3, SPEC-203 G-LIVE-08), or one fully passing counting run, as for R1?
@@ -170,8 +182,9 @@ Priority:
   keeps the stricter reading until you decide.
 - **Blocks**: nothing with the default; it sets how many live runs the R3 PR waits for.
 - **Recommended default**: 3 consecutive counting runs (SPEC-203 Q-12, D-24).
+- **Answer** (answers recorded 2026-10-22): three in a row, the same bar that unlocks local inference. G-LIVE-08 stays.
 
-### OQ-26 Promotion evidence from the benchmark streak
+### OQ-26 Promotion evidence from the benchmark streak (resolved)
 
 - **Question**: (a) Must the streak behind promotion criterion P-8 be on the model the project's installed profiles
   use, or is the factory's gate model enough? (b) Should a failing counting run or an unstable case after a promotion
@@ -181,6 +194,8 @@ Priority:
 - **Blocks**: **M-PROMO** only.
 - **Recommended default**: (a) the installed profiles' model; (b) no new demotion trigger: report it and hold
   re-promotion (SPEC-203 Q-14).
+- **Answer** (answers recorded 2026-10-22): (a) the streak must be on the installed profiles' model; (b) no extra demotion trigger for a
+  failing run or an unstable case after promotion.
 
 ## P3: safe defaults, nothing blocked
 
@@ -195,14 +210,15 @@ Priority:
   local later"). T112 verifies the model ids only; it does not choose the endpoint. L1 later switches the profile model
   ids to local models on the same provider.
 
-### OQ-11 Local parity runs
+### OQ-11 Local parity runs (resolved)
 
 - **Question**: Should local parity need 3 consecutive local runs (the same bar as cloud) or 1?
 - **Why it matters**: one pass at non-zero temperature proves little, and the roadmap's "reliable" is defined by 3 runs.
 - **Blocks**: nothing (it sets M-L1's duration).
 - **Recommended default**: 3.
+- **Answer** (answers recorded 2026-10-22): 3 consecutive local runs.
 
-### OQ-12 L1 on the R1 suite
+### OQ-12 L1 on the R1 suite (resolved)
 
 - **Question**: Do you want L1 evaluated early on the R1 suite? Such a record goes stale when R2's suite lands and must
   be earned again.
@@ -210,8 +226,9 @@ Priority:
 - **Blocks**: nothing.
 - **Recommended default**: evaluate on whatever suite is installed when 3 eligible runs exist; `install --check` flags a
   stale record.
+- **Answer** (answers recorded 2026-10-22): L1 is measured on the suite installed at unlock time.
 
-### OQ-13 Dispatch limits and merge-schedule TTL
+### OQ-13 Dispatch limits and merge-schedule TTL (resolved)
 
 - **Question**: Are these limits acceptable: 1 concurrent PSE session (maximum 2), 10 dispatches a day (maximum 20), and
   a merge-schedule TTL of 30 minutes (range 5–60)?
@@ -220,6 +237,7 @@ Priority:
   finishes inside it and a stuck one becomes a human decision.
 - **Blocks**: nothing.
 - **Recommended default**: these values.
+- **Answer** (answers recorded 2026-10-22): these values: 1 PSE (max 2), 10 a day (max 20), merge schedule expires after 30 minutes.
 
 ### OQ-14 Your identity in human-owned records (resolved for `set_by`)
 
@@ -241,7 +259,7 @@ Priority:
   repository?
 - **Answer** (set 1): include it.
 
-### OQ-17 Low-risk paths for auto-merge
+### OQ-17 Low-risk paths for auto-merge (resolved)
 
 - **Question**: The default low-risk set is `docs/**` and Markdown outside agent and policy paths, with at most 400
   changed lines. Should any project also treat "non-sensitive UI" paths as low risk (the report's example)?
@@ -250,8 +268,9 @@ Priority:
 - **Blocks**: nothing.
 - **Recommended default**: no built-in additions; a project adds paths through a human-merged policy change, and never
   where a built-in critical or high pattern matches.
+- **Answer** (answers recorded 2026-10-22): docs-only auto-merge paths, at most 400 changed lines; no built-in additions.
 
-### OQ-18 Demotion triggers and escaped-defect labelling
+### OQ-18 Demotion triggers and escaped-defect labelling (resolved)
 
 - **Question**: (a) Keep the three demotion triggers beyond your rule (escaped defect, revert): containment breach,
   gate-integrity violation, and lease violation? (b) Humans label escaped defects `incident/escaped-defect` with a
@@ -260,21 +279,24 @@ Priority:
   re-promotes.
 - **Blocks**: nothing.
 - **Recommended default**: keep all five triggers; use the `Caused-by:` convention; unattributed labels also demote.
+- **Answer** (answers recorded 2026-10-22): all five triggers, the `Caused-by:` convention, and unattributed labels also demote.
 
-### OQ-19 Auto-merge style
+### OQ-19 Auto-merge style (resolved)
 
 - **Question**: Merge commit or squash for auto-merges?
 - **Why it matters**: a merge commit keeps the PR's commits, which revert attribution and post-merge audits use.
 - **Blocks**: nothing.
 - **Recommended default**: merge commit.
+- **Answer** (answers recorded 2026-10-22): merge commits.
 
-### OQ-20 Issue granularity
+### OQ-20 Issue granularity (resolved)
 
 - **Question**: One Gitea issue per Spec Kit task (the Spec Kit `github` extension's behaviour, which R1's dry run
   follows), or grouped issues as in the report's example?
 - **Why it matters**: it decides how many issues, leases, and PRs a feature produces.
 - **Blocks**: nothing in R2, which only applies R1's plans.
 - **Recommended default**: one issue per task.
+- **Answer** (answers recorded 2026-10-22): one Gitea issue per task.
 
 ### OQ-21 Live artefacts in PR bodies (resolved)
 
@@ -286,7 +308,7 @@ Priority:
   repository, referenced by digest. Only skill-factory's own fixtures, skill instructions, and model outputs are ever
   sent to the live services (intake Q4).
 
-### OQ-22 Monitoring your own machine during local parity runs
+### OQ-22 Monitoring your own machine during local parity runs (resolved)
 
 - **Question**: If R2's local parity runs (L1, `--runtime ollama-local`) happen on your machine, should `run-monitor`
   also record that machine's CPU, memory, disk, and processes?
@@ -294,27 +316,38 @@ Priority:
   reviewer session (intake Q19); you did not choose your own machine. Local parity runs may run where the local models
   are, which could be your machine.
 - **Blocks**: nothing with the default; it concerns M-L1's local runs only, never a release PR.
-- **Recommended default**: no machine monitoring. Local runs record no host figures from your machine unless you decide
-  otherwise (SPEC-202 Q-10, D-27: `snapshot.py --host-metrics off`).
+- **Earlier default** (withdrawn): no machine monitoring (`snapshot.py --host-metrics off`).
+- **Answer** (answers recorded 2026-10-22): "run-monitor for Rancher Desktop local containers", read from inside each container. R2's local
+  parity runs happen inside one of your Rancher Desktop local containers; bench calls `run-monitor` `snapshot.py
+  --target local-container` there after each skill. It reads that container's own cgroup v2 CPU and memory limits and
+  use (`/sys/fs/cgroup`: `cpu.stat`, `cpu.max`, `memory.current`, `memory.max`; cgroup v1 fallback; `null` plus a note
+  when unavailable), plus disk free and process count as seen inside the container. It opens no Docker or containerd
+  socket and reads nothing else on the machine (SPEC-105 R-9; SPEC-202 FR-048, D-27). The `--host-metrics off` option
+  is withdrawn.
 
-### OQ-23 L1 alongside R3
+### OQ-23 L1 alongside R3 (resolved)
 
 - **Question**: May L1 (local inference enablement, milestone M-L1) run alongside R3, blocking neither the R2 merge nor
   R3?
 - **Why it matters**: L1's entry is settled (SPEC-105's `local_unlock_evidence` for the cloud model plus your sign-off,
-  then the floor gates on `--runtime ollama-local`), and R3 now starts only after R2 is merged; only the overlap with R3
-  is open.
+  then the floor gates on `--runtime ollama-local`); only the overlap with R3 was open.
 - **Blocks**: nothing.
 - **Recommended default**: yes (SPEC-202 Q-5).
+- **Answer** (answers recorded 2026-10-22): yes. L1 can run alongside R3 and blocks neither the R2 merge nor R3.
 
-### OQ-25 Monitoring the R3 webhook gateway host
+### OQ-25 Monitoring the R3 webhook gateway host (resolved)
 
 - **Question**: R3's live webhook gateway is a service you run, possibly on your machine. Should `run-monitor` watch
   the gateway host?
 - **Why it matters**: the monitoring you chose watches the benchmark container, the model sessions under test, and the
   reviewer session (intake Q19), not your machine.
 - **Blocks**: nothing.
-- **Recommended default**: no; `run-monitor` gets no R3 change (SPEC-203 Q-13, D-29).
+- **Earlier default** (withdrawn): no; `run-monitor` gets no R3 change.
+- **Answer** (answers recorded 2026-10-22): "run-monitor for Rancher Desktop local containers". The gateway runs inside one of your Rancher
+  Desktop local containers. On every reconcile tick, `normalize.py serve` runs `run-monitor` `snapshot.py --target
+  local-container` as a subprocess inside that container and keeps the `run-health.v1` report in its state folder; the
+  report advises and never changes a gateway decision. Only that container's own figures are read; no Docker or
+  containerd socket, nothing else on the machine (SPEC-203 FR-058, D-29).
 
 ## Source mapping
 

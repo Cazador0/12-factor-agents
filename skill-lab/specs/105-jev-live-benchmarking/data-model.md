@@ -55,10 +55,11 @@ changes keep v1. Once written, the schemas in `skill-lab/contracts/schemas/` are
 | Field | Type | Meaning |
 |---|---|---|
 | `schema_version` | const 1 | |
-| `run_id` | string or null | Run being monitored; `null` for the reviewer session |
+| `run_id` | string or null | Run being monitored; `null` for the reviewer session and for a `local-container` snapshot taken outside a benchmark run (SPEC-203's webhook gateway) |
 | `skill` | string or null | Skill whose cases just finished |
-| `target` | object | `{kind: benchmark-container, model-session or reviewer-session, id}` |
-| `container` | object | `{cpu_percent, memory_percent, disk_free_bytes, processes}`, each number or null, plus `notes[]` |
+| `target` | object | `{kind: benchmark-container, model-session, reviewer-session or local-container, id}`. `local-container` (additive, the person's answer, 2026-10-22) is one of the person's Rancher Desktop local containers, measured from inside it (research R-9); `id` is the container's hostname as seen inside it |
+| `container` | object | `{cpu_percent, memory_percent, disk_free_bytes, processes}`, each number or null, plus `notes[]` and, for `local-container`, the optional `cgroup` object below |
+| `container.cgroup` | object, optional | `{version (2, 1 or null), cpu_limit_cores, memory_limit_bytes, memory_used_bytes}`, each number or null: the container's own limits and use read from `/sys/fs/cgroup` (`null` limit = no limit set). Only `local-container` snapshots carry it |
 | `apis` | array | `[{service, requests, p50_ms, p95_ms, error_rate, rate_limited, retry_wait_ms}]` |
 | `sessions` | array | `[{id, turns, tool_calls, context_used, context_limit, stalled, end_reason}]` |
 | `limits` | object | The limits applied, copied from `monitor-limits.json` with its digest |
