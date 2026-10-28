@@ -1,0 +1,35 @@
+{
+  "feature": "042-session-refresh",
+  "generated_at": "2026-10-22T08:00:00Z",
+  "repository": "acme/factory",
+  "schema_version": 1,
+  "source_path": "specs/042-session-refresh/tasks.md",
+  "spec_id": "SPEC-042",
+  "tasks": {
+    "T031": {
+      "blocked_by": [],
+      "board_state": "IN_PROGRESS",
+      "gitea_issue": 184,
+      "state": "open",
+      "title": "T031: Rotate refresh tokens on every use"
+    },
+    "T032": {
+      "blocked_by": [
+        "T031"
+      ],
+      "board_state": "READY_FOR_BUILD",
+      "gitea_issue": 185,
+      "state": "open",
+      "title": "T032: Revoke the token family on reuse"
+    },
+    "T034": {
+      "blocked_by": [
+        "T031"
+      ],
+      "board_state": "READY_FOR_BUILD",
+      "gitea_issue": 187,
+      "state": "open",
+      "title": "T034: Make refresh idempotent under duplicate delivery"
+    }
+  }
+}

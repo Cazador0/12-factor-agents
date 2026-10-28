@@ -1,0 +1,46 @@
+{
+  "gates": [
+    {
+      "id": "deterministic-all-pass",
+      "metric": "bench.deterministic.pass_rate",
+      "op": "gte",
+      "rationale": "Every scripted behaviour is specified; none may regress.",
+      "threshold": 1.0,
+      "tier": "deterministic"
+    },
+    {
+      "id": "agentic-quality",
+      "metric": "bench.agentic.pass_rate",
+      "op": "gte",
+      "rationale": "Small local models must follow the procedure in most runs.",
+      "threshold": 0.8,
+      "tier": "agentic"
+    },
+    {
+      "id": "trigger-routing",
+      "metric": "bench.trigger.accuracy",
+      "op": "gte",
+      "rationale": "Review requests must route here, neighbours must not.",
+      "threshold": 0.9,
+      "tier": "trigger"
+    },
+    {
+      "id": "unit-tests",
+      "metric": "tests.failed",
+      "op": "eq",
+      "rationale": "No failing unit test ships.",
+      "threshold": 0
+    },
+    {
+      "id": "static-clean",
+      "metric": "static.errors",
+      "op": "eq",
+      "rationale": "Validator errors block release.",
+      "threshold": 0
+    }
+  ],
+  "notes": [],
+  "schema_version": 1,
+  "skill": "review-verifier",
+  "version": "0.1.0"
+}

@@ -1,0 +1,36 @@
+{
+  "checks": [
+    {
+      "evidence": "specs/042-session-refresh/spec.md:9",
+      "id": "has-user-stories",
+      "message": "3 prioritised user stories with Given/When/Then scenarios",
+      "status": "pass"
+    },
+    {
+      "evidence": "specs/042-session-refresh/spec.md:57",
+      "id": "no-open-clarifications",
+      "message": "FR-007 still contains [NEEDS CLARIFICATION: refresh token TTL]",
+      "status": "fail"
+    },
+    {
+      "evidence": null,
+      "id": "performance-slo",
+      "message": "No performance target applies to this feature",
+      "status": "na"
+    }
+  ],
+  "feature": "042-session-refresh",
+  "missing": [
+    "specs/042-session-refresh/checklists/requirements.md"
+  ],
+  "ready": false,
+  "schema_version": 1,
+  "spec_id": "SPEC-042",
+  "traceability": {
+    "covered": 7,
+    "requirements": 8,
+    "uncovered": [
+      "FR-007"
+    ]
+  }
+}

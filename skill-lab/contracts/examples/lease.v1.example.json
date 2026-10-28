@@ -1,0 +1,25 @@
+{
+  "acquired_at": "2026-10-22T07:00:00Z",
+  "base_commit": "9b1d3e5f7a9c0e2f4a6b8d0c1e3f5a7b9c0d2e4f",
+  "branch": "agent/pse/184-session-refresh",
+  "expires_at": "2026-10-22T09:00:00Z",
+  "heartbeat_at": "2026-10-22T08:00:00Z",
+  "lease_id": "lease-issue-184-pse",
+  "release_reason": null,
+  "released_at": null,
+  "resource": {
+    "id": 184,
+    "repository": "acme/factory",
+    "type": "issue"
+  },
+  "role": "pse",
+  "schema_version": 1,
+  "session_id": "sess_pse_184_01",
+  "status": "active",
+  "ttl_seconds": 3600,
+  "version": 3,
+  "write_domains": [
+    "apps/api/session/**",
+    "packages/auth/**"
+  ]
+}

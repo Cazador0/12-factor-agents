@@ -1,0 +1,138 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:skill-lab:schema:task-issue-map:v1",
+  "title": "Task to issue map",
+  "description": "The committed, stable mapping from Spec Kit task IDs to Gitea issues, so repeated runs never create duplicate issues.",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "feature",
+    "repository",
+    "tasks",
+    "generated_at"
+  ],
+  "properties": {
+    "schema_version": {
+      "description": "Contract major version.",
+      "type": "integer",
+      "const": 1
+    },
+    "feature": {
+      "$ref": "#/$defs/feature"
+    },
+    "spec_id": {
+      "$ref": "#/$defs/spec_id"
+    },
+    "repository": {
+      "$ref": "#/$defs/repository"
+    },
+    "source_path": {
+      "$ref": "#/$defs/rel_path"
+    },
+    "tasks": {
+      "description": "Map from task ID (keys must match ^T[0-9]{3,}$) to its issue.",
+      "type": "object",
+      "additionalProperties": {
+        "$ref": "#/$defs/task_entry"
+      }
+    },
+    "generated_at": {
+      "$ref": "#/$defs/date_time"
+    }
+  },
+  "additionalProperties": false,
+  "$defs": {
+    "date_time": {
+      "description": "RFC 3339 timestamp; producers emit YYYY-MM-DDTHH:MM:SSZ.",
+      "type": "string",
+      "format": "date-time"
+    },
+    "feature": {
+      "description": "Feature directory name under specs/, e.g. 042-session-refresh.",
+      "type": "string",
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,99}$"
+    },
+    "issue_number": {
+      "description": "Gitea issue number.",
+      "type": "integer",
+      "minimum": 1
+    },
+    "line": {
+      "description": "One line of text (no line breaks), at most 500 characters.",
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 500,
+      "pattern": "^[^\\r\\n]+$"
+    },
+    "rel_path": {
+      "description": "Relative path with '/' separators; no leading '/', drive letter, '..' segment or backslash.",
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 500,
+      "pattern": "^(?!/)(?![A-Za-z]:)(?!.*(?:^|/)\\.\\.(?:/|$))[^\\\\\\x00]+$"
+    },
+    "repository": {
+      "description": "Repository as owner/name.",
+      "type": "string",
+      "pattern": "^[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+$",
+      "maxLength": 200
+    },
+    "spec_id": {
+      "description": "Specification ID, e.g. SPEC-042.",
+      "type": "string",
+      "pattern": "^SPEC-[0-9]{3}$"
+    },
+    "task_entry": {
+      "type": "object",
+      "required": [
+        "gitea_issue",
+        "title",
+        "blocked_by",
+        "state"
+      ],
+      "properties": {
+        "gitea_issue": {
+          "$ref": "#/$defs/issue_number"
+        },
+        "title": {
+          "$ref": "#/$defs/line"
+        },
+        "blocked_by": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/task_id"
+          },
+          "uniqueItems": true
+        },
+        "state": {
+          "description": "Gitea issue state.",
+          "enum": [
+            "open",
+            "closed"
+          ]
+        },
+        "board_state": {
+          "enum": [
+            "BACKLOG",
+            "READY_FOR_SPEC",
+            "SPECIFYING",
+            "READY_FOR_BUILD",
+            "IN_PROGRESS",
+            "REVIEW",
+            "CHANGES_REQUESTED",
+            "READY_TO_MERGE",
+            "DONE",
+            "BLOCKED",
+            null
+          ]
+        }
+      },
+      "additionalProperties": false
+    },
+    "task_id": {
+      "description": "Spec Kit task ID, e.g. T001.",
+      "type": "string",
+      "pattern": "^T[0-9]{3,}$"
+    }
+  }
+}

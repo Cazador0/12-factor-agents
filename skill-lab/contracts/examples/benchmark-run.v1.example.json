@@ -1,0 +1,115 @@
+{
+  "environment": {
+    "platform": "linux",
+    "python": "3.13.16"
+  },
+  "filters": {
+    "skill": null,
+    "tier": null
+  },
+  "finished_at": "2026-10-22T08:00:02Z",
+  "jev_mode": "off",
+  "lab_version": "0.1.0",
+  "model": null,
+  "notes": [
+    "Agentic and trigger tiers were skipped: no network access to Ollama or TypeSafe in this environment."
+  ],
+  "results": [
+    {
+      "assertions": [
+        {
+          "actual": "CHECK_NOT_EXECUTED",
+          "op": "eq",
+          "passed": true,
+          "path": "/errors/0/code"
+        }
+      ],
+      "case_id": "rejects-unexecuted-evidence",
+      "duration_ms": 84,
+      "exit_code": 1,
+      "jev_mode": "off",
+      "judgments": [],
+      "model": null,
+      "notes": [],
+      "runtime": "script",
+      "schema_valid": true,
+      "schema_version": 1,
+      "skill": "pse-implementer",
+      "started_at": "2026-10-22T08:00:00Z",
+      "status": "pass",
+      "tier": "deterministic"
+    },
+    {
+      "assertions": [],
+      "case_id": "verdict-cites-evidence",
+      "duration_ms": 3,
+      "jev_mode": "off",
+      "judgments": [],
+      "model": "qwen3:14b",
+      "notes": [
+        "Re-run with network access to grade this case."
+      ],
+      "runtime": "zed-ollama-local",
+      "schema_version": 1,
+      "skill": "review-verifier",
+      "skip_reason": "Ollama at http://localhost:11434 unreachable and TYPESAFE_API_KEY not set; no model or Jev call was made.",
+      "started_at": "2026-10-22T08:00:00Z",
+      "status": "skipped",
+      "tier": "agentic"
+    },
+    {
+      "assertions": [],
+      "case_id": "routes-review-request",
+      "duration_ms": 1,
+      "jev_mode": "off",
+      "judgments": [],
+      "model": "qwen3:14b",
+      "notes": [],
+      "runtime": "zed-ollama-local",
+      "schema_version": 1,
+      "skill": "review-verifier",
+      "skip_reason": "Ollama at http://localhost:11434 unreachable; no model call was made.",
+      "started_at": "2026-10-22T08:00:00Z",
+      "status": "skipped",
+      "tier": "trigger"
+    }
+  ],
+  "run_id": "run-20261022T080000Z",
+  "runtime": "script",
+  "schema_version": 1,
+  "started_at": "2026-10-22T08:00:00Z",
+  "summary": {
+    "agentic": {
+      "errored": 0,
+      "failed": 0,
+      "pass_rate": null,
+      "passed": 0,
+      "skipped": 1,
+      "total": 1
+    },
+    "deterministic": {
+      "errored": 0,
+      "failed": 0,
+      "pass_rate": 1.0,
+      "passed": 1,
+      "skipped": 0,
+      "total": 1
+    },
+    "overall": {
+      "errored": 0,
+      "failed": 0,
+      "pass_rate": 1.0,
+      "passed": 1,
+      "skipped": 2,
+      "total": 3
+    },
+    "trigger": {
+      "errored": 0,
+      "failed": 0,
+      "pass_rate": null,
+      "passed": 0,
+      "skipped": 1,
+      "total": 1
+    }
+  }
+}

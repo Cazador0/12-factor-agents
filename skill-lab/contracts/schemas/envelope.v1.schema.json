@@ -1,0 +1,177 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:skill-lab:schema:envelope:v1",
+  "title": "Script output envelope",
+  "description": "The single JSON document every skill script prints on stdout. ok is true exactly when the exit code is 0; payload validates against kind_schema when ok is true and when the exit code is 1.",
+  "type": "object",
+  "required": [
+    "schema",
+    "kind",
+    "kind_schema",
+    "ok",
+    "producer",
+    "created_at",
+    "idempotency_key",
+    "payload",
+    "errors",
+    "warnings"
+  ],
+  "properties": {
+    "schema": {
+      "const": "urn:skill-lab:schema:envelope:v1"
+    },
+    "kind": {
+      "$ref": "#/$defs/contract_name"
+    },
+    "kind_schema": {
+      "description": "URN of the payload contract, urn:skill-lab:schema:<kind>:v<N>.",
+      "type": "string",
+      "pattern": "^urn:skill-lab:schema:[a-z0-9]+(-[a-z0-9]+)*:v[1-9][0-9]*$"
+    },
+    "ok": {
+      "description": "True exactly when the process exit code is 0.",
+      "type": "boolean"
+    },
+    "producer": {
+      "description": "What produced this envelope.",
+      "type": "object",
+      "required": [
+        "skill",
+        "script",
+        "version"
+      ],
+      "properties": {
+        "skill": {
+          "$ref": "#/$defs/skill_name"
+        },
+        "script": {
+          "description": "Script file name, e.g. review_verdict.py.",
+          "type": "string",
+          "pattern": "^[A-Za-z0-9_.-]+$",
+          "maxLength": 128
+        },
+        "version": {
+          "$ref": "#/$defs/semver"
+        }
+      },
+      "additionalProperties": false
+    },
+    "created_at": {
+      "$ref": "#/$defs/date_time"
+    },
+    "idempotency_key": {
+      "description": "Key of the mutation this run planned or applied; null for read-only runs.",
+      "type": [
+        "string",
+        "null"
+      ],
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,199}$"
+    },
+    "payload": {
+      "description": "The contract document named by kind_schema (open here; validated against kind_schema). Null when the run ended before producing one (exit 2-4).",
+      "type": [
+        "object",
+        "null"
+      ],
+      "additionalProperties": true
+    },
+    "errors": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/message"
+      },
+      "maxItems": 50,
+      "description": "Compact errors (Factor 9). Empty when ok is true."
+    },
+    "warnings": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/message"
+      },
+      "maxItems": 50
+    }
+  },
+  "additionalProperties": false,
+  "allOf": [
+    {
+      "description": "ok means exit 0: no errors and a payload object.",
+      "anyOf": [
+        {
+          "description": "A failed run (exit 1-4).",
+          "properties": {
+            "ok": {
+              "const": false
+            }
+          }
+        },
+        {
+          "description": "A successful run carries a payload object and no errors.",
+          "properties": {
+            "errors": {
+              "maxItems": 0
+            },
+            "payload": {
+              "not": {
+                "type": "null"
+              }
+            }
+          }
+        }
+      ]
+    }
+  ],
+  "$defs": {
+    "contract_name": {
+      "description": "Contract name, e.g. review-verdict.",
+      "type": "string",
+      "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$",
+      "maxLength": 64
+    },
+    "date_time": {
+      "description": "RFC 3339 timestamp; producers emit YYYY-MM-DDTHH:MM:SSZ.",
+      "type": "string",
+      "format": "date-time"
+    },
+    "message": {
+      "description": "A compact error or warning.",
+      "type": "object",
+      "required": [
+        "code",
+        "message"
+      ],
+      "properties": {
+        "code": {
+          "description": "UPPER_SNAKE error code.",
+          "type": "string",
+          "pattern": "^[A-Z][A-Z0-9_]*$",
+          "maxLength": 64
+        },
+        "message": {
+          "description": "One line, at most 300 characters, no stack trace.",
+          "type": "string",
+          "maxLength": 300
+        },
+        "path": {
+          "description": "JSON Pointer or file:line the message refers to.",
+          "type": [
+            "string",
+            "null"
+          ],
+          "maxLength": 500
+        }
+      },
+      "additionalProperties": false
+    },
+    "semver": {
+      "description": "Semantic version, e.g. 0.1.0.",
+      "type": "string",
+      "pattern": "^(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)(-[0-9A-Za-z.-]+)?(\\+[0-9A-Za-z.-]+)?$"
+    },
+    "skill_name": {
+      "description": "Skill name (also its folder name).",
+      "type": "string",
+      "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$",
+      "maxLength": 64
+    }
+  }
+}

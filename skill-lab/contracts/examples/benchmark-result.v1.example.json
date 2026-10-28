@@ -1,0 +1,24 @@
+{
+  "assertions": [
+    {
+      "actual": "CHECK_NOT_EXECUTED",
+      "op": "eq",
+      "passed": true,
+      "path": "/errors/0/code"
+    }
+  ],
+  "case_id": "rejects-unexecuted-evidence",
+  "duration_ms": 84,
+  "exit_code": 1,
+  "jev_mode": "off",
+  "judgments": [],
+  "model": null,
+  "notes": [],
+  "runtime": "script",
+  "schema_valid": true,
+  "schema_version": 1,
+  "skill": "pse-implementer",
+  "started_at": "2026-10-22T08:00:00Z",
+  "status": "pass",
+  "tier": "deterministic"
+}

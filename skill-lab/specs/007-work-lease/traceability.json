@@ -1,0 +1,315 @@
+{
+  "spec": "SPEC-007",
+  "requirements": [
+    {
+      "id": "FR-001",
+      "implemented_by": [
+        "skills/work-lease/scripts/lease.py",
+        "skills/work-lease/references/lease-store.md"
+      ],
+      "verified_by": [
+        "skills/work-lease/tests/test_lease.py::TestStore::test_one_lease_file_per_lease",
+        "skills/work-lease/tests/test_lease.py::TestStore::test_writes_are_atomic_under_lock",
+        "skills/work-lease/tests/test_lease.py::TestStore::test_readers_do_not_lock",
+        "skills/work-lease/tests/test_lease.py::TestStore::test_never_deletes_a_lease",
+        "skills/work-lease/tests/test_lease.py::TestStore::test_orchestration_resource_type",
+        "skills/work-lease/evals/cases/acquire-fresh-store.json"
+      ],
+      "planned": true
+    },
+    {
+      "id": "FR-002",
+      "implemented_by": [
+        "skills/work-lease/scripts/lease.py"
+      ],
+      "verified_by": [
+        "skills/work-lease/tests/test_lease.py::TestAcquire::test_defaults_ttl_1800_and_version_1",
+        "skills/work-lease/tests/test_lease.py::TestAcquire::test_ttl_bounds",
+        "skills/work-lease/tests/test_lease.py::TestAcquire::test_lease_id_is_deterministic",
+        "skills/work-lease/tests/test_lease.py::TestAcquire::test_domains_from_contract",
+        "skills/work-lease/tests/test_lease.py::TestAcquire::test_same_session_reacquire_is_noop",
+        "skills/work-lease/evals/cases/acquire-fresh-store.json",
+        "skills/work-lease/evals/cases/ttl-out-of-range.json"
+      ],
+      "planned": true
+    },
+    {
+      "id": "FR-003",
+      "implemented_by": [
+        "skills/work-lease/scripts/lease.py",
+        "skills/work-lease/references/write-domains.md"
+      ],
+      "verified_by": [
+        "skills/work-lease/tests/test_lease.py::TestOverlap::test_golden_t011_overlaps_t006_t007",
+        "skills/work-lease/tests/test_lease.py::TestOverlap::test_wildcard_uses_static_prefix",
+        "skills/work-lease/tests/test_lease.py::TestOverlap::test_same_resource_other_session_conflicts",
+        "skills/work-lease/tests/test_lease.py::TestOverlap::test_disjoint_domains_granted",
+        "skills/work-lease/tests/test_lease.py::TestOverlap::test_expired_unreleased_still_blocks",
+        "skills/work-lease/tests/test_lease.py::TestConcurrency::test_two_processes_one_grant",
+        "skills/work-lease/evals/cases/overlap-detected.json",
+        "skills/work-lease/evals/cases/check-expired-unreleased-conflicts.json",
+        "skills/work-lease/evals/cases/agentic-overlap-explained.json"
+      ],
+      "planned": true
+    },
+    {
+      "id": "FR-004",
+      "implemented_by": [
+        "skills/work-lease/scripts/lease.py"
+      ],
+      "verified_by": [
+        "skills/work-lease/tests/test_lease.py::TestRenew::test_renew_extends_from_now",
+        "skills/work-lease/tests/test_lease.py::TestRenew::test_stale_expected_version",
+        "skills/work-lease/tests/test_lease.py::TestRenew::test_other_session_refused",
+        "skills/work-lease/tests/test_lease.py::TestRenew::test_expired_refused",
+        "skills/work-lease/tests/test_lease.py::TestRenew::test_unknown_lease_required",
+        "skills/work-lease/evals/cases/renew-extends-from-now.json",
+        "skills/work-lease/evals/cases/renew-expired-refused.json",
+        "skills/work-lease/evals/cases/agentic-renew-cadence.json",
+        "skills/work-lease/evals/cases/agentic-expired-no-blind-continue.json"
+      ],
+      "planned": true
+    },
+    {
+      "id": "FR-005",
+      "implemented_by": [
+        "skills/work-lease/scripts/lease.py"
+      ],
+      "verified_by": [
+        "skills/work-lease/tests/test_lease.py::TestRelease::test_release_sets_status_and_reason",
+        "skills/work-lease/tests/test_lease.py::TestRelease::test_other_session_refused",
+        "skills/work-lease/tests/test_lease.py::TestRelease::test_rerelease_already_applied",
+        "skills/work-lease/tests/test_lease.py::TestRelease::test_released_lease_no_longer_blocks",
+        "skills/work-lease/evals/cases/release-by-other-session-refused.json",
+        "skills/work-lease/evals/cases/agentic-release-on-handoff.json"
+      ],
+      "planned": true
+    },
+    {
+      "id": "FR-006",
+      "implemented_by": [
+        "skills/work-lease/scripts/lease.py"
+      ],
+      "verified_by": [
+        "skills/work-lease/tests/test_lease.py::TestStatusCheck::test_status_computes_expired_without_write",
+        "skills/work-lease/tests/test_lease.py::TestStatusCheck::test_status_not_found",
+        "skills/work-lease/tests/test_lease.py::TestStatusCheck::test_check_grantable_exit_0",
+        "skills/work-lease/tests/test_lease.py::TestStatusCheck::test_check_conflict_exit_1_writes_nothing",
+        "skills/work-lease/evals/cases/status-expired-computed.json"
+      ],
+      "planned": true
+    },
+    {
+      "id": "FR-007",
+      "implemented_by": [
+        "skills/work-lease/scripts/lease.py"
+      ],
+      "verified_by": [
+        "skills/work-lease/tests/test_lease.py::TestPolicy::test_plan_without_apply_writes_nothing",
+        "skills/work-lease/tests/test_lease.py::TestPolicy::test_mirror_plan_has_mirror_lease_op",
+        "skills/work-lease/tests/test_lease.py::TestPolicy::test_mirror_apply_refused_at_shadow_nothing_written",
+        "skills/work-lease/tests/test_lease.py::TestPolicy::test_deny_state_write_local_refused",
+        "skills/work-lease/evals/cases/acquire-plan-only.json",
+        "skills/work-lease/evals/cases/mirror-plan-at-shadow.json",
+        "skills/work-lease/evals/cases/mirror-refused-at-shadow.json",
+        "skills/work-lease/evals/cases/agentic-no-remote-write-claim.json"
+      ],
+      "planned": true
+    },
+    {
+      "id": "FR-008",
+      "implemented_by": [
+        "skills/work-lease/scripts/lease.py"
+      ],
+      "verified_by": [
+        "skills/work-lease/tests/test_lease.py::TestDeterminism::test_every_subcommand_is_deterministic",
+        "skills/work-lease/tests/test_lease.py::TestDeterminism::test_no_write_in_skill_folder",
+        "skills/work-lease/tests/test_lease.py::TestSeedStore::test_seed_read_only_for_read_subcommands",
+        "skills/work-lease/tests/test_lease.py::TestSeedStore::test_seed_refused_into_non_empty_store"
+      ],
+      "planned": true
+    },
+    {
+      "id": "FR-009",
+      "implemented_by": [
+        "skills/work-lease/SKILL.md",
+        "skills/work-lease/references/lease-store.md",
+        "skills/work-lease/references/write-domains.md"
+      ],
+      "verified_by": [
+        "skills/work-lease/evals/cases/trigger-take-lease.json",
+        "skills/work-lease/evals/cases/trigger-renew-lease.json",
+        "skills/work-lease/evals/cases/trigger-neg-save-progress.json",
+        "skills/work-lease/evals/cases/trigger-null-mutex.json",
+        "skills/work-lease/evals/cases/agentic-renew-cadence.json"
+      ],
+      "planned": true
+    },
+    {
+      "id": "FR-010",
+      "implemented_by": [
+        "skills/work-lease/evals/cases",
+        "skills/work-lease/evals/fixtures"
+      ],
+      "verified_by": [
+        "skills/work-lease/evals/cases/overlap-detected.json",
+        "skills/work-lease/evals/cases/mirror-refused-at-shadow.json",
+        "skills/work-lease/evals/cases/renew-expired-refused.json",
+        "skills/work-lease/evals/cases/agentic-injected-issue-text.json",
+        "skills/work-lease/evals/cases/trigger-take-lease.json",
+        "skills/work-lease/evals/cases/trigger-neg-save-progress.json",
+        "skills/work-lease/evals/cases/trigger-null-mutex.json",
+        "skills/work-lease/evals/cases/trigger-null-apartment-lease.json"
+      ],
+      "planned": true
+    },
+    {
+      "id": "FR-011",
+      "implemented_by": [
+        "skills/work-lease/scripts/lease.py",
+        "skills/work-lease/references/lease-store.md",
+        "skills/work-lease/scripts/_skillkit/leases.py"
+      ],
+      "verified_by": [
+        "skill-lab/tests/test_skillkit_leases.py::TestVerify::test_accepts_store_written_by_lease_py",
+        "skill-lab/tests/test_skillkit_leases.py::TestVerify::test_refusal_codes"
+      ],
+      "planned": true
+    },
+    {
+      "id": "FR-012",
+      "implemented_by": [
+        "skills/work-lease/scripts/lease.py",
+        "skills/work-lease/assets/templates/lease-comment.md",
+        "skills/work-lease/scripts/_skillkit/plan_apply.py"
+      ],
+      "verified_by": [
+        "skills/work-lease/tests/test_lease_mirror.py::TestMirror::test_acquire_renew_release_post_marked_comment",
+        "skills/work-lease/tests/test_lease_mirror.py::TestMirror::test_rerun_already_applied",
+        "skills/work-lease/tests/test_lease_mirror.py::TestMirror::test_foreign_active_mirror_refused_without_writes",
+        "skills/work-lease/tests/test_lease_mirror.py::TestMirror::test_forged_or_unconfigured_marker_ignored",
+        "skills/work-lease/evals/cases/mirror-applied.json",
+        "skills/work-lease/evals/cases/mirror-rerun.json",
+        "skills/work-lease/evals/cases/mirror-foreign-conflict.json",
+        "skills/work-lease/evals/cases/agentic-r2-foreign-mirror.json"
+      ],
+      "planned": true
+    },
+    {
+      "id": "FR-013",
+      "implemented_by": [
+        "skills/work-lease/scripts/lease.py",
+        "skills/work-lease/scripts/_skillkit/gitea.py"
+      ],
+      "verified_by": [
+        "skills/work-lease/tests/test_lease_mirror.py::TestIdentityAndSecrets::test_identity_mismatch_refused",
+        "skills/work-lease/tests/test_lease_mirror.py::TestIdentityAndSecrets::test_canary_tokens_never_in_output_or_comment"
+      ],
+      "planned": true
+    },
+    {
+      "id": "FR-014",
+      "implemented_by": [
+        "skills/work-lease/evals/cases",
+        "skills/work-lease/evals/fixtures/r2"
+      ],
+      "verified_by": [
+        "skills/work-lease/evals/cases/mirror-applied.json",
+        "skills/work-lease/evals/cases/mirror-rerun.json",
+        "skills/work-lease/evals/cases/agentic-r2-foreign-mirror.json",
+        "skills/work-lease/evals/cases/trigger-r2-claim-issue.json",
+        "skills/work-lease/evals/cases/trigger-r2-neg-assign-dispatch.json"
+      ],
+      "planned": true
+    },
+    {
+      "id": "FR-015",
+      "implemented_by": [
+        "skills/work-lease/scripts/lease.py",
+        "skills/work-lease/scripts/_skillkit/leases.py"
+      ],
+      "verified_by": [
+        "skills/work-lease/tests/test_recover.py::TestConstants::test_constants_from_skillkit",
+        "skills/work-lease/tests/test_recover.py::TestConstants::test_network_step_bounds"
+      ],
+      "planned": true
+    },
+    {
+      "id": "FR-016",
+      "implemented_by": [
+        "skills/work-lease/scripts/lease.py",
+        "skills/work-lease/scripts/_skillkit/recovery.py",
+        "skills/work-lease/references/recovery-rules.md"
+      ],
+      "verified_by": [
+        "skills/work-lease/tests/test_recover.py::TestRecover::test_not_eligible_within_grace",
+        "skills/work-lease/tests/test_recover.py::TestRecover::test_release_no_work",
+        "skills/work-lease/tests/test_recover.py::TestRecover::test_resume_from_checkpoint",
+        "skills/work-lease/tests/test_recover.py::TestRecover::test_resume_with_reverification",
+        "skills/work-lease/tests/test_recover.py::TestRecover::test_escalate_human_preserves_patch",
+        "skills/work-lease/tests/test_recover.py::TestRecover::test_never_deletes_branch_worktree_or_commit",
+        "skills/work-lease/tests/test_recover.py::TestRecover::test_lease_violation_for_unexplained_head",
+        "skills/work-lease/evals/cases/afv-resume-from-checkpoint.json",
+        "skills/work-lease/evals/cases/afv-reverify-after-checkpoint.json",
+        "skills/work-lease/evals/cases/afv-sandbox-died.json",
+        "skills/work-lease/evals/cases/agentic-r3-classify-recovery.json"
+      ],
+      "planned": true
+    },
+    {
+      "id": "FR-017",
+      "implemented_by": [
+        "skills/work-lease/scripts/lease.py"
+      ],
+      "verified_by": [
+        "skills/work-lease/tests/test_takeover.py::TestTakeover::test_successor_lease_fields",
+        "skills/work-lease/tests/test_takeover.py::TestTakeover::test_recovery_stale",
+        "skills/work-lease/tests/test_takeover.py::TestTakeover::test_version_conflict",
+        "skills/work-lease/tests/test_takeover.py::TestTakeover::test_record_required",
+        "skills/work-lease/tests/test_takeover.py::TestTakeover::test_takeover_not_permitted",
+        "skills/work-lease/tests/test_takeover.py::TestTakeover::test_refused_below_guarded_or_demoted",
+        "skills/work-lease/evals/cases/lease-takeover-applied.json",
+        "skills/work-lease/evals/cases/lease-takeover-rerun.json",
+        "skills/work-lease/evals/cases/lease-takeover-refused-agent-implementation.json",
+        "skills/work-lease/evals/cases/lease-takeover-refused-demoted.json",
+        "skills/work-lease/evals/cases/afv-takeover-without-record.json",
+        "skills/work-lease/evals/cases/afv-rerun-takeover-no-write.json",
+        "skills/work-lease/evals/cases/afv-two-takeovers-one-wins.json",
+        "skills/work-lease/evals/cases/agentic-afv-verify-takeover-state.json",
+        "skills/work-lease/evals/cases/agentic-r3-no-blind-takeover.json"
+      ],
+      "planned": true
+    },
+    {
+      "id": "FR-018",
+      "implemented_by": [
+        "skills/work-lease/scripts/lease.py"
+      ],
+      "verified_by": [
+        "skills/work-lease/tests/test_recover.py::TestHandlers::test_recover_all_expired_idempotent",
+        "skills/work-lease/tests/test_recover.py::TestHandlers::test_release_if_pr_closed",
+        "skills/work-lease/tests/test_recover.py::TestHandlers::test_open_pr_is_noop",
+        "skills/work-lease/tests/test_recover.py::TestHandlers::test_expired_listing_read_only"
+      ],
+      "planned": true
+    },
+    {
+      "id": "FR-019",
+      "implemented_by": [
+        "skills/work-lease/SKILL.md",
+        "skills/work-lease/references/recovery-rules.md",
+        "skills/work-lease/evals/cases",
+        "skills/work-lease/evals/fixtures/r3"
+      ],
+      "verified_by": [
+        "skills/work-lease/evals/cases/lease-takeover-refused-demoted.json",
+        "skills/work-lease/evals/cases/afv-two-takeovers-one-wins.json",
+        "skills/work-lease/evals/cases/agentic-r3-classify-recovery.json",
+        "skills/work-lease/evals/cases/agentic-r3-no-blind-takeover.json",
+        "skills/work-lease/evals/cases/trigger-r3-recover-issue.json",
+        "skills/work-lease/evals/cases/trigger-r3-neg-resume-plan.json"
+      ],
+      "planned": true
+    }
+  ]
+}

@@ -1,0 +1,31 @@
+{
+  "description": "TODO(scaffold): replace with a real case. A missing input file exits 2 with INPUT_NOT_FOUND.",
+  "expect": {
+    "assertions": [
+      {
+        "op": "eq",
+        "path": "/errors/0/code",
+        "value": "INPUT_NOT_FOUND"
+      }
+    ],
+    "exit_code": 2,
+    "schema_valid": true
+  },
+  "id": "example-missing-input",
+  "judgments": [],
+  "run": {
+    "args": [
+      "--input",
+      "no-such-file.json",
+      "--contract",
+      "envelope"
+    ],
+    "script": "scripts/example.py"
+  },
+  "schema": "urn:skill-lab:schema:benchmark-case:v1",
+  "skill": "{{name}}",
+  "tags": [
+    "scaffold-todo"
+  ],
+  "tier": "deterministic"
+}

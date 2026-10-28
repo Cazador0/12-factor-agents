@@ -1,0 +1,36 @@
+{
+  "blockers": [
+    {
+      "evidence": [
+        "tests/integration/test_retry.py::test_duplicate_delivery",
+        "packages/auth/refresh.py:88"
+      ],
+      "id": "B-01",
+      "severity": "high",
+      "summary": "Retry path is not idempotent: a duplicate delivery rotates the refresh token twice (AC-03)."
+    }
+  ],
+  "evidence": [
+    {
+      "artifact": "tests/integration/test_retry.py",
+      "digest": "sha256:50522b5395b0dd92cdb34f8aeb67b5b2aa395b1f85e8f588da661b00b1b2ec35"
+    }
+  ],
+  "issue": 184,
+  "non_blocking_findings": [
+    "Consider reducing duplicate serialization logic in web/session/serialize.ts."
+  ],
+  "pr": 211,
+  "requirements": {
+    "covered": 13,
+    "failed": 1,
+    "unverified": 0
+  },
+  "result": "CHANGES_REQUESTED",
+  "reviewed_at": "2026-10-22T08:00:00Z",
+  "reviewed_commit": "4f2c9a1e7b3d5f60a8c2e1d9b7f4a3c2e1d0b9a8",
+  "reviewer_session": "review-184-03",
+  "schema_version": 1,
+  "spec_id": "SPEC-042",
+  "summary": "AC-03 fails under duplicate webhook delivery; all other requirements verified."
+}

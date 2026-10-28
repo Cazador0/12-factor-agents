@@ -1,0 +1,355 @@
+{
+  "spec": "SPEC-002",
+  "requirements": [
+    {
+      "id": "FR-001",
+      "implemented_by": [
+        "skills/pse-implementer/scripts/preflight.py"
+      ],
+      "verified_by": [
+        "skills/pse-implementer/tests/test_preflight.py::TestPreflight::test_needs_clarification_marks_not_ready",
+        "skills/pse-implementer/tests/test_preflight.py::TestPreflight::test_ready_with_clean_tree_and_lease",
+        "skills/pse-implementer/tests/test_preflight.py::TestPreflight::test_dirty_tree_not_ready",
+        "skills/pse-implementer/tests/test_preflight.py::TestPreflight::test_incomplete_contract_names_field",
+        "skills/pse-implementer/tests/test_preflight.py::TestPreflight::test_missing_or_foreign_lease_not_ready",
+        "skills/pse-implementer/evals/cases/preflight-needs-clarification.json",
+        "skills/pse-implementer/evals/cases/agentic-preflight-stops-on-ambiguity.json"
+      ],
+      "planned": true
+    },
+    {
+      "id": "FR-002",
+      "implemented_by": [
+        "skills/pse-implementer/scripts/run_check.py",
+        "skills/pse-implementer/scripts/_skillkit/checks.py",
+        "skills/pse-implementer/references/check-denylist.md"
+      ],
+      "verified_by": [
+        "skills/pse-implementer/tests/test_run_check.py::TestRunCheck::test_secret_env_removed",
+        "skills/pse-implementer/tests/test_run_check.py::TestRunCheck::test_forbidden_push_starts_no_process",
+        "skills/pse-implementer/tests/test_run_check.py::TestRunCheck::test_plan_without_apply_starts_nothing",
+        "skills/pse-implementer/tests/test_run_check.py::TestRunCheck::test_timeout_status_and_exit_code",
+        "skills/pse-implementer/tests/test_run_check.py::TestRunCheck::test_log_digest_matches_log_bytes",
+        "skills/pse-implementer/evals/cases/run-check-forbidden-push.json",
+        "skills/pse-implementer/evals/cases/run-check-plan-only.json"
+      ],
+      "planned": true
+    },
+    {
+      "id": "FR-003",
+      "implemented_by": [
+        "skills/pse-implementer/scripts/evidence_manifest.py",
+        "skills/pse-implementer/references/evidence-rules.md"
+      ],
+      "verified_by": [
+        "skills/pse-implementer/tests/test_evidence_manifest.py::TestBuild::test_r1_head_null_with_patch_ref",
+        "skills/pse-implementer/tests/test_evidence_manifest.py::TestBuild::test_check_fields_copied_from_records",
+        "skills/pse-implementer/tests/test_evidence_manifest.py::TestBuild::test_missing_layer_is_not_run",
+        "skills/pse-implementer/evals/cases/evidence-build-null-head.json",
+        "skills/pse-implementer/evals/cases/agentic-failed-check-reported.json"
+      ],
+      "planned": true
+    },
+    {
+      "id": "FR-004",
+      "implemented_by": [
+        "skills/pse-implementer/scripts/evidence_manifest.py"
+      ],
+      "verified_by": [
+        "skills/pse-implementer/tests/test_evidence_manifest.py::TestValidate::test_unexecuted_check_rejected",
+        "skills/pse-implementer/tests/test_evidence_manifest.py::TestValidate::test_failed_record_does_not_back_passed",
+        "skills/pse-implementer/evals/cases/rejects-unexecuted-evidence.json",
+        "skills/pse-implementer/evals/cases/agentic-evidence-only-executed.json"
+      ],
+      "planned": true
+    },
+    {
+      "id": "FR-005",
+      "implemented_by": [
+        "skills/pse-implementer/scripts/propose_patch.py"
+      ],
+      "verified_by": [
+        "skills/pse-implementer/tests/test_propose_patch.py::TestProposePatch::test_out_of_scope_change_is_violation",
+        "skills/pse-implementer/tests/test_propose_patch.py::TestProposePatch::test_patch_applies_on_base",
+        "skills/pse-implementer/tests/test_propose_patch.py::TestProposePatch::test_policy_path_never_in_scope",
+        "skills/pse-implementer/tests/test_propose_patch.py::TestProposePatch::test_nothing_changed",
+        "skills/pse-implementer/tests/test_propose_patch.py::TestProposePatch::test_out_inside_skill_folder_refused",
+        "skills/pse-implementer/evals/cases/agentic-propose-in-scope.json"
+      ],
+      "planned": true
+    },
+    {
+      "id": "FR-006",
+      "implemented_by": [
+        "skills/pse-implementer/scripts/delivery_plan.py",
+        "skills/pse-implementer/references/delivery-steps.md"
+      ],
+      "verified_by": [
+        "skills/pse-implementer/tests/test_delivery_plan.py::TestDeliveryPlan::test_commit_plan_lists_refusal",
+        "skills/pse-implementer/tests/test_delivery_plan.py::TestDeliveryPlan::test_apply_refused_at_shadow_without_side_effects",
+        "skills/pse-implementer/tests/test_delivery_plan.py::TestDeliveryPlan::test_apply_without_step_is_usage",
+        "skills/pse-implementer/tests/test_delivery_plan.py::TestDeliveryPlan::test_branch_slug_rule",
+        "skills/pse-implementer/evals/cases/delivery-plan-commit-refusal-listed.json",
+        "skills/pse-implementer/evals/cases/delivery-worktree-refused-at-shadow.json",
+        "skills/pse-implementer/evals/cases/delivery-branch-refused-at-shadow.json",
+        "skills/pse-implementer/evals/cases/delivery-commit-refused-at-shadow.json",
+        "skills/pse-implementer/evals/cases/delivery-push-refused-at-shadow.json",
+        "skills/pse-implementer/evals/cases/delivery-pr-refused-at-shadow.json",
+        "skills/pse-implementer/evals/cases/agentic-no-write-claims.json",
+        "skills/pse-implementer/evals/cases/agentic-injected-contract.json"
+      ],
+      "planned": true
+    },
+    {
+      "id": "FR-007",
+      "implemented_by": [
+        "skills/pse-implementer/scripts/preflight.py",
+        "skills/pse-implementer/scripts/run_check.py",
+        "skills/pse-implementer/scripts/evidence_manifest.py",
+        "skills/pse-implementer/scripts/propose_patch.py",
+        "skills/pse-implementer/scripts/delivery_plan.py"
+      ],
+      "verified_by": [
+        "skills/pse-implementer/tests/test_preflight.py::TestDeterminism::test_preflight_is_deterministic",
+        "skills/pse-implementer/tests/test_run_check.py::TestDeterminism::test_run_check_is_deterministic",
+        "skills/pse-implementer/tests/test_evidence_manifest.py::TestDeterminism::test_evidence_manifest_is_deterministic",
+        "skills/pse-implementer/tests/test_propose_patch.py::TestDeterminism::test_propose_patch_is_deterministic",
+        "skills/pse-implementer/tests/test_propose_patch.py::TestDeterminism::test_no_write_in_skill_folder",
+        "skills/pse-implementer/tests/test_delivery_plan.py::TestDeterminism::test_delivery_plan_is_deterministic"
+      ],
+      "planned": true
+    },
+    {
+      "id": "FR-008",
+      "implemented_by": [
+        "skills/pse-implementer/SKILL.md",
+        "skills/pse-implementer/references/evidence-rules.md",
+        "skills/pse-implementer/references/delivery-steps.md",
+        "skills/pse-implementer/references/check-denylist.md"
+      ],
+      "verified_by": [
+        "skills/pse-implementer/evals/cases/trigger-implement-issue.json",
+        "skills/pse-implementer/evals/cases/trigger-run-checks.json",
+        "skills/pse-implementer/evals/cases/trigger-neg-review-pr.json",
+        "skills/pse-implementer/evals/cases/trigger-null-cat-name.json",
+        "skills/pse-implementer/evals/cases/agentic-preflight-stops-on-ambiguity.json"
+      ],
+      "planned": true
+    },
+    {
+      "id": "FR-009",
+      "implemented_by": [
+        "skills/pse-implementer/evals/cases",
+        "skills/pse-implementer/evals/fixtures"
+      ],
+      "verified_by": [
+        "skills/pse-implementer/evals/cases/rejects-unexecuted-evidence.json",
+        "skills/pse-implementer/evals/cases/run-check-forbidden-push.json",
+        "skills/pse-implementer/evals/cases/delivery-commit-refused-at-shadow.json",
+        "skills/pse-implementer/evals/cases/agentic-evidence-only-executed.json",
+        "skills/pse-implementer/evals/cases/trigger-implement-issue.json",
+        "skills/pse-implementer/evals/cases/trigger-neg-review-pr.json",
+        "skills/pse-implementer/evals/cases/trigger-null-cat-name.json",
+        "skills/pse-implementer/evals/cases/trigger-null-merge-vs-rebase.json"
+      ],
+      "planned": true
+    },
+    {
+      "id": "FR-010",
+      "implemented_by": [
+        "skills/pse-implementer/scripts/delivery_plan.py",
+        "skills/pse-implementer/scripts/_skillkit/leases.py"
+      ],
+      "verified_by": [
+        "skills/pse-implementer/tests/test_delivery_plan_apply.py::TestLease::test_lease_required",
+        "skills/pse-implementer/tests/test_delivery_plan_apply.py::TestLease::test_lease_expired",
+        "skills/pse-implementer/tests/test_delivery_plan_apply.py::TestLease::test_lease_held_by_other",
+        "skills/pse-implementer/tests/test_delivery_plan_apply.py::TestLease::test_domains_must_cover_changed_paths"
+      ],
+      "planned": true
+    },
+    {
+      "id": "FR-011",
+      "implemented_by": [
+        "skills/pse-implementer/scripts/delivery_plan.py",
+        "skills/pse-implementer/scripts/_skillkit/delivery.py"
+      ],
+      "verified_by": [
+        "skills/pse-implementer/tests/test_delivery_plan_apply.py::TestWorktreeBranch::test_detached_worktree_at_lease_base",
+        "skills/pse-implementer/tests/test_delivery_plan_apply.py::TestWorktreeBranch::test_branch_name_and_slug",
+        "skills/pse-implementer/tests/test_delivery_plan_apply.py::TestWorktreeBranch::test_adopt_or_worktree_conflict",
+        "skills/pse-implementer/evals/cases/worktree-applied.json",
+        "skills/pse-implementer/evals/cases/worktree-rerun.json",
+        "skills/pse-implementer/evals/cases/branch-applied.json",
+        "skills/pse-implementer/evals/cases/branch-rerun.json"
+      ],
+      "planned": true
+    },
+    {
+      "id": "FR-012",
+      "implemented_by": [
+        "skills/pse-implementer/scripts/evidence_manifest.py",
+        "skills/pse-implementer/scripts/_skillkit/checks.py"
+      ],
+      "verified_by": [
+        "skills/pse-implementer/tests/test_evidence_integrity.py::TestIntegrity::test_not_executed",
+        "skills/pse-implementer/tests/test_evidence_integrity.py::TestIntegrity::test_log_digest_mismatch",
+        "skills/pse-implementer/tests/test_evidence_integrity.py::TestIntegrity::test_ran_on_different_commit",
+        "skills/pse-implementer/tests/test_evidence_integrity.py::TestIntegrity::test_ran_on_dirty_tree",
+        "skills/pse-implementer/tests/test_evidence_integrity.py::TestIntegrity::test_status_mismatch",
+        "skills/pse-implementer/tests/test_evidence_integrity.py::TestIntegrity::test_ac_without_evidence",
+        "skills/pse-implementer/tests/test_evidence_integrity.py::TestIntegrity::test_pr_requires_head_commit",
+        "skills/pse-implementer/evals/cases/evidence-not-executed.json",
+        "skills/pse-implementer/evals/cases/evidence-log-digest-mismatch.json",
+        "skills/pse-implementer/evals/cases/evidence-different-commit.json",
+        "skills/pse-implementer/evals/cases/evidence-dirty-tree.json",
+        "skills/pse-implementer/evals/cases/evidence-status-mismatch.json",
+        "skills/pse-implementer/evals/cases/evidence-ac-without-evidence.json"
+      ],
+      "planned": true
+    },
+    {
+      "id": "FR-013",
+      "implemented_by": [
+        "skills/pse-implementer/scripts/delivery_plan.py",
+        "skills/pse-implementer/assets/templates/commit-message.txt"
+      ],
+      "verified_by": [
+        "skills/pse-implementer/tests/test_delivery_plan_apply.py::TestCommit::test_out_of_domain_is_scope_violation",
+        "skills/pse-implementer/tests/test_delivery_plan_apply.py::TestCommit::test_policy_path_touched",
+        "skills/pse-implementer/tests/test_delivery_plan_apply.py::TestCommit::test_protected_branch",
+        "skills/pse-implementer/tests/test_delivery_plan_apply.py::TestCommit::test_identity_and_trailers",
+        "skills/pse-implementer/tests/test_delivery_plan_apply.py::TestCommit::test_never_no_verify",
+        "skills/pse-implementer/evals/cases/commit-applied.json",
+        "skills/pse-implementer/evals/cases/commit-rerun.json",
+        "skills/pse-implementer/evals/cases/commit-out-of-domain.json",
+        "skills/pse-implementer/evals/cases/commit-policy-path.json"
+      ],
+      "planned": true
+    },
+    {
+      "id": "FR-014",
+      "implemented_by": [
+        "skills/pse-implementer/scripts/delivery_plan.py",
+        "skills/pse-implementer/scripts/_skillkit/gitrepo.py"
+      ],
+      "verified_by": [
+        "skills/pse-implementer/tests/test_delivery_plan_apply.py::TestPush::test_exact_refspec_only",
+        "skills/pse-implementer/tests/test_delivery_plan_apply.py::TestPush::test_force_flag_refused",
+        "skills/pse-implementer/tests/test_delivery_plan_apply.py::TestPush::test_credential_url_refused",
+        "skills/pse-implementer/tests/test_delivery_plan_apply.py::TestPush::test_remote_host_mismatch",
+        "skills/pse-implementer/tests/test_delivery_plan_apply.py::TestPush::test_non_fast_forward_mapped",
+        "skills/pse-implementer/tests/test_delivery_plan_apply.py::TestPush::test_ls_remote_verified",
+        "skills/pse-implementer/evals/cases/push-applied.json",
+        "skills/pse-implementer/evals/cases/push-rerun.json",
+        "skills/pse-implementer/evals/cases/push-foreign-branch.json",
+        "skills/pse-implementer/evals/cases/push-force-flag.json",
+        "skills/pse-implementer/evals/cases/push-credential-url.json",
+        "skills/pse-implementer/evals/cases/push-remote-host-mismatch.json"
+      ],
+      "planned": true
+    },
+    {
+      "id": "FR-015",
+      "implemented_by": [
+        "skills/pse-implementer/scripts/delivery_plan.py",
+        "skills/pse-implementer/assets/templates/pr-body.md"
+      ],
+      "verified_by": [
+        "skills/pse-implementer/tests/test_delivery_plan_apply.py::TestPullRequest::test_idempotent_by_head_branch",
+        "skills/pse-implementer/tests/test_delivery_plan_apply.py::TestPullRequest::test_update_only_on_digest_change",
+        "skills/pse-implementer/tests/test_delivery_plan_apply.py::TestPullRequest::test_refused_with_invalid_evidence",
+        "skills/pse-implementer/tests/test_delivery_plan_apply.py::TestPullRequest::test_github_forge_writes_request_only",
+        "skills/pse-implementer/tests/test_delivery_plan_apply.py::TestPullRequest::test_body_bound",
+        "skills/pse-implementer/evals/cases/pr-create-applied.json",
+        "skills/pse-implementer/evals/cases/pr-create-rerun.json",
+        "skills/pse-implementer/evals/cases/pr-update-applied.json",
+        "skills/pse-implementer/evals/cases/pr-update-rerun.json",
+        "skills/pse-implementer/evals/cases/pr-update-refused-at-shadow.json",
+        "skills/pse-implementer/evals/cases/agentic-r2-deliver-issue-pr.json"
+      ],
+      "planned": true
+    },
+    {
+      "id": "FR-016",
+      "implemented_by": [
+        "skills/pse-implementer/scripts/run_check.py",
+        "skills/pse-implementer/scripts/delivery_plan.py",
+        "skills/pse-implementer/scripts/_skillkit/redact.py"
+      ],
+      "verified_by": [
+        "skills/pse-implementer/tests/test_delivery_plan_apply.py::TestSecrets::test_canary_never_in_outputs_or_remote_urls",
+        "skills/pse-implementer/tests/test_run_check.py::TestRunCheck::test_secret_env_removed"
+      ],
+      "planned": true
+    },
+    {
+      "id": "FR-017",
+      "implemented_by": [
+        "skills/pse-implementer/evals/cases",
+        "skills/pse-implementer/evals/fixtures/r2"
+      ],
+      "verified_by": [
+        "skills/pse-implementer/evals/cases/worktree-applied.json",
+        "skills/pse-implementer/evals/cases/pr-update-refused-at-shadow.json",
+        "skills/pse-implementer/evals/cases/push-force-flag.json",
+        "skills/pse-implementer/evals/cases/evidence-dirty-tree.json",
+        "skills/pse-implementer/evals/cases/agentic-r2-injected-issue-body.json",
+        "skills/pse-implementer/evals/cases/trigger-r2-open-pr.json",
+        "skills/pse-implementer/evals/cases/trigger-r2-neg-deliver-feature.json"
+      ],
+      "planned": true
+    },
+    {
+      "id": "FR-018",
+      "implemented_by": [
+        "skills/pse-implementer/scripts/delivery_plan.py",
+        "skills/pse-implementer/scripts/_skillkit/delivery.py"
+      ],
+      "verified_by": [
+        "skills/pse-implementer/tests/test_rebase.py::TestRebase::test_rebase_success_invalidates_evidence",
+        "skills/pse-implementer/tests/test_rebase.py::TestRebase::test_conflict_aborts_and_escalates",
+        "skills/pse-implementer/tests/test_rebase.py::TestRebase::test_requires_lease_branch_pr_and_behind",
+        "skills/pse-implementer/evals/cases/afv-rebase-conflict-aborts.json",
+        "skills/pse-implementer/evals/cases/agentic-r3-conflict-escalation.json"
+      ],
+      "planned": true
+    },
+    {
+      "id": "FR-019",
+      "implemented_by": [
+        "skills/pse-implementer/scripts/delivery_plan.py",
+        "skills/pse-implementer/scripts/_skillkit/gitrepo.py"
+      ],
+      "verified_by": [
+        "skills/pse-implementer/tests/test_rebase.py::TestForceWithLease::test_exact_lease_and_refspec",
+        "skills/pse-implementer/tests/test_rebase.py::TestForceWithLease::test_push_lease_mismatch",
+        "skills/pse-implementer/tests/test_rebase.py::TestForceWithLease::test_evidence_stale_after_rebase",
+        "skills/pse-implementer/tests/test_rebase.py::TestForceWithLease::test_refused_below_guarded_autonomous",
+        "skills/pse-implementer/evals/cases/force-own-branch-applied.json",
+        "skills/pse-implementer/evals/cases/force-own-branch-rerun.json",
+        "skills/pse-implementer/evals/cases/force-own-branch-refused-agent-implementation.json",
+        "skills/pse-implementer/evals/cases/force-own-branch-refused-demoted.json"
+      ],
+      "planned": true
+    },
+    {
+      "id": "FR-020",
+      "implemented_by": [
+        "skills/pse-implementer/SKILL.md",
+        "skills/pse-implementer/evals/cases",
+        "skills/pse-implementer/evals/fixtures/r3"
+      ],
+      "verified_by": [
+        "skills/pse-implementer/evals/cases/force-own-branch-refused-demoted.json",
+        "skills/pse-implementer/evals/cases/afv-rebase-conflict-aborts.json",
+        "skills/pse-implementer/evals/cases/agentic-afv-refuse-push-main.json",
+        "skills/pse-implementer/evals/cases/agentic-r3-conflict-escalation.json",
+        "skills/pse-implementer/evals/cases/agentic-r3-rebase-clean.json",
+        "skills/pse-implementer/evals/cases/trigger-r3-rebase-pr.json",
+        "skills/pse-implementer/evals/cases/trigger-r3-neg-deliver-feature.json"
+      ],
+      "planned": true
+    }
+  ]
+}

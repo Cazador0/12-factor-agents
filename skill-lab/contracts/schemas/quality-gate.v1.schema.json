@@ -1,0 +1,265 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:skill-lab:schema:quality-gate:v1",
+  "title": "Merge evidence gate",
+  "description": "The evidence manifest Review must produce before APPROVE. Every category states explicitly whether it applies; a category that does not apply is not_run, and not_run never counts as pass. passed is true only when every applicable category passed and every other condition holds.",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "reviewed_commit",
+    "categories",
+    "requirements_traceability",
+    "review",
+    "spec",
+    "branch",
+    "passed"
+  ],
+  "properties": {
+    "schema_version": {
+      "description": "Contract major version.",
+      "type": "integer",
+      "const": 1
+    },
+    "pr": {
+      "$ref": "#/$defs/pr_number"
+    },
+    "issue": {
+      "$ref": "#/$defs/issue_number"
+    },
+    "reviewed_commit": {
+      "$ref": "#/$defs/git_sha"
+    },
+    "base_commit": {
+      "$ref": "#/$defs/git_sha"
+    },
+    "categories": {
+      "description": "Map from category name (format, lint, types, architecture, unit, integration, e2e, security, dependency_scan, ...) to its result.",
+      "type": "object",
+      "additionalProperties": {
+        "$ref": "#/$defs/category"
+      }
+    },
+    "requirements_traceability": {
+      "type": "object",
+      "required": [
+        "complete"
+      ],
+      "properties": {
+        "complete": {
+          "type": "boolean"
+        }
+      },
+      "additionalProperties": false
+    },
+    "regressions": {
+      "type": "object",
+      "required": [
+        "known"
+      ],
+      "properties": {
+        "known": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/line"
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    "review": {
+      "type": "object",
+      "required": [
+        "blocking_findings",
+        "unresolved_questions"
+      ],
+      "properties": {
+        "blocking_findings": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "unresolved_questions": {
+          "type": "integer",
+          "minimum": 0
+        }
+      },
+      "additionalProperties": false
+    },
+    "spec": {
+      "type": "object",
+      "required": [
+        "converged"
+      ],
+      "properties": {
+        "converged": {
+          "type": "boolean"
+        }
+      },
+      "additionalProperties": false
+    },
+    "branch": {
+      "type": "object",
+      "required": [
+        "current_with_base"
+      ],
+      "properties": {
+        "current_with_base": {
+          "type": "boolean"
+        }
+      },
+      "additionalProperties": false
+    },
+    "passed": {
+      "type": "boolean"
+    },
+    "evaluated_at": {
+      "$ref": "#/$defs/date_time"
+    }
+  },
+  "additionalProperties": false,
+  "allOf": [
+    {
+      "description": "passed requires every applicable category to pass and every other condition to hold.",
+      "anyOf": [
+        {
+          "properties": {
+            "passed": {
+              "const": false
+            }
+          }
+        },
+        {
+          "description": "passed requires every gate condition.",
+          "properties": {
+            "categories": {
+              "additionalProperties": {
+                "anyOf": [
+                  {
+                    "properties": {
+                      "applicable": {
+                        "const": false
+                      }
+                    }
+                  },
+                  {
+                    "properties": {
+                      "status": {
+                        "const": "pass"
+                      }
+                    }
+                  }
+                ]
+              }
+            },
+            "requirements_traceability": {
+              "properties": {
+                "complete": {
+                  "const": true
+                }
+              }
+            },
+            "review": {
+              "properties": {
+                "blocking_findings": {
+                  "const": 0
+                },
+                "unresolved_questions": {
+                  "const": 0
+                }
+              }
+            },
+            "spec": {
+              "properties": {
+                "converged": {
+                  "const": true
+                }
+              }
+            },
+            "branch": {
+              "properties": {
+                "current_with_base": {
+                  "const": true
+                }
+              }
+            }
+          }
+        }
+      ]
+    }
+  ],
+  "$defs": {
+    "category": {
+      "description": "One category result; a category that does not apply must be not_run.",
+      "type": "object",
+      "required": [
+        "applicable",
+        "status",
+        "evidence"
+      ],
+      "properties": {
+        "applicable": {
+          "description": "Explicit applicability decision.",
+          "type": "boolean"
+        },
+        "status": {
+          "enum": [
+            "pass",
+            "fail",
+            "not_run"
+          ]
+        },
+        "evidence": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/line"
+          },
+          "description": "Commands with results, or artifact paths."
+        }
+      },
+      "additionalProperties": false,
+      "anyOf": [
+        {
+          "properties": {
+            "applicable": {
+              "const": true
+            }
+          }
+        },
+        {
+          "description": "A category that does not apply is not_run.",
+          "properties": {
+            "status": {
+              "const": "not_run"
+            }
+          }
+        }
+      ]
+    },
+    "date_time": {
+      "description": "RFC 3339 timestamp; producers emit YYYY-MM-DDTHH:MM:SSZ.",
+      "type": "string",
+      "format": "date-time"
+    },
+    "git_sha": {
+      "description": "Git commit SHA, abbreviated (7+) or full, lowercase hex.",
+      "type": "string",
+      "pattern": "^[0-9a-f]{7,64}$"
+    },
+    "issue_number": {
+      "description": "Gitea issue number.",
+      "type": "integer",
+      "minimum": 1
+    },
+    "line": {
+      "description": "One line of text (no line breaks), at most 500 characters.",
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 500,
+      "pattern": "^[^\\r\\n]+$"
+    },
+    "pr_number": {
+      "description": "Gitea pull-request number.",
+      "type": "integer",
+      "minimum": 1
+    }
+  }
+}

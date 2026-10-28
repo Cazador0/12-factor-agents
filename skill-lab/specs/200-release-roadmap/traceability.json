@@ -1,0 +1,74 @@
+{
+  "spec": "SPEC-200",
+  "requirements": [
+    {
+      "id": "SC-001",
+      "implemented_by": [
+        "skill-lab/specs/201-release-shadow/release-plan.md",
+        "skill-lab/specs/201-release-shadow/synthesis.md",
+        "skill-lab/specs/201-release-shadow/spec.md",
+        "skill-lab/specs/201-release-shadow/plan.md",
+        "skill-lab/specs/201-release-shadow/tasks.md",
+        "skill-lab/specs/202-release-agent-implementation/release-plan.md",
+        "skill-lab/specs/202-release-agent-implementation/synthesis.md",
+        "skill-lab/specs/202-release-agent-implementation/spec.md",
+        "skill-lab/specs/202-release-agent-implementation/plan.md",
+        "skill-lab/specs/202-release-agent-implementation/tasks.md",
+        "skill-lab/specs/203-release-guarded-autonomous/release-plan.md",
+        "skill-lab/specs/203-release-guarded-autonomous/synthesis.md",
+        "skill-lab/specs/203-release-guarded-autonomous/spec.md",
+        "skill-lab/specs/203-release-guarded-autonomous/plan.md",
+        "skill-lab/specs/203-release-guarded-autonomous/tasks.md"
+      ],
+      "verified_by": [
+        "skill-lab/specs/201-release-shadow/traceability.json",
+        "skill-lab/specs/202-release-agent-implementation/traceability.json",
+        "skill-lab/specs/203-release-guarded-autonomous/traceability.json"
+      ],
+      "planned": false
+    },
+    {
+      "id": "SC-002",
+      "implemented_by": [
+        "skills/speckit-development/scripts/review_request.py",
+        "skills/speckit-development/scripts/review_collect.py",
+        "skill-lab/docs/runbooks/release-delivery.md"
+      ],
+      "verified_by": [
+        "skills/speckit-development/tests/test_review_collect.py",
+        "skill-lab/tests/integration/test_us2_speckit_development.py",
+        "skill-lab/specs/201-release-shadow/gates.json",
+        "skill-lab/specs/202-release-agent-implementation/gates.json",
+        "skill-lab/specs/203-release-guarded-autonomous/gates.json"
+      ],
+      "planned": true
+    },
+    {
+      "id": "SC-003",
+      "implemented_by": [
+        "skill-lab/shared/_skillkit/policy.py",
+        "skill-lab/lab/containment.py"
+      ],
+      "verified_by": [
+        "skill-lab/tests/test_policy.py",
+        "skill-lab/tests/test_containment.py",
+        "skill-lab/tests/integration/test_us1_policy.py"
+      ],
+      "planned": true
+    },
+    {
+      "id": "SC-004",
+      "implemented_by": [
+        "skill-lab/lab/install.py",
+        "skill-lab/lab/l1_gate.py",
+        "skill-lab/config/zed/local-ollama.disabled.jsonc"
+      ],
+      "verified_by": [
+        "skill-lab/tests/test_install_inference.py",
+        "skill-lab/tests/test_l1_gate.py",
+        "skill-lab/tests/test_install_local_inference.py"
+      ],
+      "planned": true
+    }
+  ]
+}

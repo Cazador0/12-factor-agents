@@ -1,0 +1,69 @@
+{
+  "acceptance_criteria": {
+    "AC-01": "passed",
+    "AC-02": "passed",
+    "AC-03": "not_run"
+  },
+  "base_commit": "9b1d3e5f7a9c0e2f4a6b8d0c1e3f5a7b9c0d2e4f",
+  "branch": "agent/pse/184-session-refresh",
+  "changed_components": [
+    "api/auth",
+    "web/session"
+  ],
+  "checks": [
+    {
+      "command": "python3 -m pytest tests/auth -q",
+      "duration_ms": 4210,
+      "exit_code": 0,
+      "log_digest": "sha256:7232e059ce3bd3fa339c0583c18960740dbea4f687edc1c1145ff92f2800c16e",
+      "name": "unit",
+      "status": "passed"
+    },
+    {
+      "command": "python3 -m pytest tests/integration -q",
+      "duration_ms": 19877,
+      "exit_code": 0,
+      "log_digest": "sha256:8770b2ceaefc713bdb25d2b5fbe3971f808814413ad90fae998c643fdb7a3014",
+      "name": "integration",
+      "status": "passed"
+    },
+    {
+      "command": "ruff check packages/auth apps/api/session",
+      "duration_ms": 640,
+      "exit_code": 0,
+      "log_digest": "sha256:249e607302809e0c5400fc91e756a4c58d32bebe5a50d347c4272041a81f0ae7",
+      "name": "lint",
+      "status": "passed"
+    },
+    {
+      "command": null,
+      "exit_code": null,
+      "log_digest": null,
+      "name": "browser-e2e",
+      "status": "not_run"
+    }
+  ],
+  "generated_at": "2026-10-22T08:00:00Z",
+  "head_commit": "4f2c9a1e7b3d5f60a8c2e1d9b7f4a3c2e1d0b9a8",
+  "issue": 184,
+  "known_risks": [
+    "Token family table grows until the nightly cleanup job runs."
+  ],
+  "migrations": {
+    "paths": [
+      "db/migrations/0042_token_family.sql"
+    ],
+    "present": true,
+    "reversible": true
+  },
+  "pr": 211,
+  "repository": "acme/factory",
+  "schema_version": 1,
+  "spec_id": "SPEC-042",
+  "task_ids": [
+    "T031",
+    "T032",
+    "T034"
+  ],
+  "unresolved_questions": []
+}

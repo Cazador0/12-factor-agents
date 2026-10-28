@@ -1,0 +1,61 @@
+"""Tests for scripts/example.py. TODO(scaffold): replace with tests for the skill's real scripts.
+
+Run from the skill folder: ``python3 -m unittest discover -s tests`` (or ``skill-lab test --skill {{name}}``).
+"""
+
+from __future__ import annotations
+
+import json
+import os
+import subprocess
+import sys
+import unittest
+
+SKILL_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+SCRIPT = os.path.join(SKILL_DIR, "scripts", "example.py")
+
+
+def run(*args):
+    """Run the script from the skill folder; return (exit code, stdout text)."""
+    proc = subprocess.run(
+        [sys.executable, SCRIPT] + list(args),
+        cwd=SKILL_DIR,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        timeout=60,
+        check=False,
+    )
+    return proc.returncode, proc.stdout.decode("utf-8")
+
+
+def run_json(*args):
+    code, stdout = run(*args)
+    return code, json.loads(stdout)
+
+
+class TestExample(unittest.TestCase):
+    def test_valid_input_is_echoed(self):
+        code, result = run_json("--input", "evals/fixtures/valid-envelope.json", "--contract", "envelope")
+        self.assertEqual(code, 0)
+        self.assertTrue(result["ok"])
+        self.assertEqual(result["payload"]["kind"], "lease")
+
+    def test_schema_invalid_input_exits_2(self):
+        code, result = run_json("--input", "evals/fixtures/invalid-envelope.json", "--contract", "envelope")
+        self.assertEqual(code, 2)
+        self.assertFalse(result["ok"])
+        self.assertEqual(result["errors"][0]["code"], "INPUT_SCHEMA_INVALID")
+
+    def test_missing_input_exits_2(self):
+        code, result = run_json("--input", "no-such-file.json", "--contract", "envelope")
+        self.assertEqual(code, 2)
+        self.assertEqual(result["errors"][0]["code"], "INPUT_NOT_FOUND")
+
+    def test_help_exits_0(self):
+        code, stdout = run("--help")
+        self.assertEqual(code, 0)
+        self.assertIn("--contract", stdout)
+
+
+if __name__ == "__main__":
+    unittest.main()

@@ -1,0 +1,211 @@
+{
+  "spec": "SPEC-006",
+  "requirements": [
+    {
+      "id": "FR-001",
+      "implemented_by": [
+        "skills/kanban-state-machine/scripts/transition.py",
+        "skills/kanban-state-machine/references/states.md"
+      ],
+      "verified_by": [
+        "skills/kanban-state-machine/tests/test_transition.py::TestStateLabels::test_invalid",
+        "skills/kanban-state-machine/evals/cases/state-label-ambiguous.json",
+        "skills/kanban-state-machine/evals/cases/next-action-ready-dispatch.json"
+      ],
+      "planned": true
+    },
+    {
+      "id": "FR-002",
+      "implemented_by": [
+        "skills/kanban-state-machine/scripts/transition.py",
+        "skills/kanban-state-machine/references/states.md"
+      ],
+      "verified_by": [
+        "skills/kanban-state-machine/tests/test_transition.py::TestTransitionTable::test_every_triple",
+        "skills/kanban-state-machine/evals/cases/illegal-transition-by-role.json",
+        "skills/kanban-state-machine/evals/cases/move-to-review-allowed-for-pse.json",
+        "skills/kanban-state-machine/evals/cases/move-to-review-ci-pending.json",
+        "skills/kanban-state-machine/evals/cases/decide-unknown-action.json",
+        "skills/kanban-state-machine/evals/cases/agentic-role-refusal.json"
+      ],
+      "planned": true
+    },
+    {
+      "id": "FR-003",
+      "implemented_by": [
+        "skills/kanban-state-machine/scripts/transition.py"
+      ],
+      "verified_by": [
+        "skills/kanban-state-machine/tests/test_transition.py::TestNextAction::test_report_branches",
+        "skills/kanban-state-machine/tests/test_transition.py::TestFacts::test_reviews_on_head_only",
+        "skills/kanban-state-machine/evals/cases/next-action-blocked-wait.json",
+        "skills/kanban-state-machine/evals/cases/next-action-merged-completes.json",
+        "skills/kanban-state-machine/evals/cases/review-changes-requested-returns-to-pse.json",
+        "skills/kanban-state-machine/evals/cases/agentic-next-action-explain.json"
+      ],
+      "planned": true
+    },
+    {
+      "id": "FR-004",
+      "implemented_by": [
+        "skills/kanban-state-machine/scripts/transition.py"
+      ],
+      "verified_by": [
+        "skills/kanban-state-machine/tests/test_transition_events.py::TestEventHints::test_decision_follows_reread_state",
+        "skills/kanban-state-machine/tests/test_transition_events.py::TestEventHints::test_stale_duplicate_unverified_decide_nothing",
+        "skills/kanban-state-machine/tests/test_transition_events.py::TestEventHints::test_event_without_gitea_url_refused",
+        "skills/kanban-state-machine/tests/test_transition_events.py::TestEventHints::test_unreachable_exit_3",
+        "skills/kanban-state-machine/evals/cases/stale-event-decides-nothing.json",
+        "skills/kanban-state-machine/evals/cases/event-requires-gitea-url.json",
+        "skills/kanban-state-machine/evals/cases/agentic-event-hint-reread.json"
+      ],
+      "planned": true
+    },
+    {
+      "id": "FR-005",
+      "implemented_by": [
+        "skills/kanban-state-machine/scripts/labels_plan.py"
+      ],
+      "verified_by": [
+        "skills/kanban-state-machine/tests/test_labels_plan.py::TestLabelsPlan::test_only_state_label_changes",
+        "skills/kanban-state-machine/tests/test_labels_plan.py::TestLabelsPlan::test_move_issue_only_with_columns",
+        "skills/kanban-state-machine/tests/test_labels_plan.py::TestLabelsPlan::test_apply_refused_at_shadow",
+        "skills/kanban-state-machine/evals/cases/labels-plan-without-columns.json",
+        "skills/kanban-state-machine/evals/cases/labels-plan-with-columns.json",
+        "skills/kanban-state-machine/evals/cases/labels-plan-disallowed-decision.json",
+        "skills/kanban-state-machine/evals/cases/labels-plan-set-refused-at-shadow.json",
+        "skills/kanban-state-machine/evals/cases/move-issue-refused-at-shadow.json"
+      ],
+      "planned": true
+    },
+    {
+      "id": "FR-006",
+      "implemented_by": [
+        "skills/kanban-state-machine/SKILL.md",
+        "skills/kanban-state-machine/evals/cases"
+      ],
+      "verified_by": [
+        "skills/kanban-state-machine/evals/cases/agentic-injected-move-to-done.json",
+        "skills/kanban-state-machine/evals/cases/agentic-labels-plan-shadow.json",
+        "skills/kanban-state-machine/evals/cases/trigger-can-pse-move-review.json",
+        "skills/kanban-state-machine/evals/cases/trigger-neg-safe-to-merge.json",
+        "skills/kanban-state-machine/evals/cases/trigger-null-haiku.json",
+        "skills/kanban-state-machine/evals/cases/trigger-null-kanban-app.json"
+      ],
+      "planned": true
+    },
+    {
+      "id": "FR-007",
+      "implemented_by": [
+        "skills/kanban-state-machine/scripts/labels_plan.py"
+      ],
+      "verified_by": [
+        "skills/kanban-state-machine/tests/test_labels_plan_apply.py::TestLabelsApply::test_recompute_and_role",
+        "skills/kanban-state-machine/tests/test_labels_plan_apply.py::TestLabelsApply::test_plan_stale",
+        "skills/kanban-state-machine/tests/test_labels_plan_apply.py::TestLabelsApply::test_ci_none",
+        "skills/kanban-state-machine/tests/test_labels_plan_apply.py::TestLabelsApply::test_rerun_no_write",
+        "skills/kanban-state-machine/evals/cases/labels-applied.json",
+        "skills/kanban-state-machine/evals/cases/labels-rerun.json",
+        "skills/kanban-state-machine/evals/cases/role-not-authorized.json",
+        "skills/kanban-state-machine/evals/cases/labels-plan-stale.json",
+        "skills/kanban-state-machine/evals/cases/review-entry-ci-none.json"
+      ],
+      "planned": true
+    },
+    {
+      "id": "FR-008",
+      "implemented_by": [
+        "skills/kanban-state-machine/scripts/labels_plan.py"
+      ],
+      "verified_by": [
+        "skills/kanban-state-machine/tests/test_labels_plan_apply.py::TestLabelsApply::test_project_columns_deferred",
+        "skills/kanban-state-machine/evals/cases/move-issue-deferred.json"
+      ],
+      "planned": true
+    },
+    {
+      "id": "FR-009",
+      "implemented_by": [
+        "skills/kanban-state-machine/SKILL.md",
+        "skills/kanban-state-machine/evals/cases"
+      ],
+      "verified_by": [
+        "skills/kanban-state-machine/evals/cases/agentic-r2-stale-transition.json",
+        "skills/kanban-state-machine/evals/cases/trigger-r2-move-to-review.json",
+        "skills/kanban-state-machine/evals/cases/trigger-r2-neg-who-next.json"
+      ],
+      "planned": true
+    },
+    {
+      "id": "FR-010",
+      "implemented_by": [
+        "skills/kanban-state-machine/scripts/labels_plan.py",
+        "skills/kanban-state-machine/scripts/transition.py",
+        "skills/kanban-state-machine/references/observed-facts.md"
+      ],
+      "verified_by": [
+        "skills/kanban-state-machine/tests/test_on_event.py::TestObservedFacts::test_system_applies_observed_facts",
+        "skills/kanban-state-machine/tests/test_on_event.py::TestObservedFacts::test_role_owned_refused",
+        "skills/kanban-state-machine/evals/cases/on-event-move-to-review.json",
+        "skills/kanban-state-machine/evals/cases/on-event-role-owned-refused.json"
+      ],
+      "planned": true
+    },
+    {
+      "id": "FR-011",
+      "implemented_by": [
+        "skills/kanban-state-machine/scripts/labels_plan.py",
+        "skills/kanban-state-machine/scripts/transition.py",
+        "skills/kanban-state-machine/references/observed-facts.md"
+      ],
+      "verified_by": [
+        "skills/kanban-state-machine/tests/test_on_event.py::TestObservedFacts::test_block_unblock_requeue",
+        "skills/kanban-state-machine/evals/cases/reconcile-requeue-release-no-work.json",
+        "skills/kanban-state-machine/evals/cases/reconcile-unblock-cleared.json",
+        "skills/kanban-state-machine/evals/cases/afv-dependency-reopened.json"
+      ],
+      "planned": true
+    },
+    {
+      "id": "FR-012",
+      "implemented_by": [
+        "skills/kanban-state-machine/scripts/transition.py",
+        "skills/kanban-state-machine/scripts/labels_plan.py"
+      ],
+      "verified_by": [
+        "skills/kanban-state-machine/tests/test_on_event.py::TestObservedFacts::test_merged_before_review",
+        "skills/kanban-state-machine/evals/cases/afv-merged-before-review.json",
+        "skills/kanban-state-machine/evals/cases/agentic-r3-stale-approval.json",
+        "skills/kanban-state-machine/evals/cases/afv-forged-marker-ignored.json"
+      ],
+      "planned": true
+    },
+    {
+      "id": "FR-013",
+      "implemented_by": [
+        "skills/kanban-state-machine/scripts/labels_plan.py",
+        "skills/kanban-state-machine/assets/templates/ready-to-merge-comment.md"
+      ],
+      "verified_by": [
+        "skills/kanban-state-machine/tests/test_on_event.py::TestObservedFacts::test_cap_comment_once",
+        "skills/kanban-state-machine/evals/cases/cap-comment-applied.json",
+        "skills/kanban-state-machine/evals/cases/cap-comment-rerun.json",
+        "skills/kanban-state-machine/evals/cases/comment-create-refused-at-shadow.json"
+      ],
+      "planned": true
+    },
+    {
+      "id": "FR-014",
+      "implemented_by": [
+        "skills/kanban-state-machine/SKILL.md",
+        "skills/kanban-state-machine/evals/cases"
+      ],
+      "verified_by": [
+        "skills/kanban-state-machine/evals/cases/agentic-r3-observed-fact-transition.json",
+        "skills/kanban-state-machine/evals/cases/trigger-r3-ready-to-merge.json",
+        "skills/kanban-state-machine/evals/cases/trigger-r3-neg-auto-merge.json"
+      ],
+      "planned": true
+    }
+  ]
+}

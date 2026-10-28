@@ -1,0 +1,474 @@
+---
+
+description: "Task list for SPEC-201 R1 Shadow mode"
+---
+
+# Tasks: R1 Shadow mode
+
+**Input**: Design documents from `skill-lab/specs/201-release-shadow/` (spec.md, plan.md, synthesis.md, release-plan.md)
+
+**Prerequisites**: plan.md (required), spec.md (required for user stories), foundation SPEC-100..104 (entry criterion E-1); SPEC-105 Jev live benchmarking is delivered inside R1 by T150 per `skill-lab/specs/105-jev-live-benchmarking/tasks.md`
+
+**Tests**: Requested. Every implementation task follows a task that writes its tests first, and those tests are seen to fail before implementation.
+
+**Organization**: Tasks are grouped by user story (spec.md US1–US10) so each story can be implemented and tested independently. IDs are stable: tasks added by the 2026-10-22 refinement (spec.md §Clarifications) carry new IDs T144–T159 and sit in the phase where they belong.
+
+## Format: `[ID] [P?] [Story] Description`
+
+- **[P]**: Can run in parallel (different files, no dependency on an incomplete task)
+- **[Story]**: Which user story this task belongs to (US1–US10)
+- Paths are relative to the repository root `/home/user/12-factor-agents`
+- Dependency semantics follow plan.md §Wave rule: a task without `[P]` depends on the nearest preceding task in its phase; `(depends on …)` adds explicit edges. A SPEC-105 task is always written "SPEC-105 Tnnn" and is never an edge of this graph; T150 stands for all of them
+- **Verification** of a task = the test files and lab commands named in its description. From T054 on, `dev_state.py mark --task Tnnn --apply` requires a passing `check-run.v1` for each
+- **Human-owned files**: agents never edit `.skill-policy.json`, `skill-lab/benchmarks/criteria/**`, or `skill-lab/benchmarks/monitor-limits.json` on their own. R1 ships no per-skill criteria file: every skill is scored against `skill-lab/benchmarks/criteria/_defaults.json` (the floor), and only the person may add a per-skill file later, to raise a skill's bar (the person's answer, 2026-10-22). A `monitor-limits.json` change is applied only after the person approves it (T151)
+
+## Phase 1: Setup (Shared Infrastructure)
+
+**Purpose**: Entry check, release scaffolding, and the decisions on record
+
+- [ ] T001 Run the foundation entry check (`skill-lab validate`, `sync --check`, `test`, `bench --tier deterministic`, `score`, `catalog`, `install --help`) and record exit codes in `skill-lab/specs/201-release-shadow/evidence/entry-check.json`; record the real names of the lab CLI registry, validator hook, installer, bench flags, and SPEC-104 metric names in `skill-lab/specs/201-release-shadow/evidence/interface-notes.md` (plan.md §Interface alignment)
+- [ ] T002 [P] Create the reviewer-owned requirements checklist `skill-lab/specs/201-release-shadow/checklists/requirements.md` from the Spec Kit checklist template, covering completeness, testability, gate rationale, and contract field lists of `spec.md` (depends on T001)
+- [ ] T003 [P] Write ADR-0101 "Autonomy policy file and fail-safe loading" in `skill-lab/docs/adr/0101-autonomy-policy-file.md` (MADR; Compliance: `test_policy.py`, G-OFF-07) (depends on T001)
+- [ ] T004 [P] Write ADR-0102 "Action catalog and minimum levels" in `skill-lab/docs/adr/0102-action-catalog.md` (34 ids, `human-only`, catalog is a critical path) (depends on T001)
+- [ ] T005 [P] Write ADR-0103 "Cloud-first inference with gated local enablement" in `skill-lab/docs/adr/0103-cloud-first-inference.md` (D-14, D-15; the endpoint is the local Ollama app signed in to ollama.com on `http://localhost:11434`; the L1 entry is SPEC-105's `local_unlock_evidence` plus the person's sign-off; Compliance: G-OFF-09, `LOCAL_INFERENCE_GATED`) (depends on T001)
+- [ ] T006 [P] Write ADR-0104 "Independent review loop" in `skill-lab/docs/adr/0104-independent-review-loop.md` (review-request.v1, comment marker, session-id and trailer independence, ≤ 3 rounds and then the person decides, `claude -p` fallback, reviewer holds no live keys and checks recorded evidence only, reviewer `run-health.v1` comment) (depends on T001)
+- [ ] T007 [P] Write ADR-0105 "Standalone export to Cazador0/skill-factory" in `skill-lab/docs/adr/0105-standalone-export.md` (layout, LICENSE, NOTICE, manifest, 28 symlinks, committed live runs and the engineering-team report included, no git operations) (depends on T001)
+- [ ] T144 [P] Write ADR-0106 "R1 live gate at the merge stage with floor gates" in `skill-lab/docs/adr/0106-r1-live-gate-floor.md` (one fully passing counting live run before the merge; SPEC-104 defaults as the floor per skill and catalog-wide, raise-only criteria files, guardrails 100 %; supersedes for R1 ADR-0010's "merged, live-pending" state and ADR-0011's count-based per-skill live gates; Compliance: G-OFF-13, G-LIVE-01..12) (depends on T001)
+- [ ] T145 [P] Write ADR-0107 "Four webhook defense layers" in `skill-lab/docs/adr/0107-webhook-defense-layers.md` (body-SHA-256 dedupe with the delivery id as metadata only, freshness guard on signed `updated_at` and head SHA, events as hints re-read through the read-only client, secret hygiene with the 7-day `GITEA_WEBHOOK_SECRET_PREVIOUS` window; Compliance: SC-012, `test_normalize_layers.py`) (depends on T001)
+- [ ] T008 Amend `skill-lab/docs/CONVENTIONS.md` §4 (add the 21 new contract rows and the 6 additive changes, including `normalized-event` `body_sha256` and `stale`) and §8 (clamp, `refusals`, catalog, `human-only`), citing ADR-0101..0107; write `skill-lab/tests/test_adrs_r1.py` (MADR sections present in ADR-0101..0107; CONVENTIONS cites each) and verify with `skill-lab validate` (ADR references hold) (depends on T003, T004, T005, T006, T007, T144, T145)
+
+---
+
+## Phase 2: Foundational (Blocking Prerequisites)
+
+**Purpose**: Contracts, the policy core, shared modules, the read-only Gitea double, and the lab commands every story uses
+
+**⚠️ CRITICAL**: No user story work can begin until this phase is complete
+
+### Contracts (tests first)
+
+- [ ] T009 Write failing contract tests `skill-lab/tests/test_contracts_r1.py` with one valid and ≥ 2 invalid example per new or changed contract under `skill-lab/tests/fixtures/contracts/r1/` (spec.md §Contracts), including a subset-keyword check against `jsonschema_mini`
+- [ ] T010 [P] Write schemas `skill-lab/contracts/schemas/autonomy-policy.v1.schema.json`, `action-catalog.v1.schema.json`, `policy-state.v1.schema.json`, `mutation-plan.v1.schema.json` (depends on T009)
+- [ ] T011 [P] Write schemas `skill-lab/contracts/schemas/check-run.v1.schema.json`, `rendered-document.v1.schema.json`, `requirements-matrix.v1.schema.json`, `development-report.v1.schema.json`, `convergence-report.v1.schema.json`, `review-request.v1.schema.json` (depends on T009)
+- [ ] T012 [P] Write schemas `skill-lab/contracts/schemas/preflight-report.v1.schema.json`, `patch-proposal.v1.schema.json`, `lease-check.v1.schema.json`, `resume-plan.v1.schema.json`, `dispatch-plan.v1.schema.json`, `arbitration-record.v1.schema.json`, `scaffold-plan.v1.schema.json` (depends on T009)
+- [ ] T013 [P] Write schemas `skill-lab/contracts/schemas/containment-report.v1.schema.json`, `export-manifest.v1.schema.json`, `release-gates.v1.schema.json` (op `lt` included), `release-gate-report.v1.schema.json` (depends on T009)
+- [ ] T014 [P] Apply the additive changes to `skill-lab/contracts/schemas/review-verdict.v1.schema.json`, `mutation-request.v1.schema.json`, `gitea-plan.v1.schema.json`, `implementation-evidence.v1.schema.json`, `merge-decision.v1.schema.json`, and `normalized-event.v1.schema.json` (optional `body_sha256`, `stale`) and make `skill-lab/tests/test_contracts_r1.py` pass (depends on T009)
+- [ ] T015 [P] Write `skill-lab/specs/201-release-shadow/gates.json` (`release-gates.v1`) with G-OFF-01..13 and G-LIVE-01..12 at stage `merge`, G-POST-01..02 at stage `post-review`, and no gate at stage `complete`, exactly as spec.md §Release gates, including each rationale; validate against `release-gates.v1` in `skill-lab/tests/test_contracts_r1.py` (depends on T013)
+
+### Policy core (tests first)
+
+- [ ] T016 [P] Write failing tests `skill-lab/tests/test_policy.py` (classes TestLoad, TestHostileFiles with 10 classes × ≥ 4 variants, TestClamp, TestAllows, TestRequire, TestRefusals, TestNoEscapeHatches incl. a static check that `policy.py` never reads `os.environ`, TestCatalog against the spec.md §Autonomy policy table) (depends on T010)
+- [ ] T017 Implement `skill-lab/shared/_skillkit/policy.py` (plan.md §Policy module: `load`, `Policy.allows/require/refusals/require_all`, `ACTION_CATALOG` with 34 actions, `SUPPORTED_MAX_LEVEL = "shadow"`, `find_project_root`, `catalog_document`, `state_document`) until `skill-lab/tests/test_policy.py` passes
+
+### Shared modules (tests first)
+
+- [ ] T018 [P] Write failing tests `skill-lab/tests/test_speckit_tasks.py` asserting the golden facts (14 tasks, `[P]` set, explicit edges, T006/T007 write conflict, wave 0 = `[T003, T004]`), the wave rule of plan.md including the Convergence-phase rule, cycle detection, and `UNKNOWN_DEPENDENCY` (depends on T009)
+- [ ] T019 Implement `skill-lab/shared/_skillkit/speckit_tasks.py` (parser plus `task-graph.v1` builder) until `skill-lab/tests/test_speckit_tasks.py` passes
+- [ ] T020 [P] Write `skill-lab/tests/test_gitrepo.py` first (read-only allowlist, `GIT_COMMAND_FORBIDDEN`, `session_trailers` parsing `Claude-Session:` URLs, `refs_digest` stability), then implement `skill-lab/shared/_skillkit/gitrepo.py` until it passes (depends on T009)
+- [ ] T021 [P] Write failing tests `skill-lab/tests/test_checks.py` (env scrub of every `redact.SECRET_ENV_VARS` name, including `GITEA_WEBHOOK_SECRET` and `GITEA_WEBHOOK_SECRET_PREVIOUS`, denylist of plan.md §Check denylist with no process started, timeout → `status: timeout`, log digest equals sha256 of log bytes, `check-run.v1` validity, no execution without `--apply`) (depends on T011)
+- [ ] T022 Add `GITEA_WEBHOOK_SECRET_PREVIOUS` to `SECRET_ENV_VARS` in `skill-lab/shared/_skillkit/redact.py` next to the already listed `GITEA_WEBHOOK_SECRET` (both read by the normalizer, FR-016, FR-025), extend `skill-lab/tests/test_skillkit_redact.py` so a previous-secret value is masked, and implement `skill-lab/shared/_skillkit/checks.py` until `skill-lab/tests/test_checks.py` passes
+- [ ] T023 [P] Write the seed `skill-lab/fixtures/gitea-double/seed-golden.json` (plan.md §Gitea test double, including issue and PR `updated_at` values and a PR head SHA for the event re-read of FR-047) and failing tests `skill-lab/tests/test_gitea_double.py` (every listed GET endpoint, pagination, version `28.2.0`, non-GET → 405 and logged); check field names against Gitea's `/swagger.v1.json` when a 28.x instance or the published swagger is reachable, otherwise record "unverified" in `skill-lab/specs/201-release-shadow/evidence/interface-notes.md` (depends on T001)
+- [ ] T024 Implement `skill-lab/lab/gitea_double.py` (loopback, ephemeral port, JSONL request log) until `skill-lab/tests/test_gitea_double.py` passes
+- [ ] T025 Write `skill-lab/tests/test_gitea_client.py` first (read methods are GET-only, pagination, `GITEA_VERSION_UNTESTED`, `send()` calls `policy.require` before any socket opens and refuses at `shadow`, exit 3 on unreachable/401), then implement `skill-lab/shared/_skillkit/gitea.py` (including `get_issue`, `get_pull`, `list_pull_reviews`, and `get_commit_status`, which the event re-read of FR-047 uses); record the Gitea 28.x read-scope token names in `skill-lab/specs/201-release-shadow/evidence/interface-notes.md` (depends on T017)
+- [ ] T026 Update the module list in `skill-lab/shared/_skillkit/__init__.py` docstring for `policy`, `speckit_tasks`, `gitrepo`, `checks`, `gitea` (depends on T017, T019, T020, T022, T025)
+- [ ] T027 Write and pass `skill-lab/tests/test_sync_r1.py`: `skill-lab sync` vendors the five new modules and the new schemas into a scratch skill, and `skill-lab sync --check` reports 0 drift (depends on T010, T011, T012, T013, T014)
+- [ ] T146 [P] Write failing tests first in `skill-lab/tests/test_skillkit_frontmatter.py` (optional `metadata.secondary_family` accepted only with a value of the family enum that differs from `family`) and `skill-lab/tests/test_lab_core_catalog.py` (a skill with a secondary family is listed under both families), then extend `skill-lab/shared/_skillkit/frontmatter.py` and `skill-lab/lab/catalog.py` until they pass (CONVENTIONS §2; FR-032) (depends on T001)
+
+### Lab commands
+
+- [ ] T028 [P] Register subcommands `policy`, `release`, `export` in `skill-lab/lab/cli.py` and the rule hooks `policy-action-known`, `eval-inventory-r1`, `--config`, `--specs` in `skill-lab/lab/validate.py` (lazy imports); test `--help` exits 0 for each in `skill-lab/tests/test_cli_r1.py` (depends on T001)
+- [ ] T029 [P] Write `skill-lab/tests/test_policy_cmd.py` first (show clamped, explain each refusal code, catalog schema-valid, `--format markdown` table), then implement `skill-lab/lab/policy_cmd.py` (depends on T017, T028)
+- [ ] T030 [P] Write `skill-lab/tests/test_validate_policy.py` first (unknown literal action id → error; unknown `action:` tag → error; missing refusal coverage → error; inventory counts per FR-033: ≥ 4 deterministic, ≥ 5 agentic with ≥ 1 `guardrail`, ≥ 10 trigger with ≥ 4 positive, ≥ 2 `expect_skill: null`, and ≥ 1 naming a neighbouring skill), then implement `skill-lab/lab/validate_policy.py` (depends on T017, T028)
+- [ ] T031 [P] Build the fixture skill `skill-lab/tests/fixtures/containment/fake-skill/` (one script with a plan of `gitea.issue.create`, `git.commit`, `state.write.local`) and write failing tests `skill-lab/tests/test_containment.py` (effects counted: non-GET, refs digest, workspace files; uncovered pairs reported; exit 0 only when contained) (depends on T025, T029)
+- [ ] T032 Implement `skill-lab/lab/containment.py` (sandbox: temp git repo copy, Gitea double, fresh `--state-dir`; emits `containment-report.v1`) until `skill-lab/tests/test_containment.py` passes
+- [ ] T033 [P] Write failing tests `skill-lab/tests/test_release_check.py`: `not_run` never counts as pass; stage filtering, with every offline and live gate at stage `merge`; `--only`; `--root` for export mode; live gates computed from the **newest** run in `evidence/live-runs.json` whose `suite_digest` equals the tree's, and `not_run` with `NO_LIVE_RUN` or `LIVE_RUN_STALE` otherwise; per-skill agentic pass rate ≥ 0.80, `tag:guardrail` pass rate = 1.0, per-skill trigger accuracy ≥ 0.90, per-skill schema-valid rate ≥ 0.95, per-skill uncertain rate < 0.10 (op `lt`), the same floors catalog-wide from the run's `catalog` fields, errored + skipped + missing = 0, `counts_toward_streak` true (a degraded, outage, replay, or partial run fails G-LIVE-11), and a recorded streak; exit 1 `RELEASE_GATES_FAILED` (depends on T013, T015, T028)
+- [ ] T034 Implement `skill-lab/lab/release.py` (`release check --spec --stage --only --root --ci-checks --verdict`) emitting `release-gate-report.v1` until `skill-lab/tests/test_release_check.py` passes
+- [ ] T035 [P] Write `skill-lab/tests/test_record_run.py` first (the run is validated against `benchmark-run.v1` with SPEC-105's fields; nothing from the run folder is copied; `evidence/live-runs.json` gets the run id, path, sha256 of the run summary, model, `suite_digest`, `counts_toward_streak`, and the digest of the committed `benchmark-streak.v1` that includes the run; a run that is replayed, partial, outage, or degraded is recorded with its exclusion reasons and never marked gate-eligible), then implement `skill-lab/lab/record_run.py` (`release record-run --run`) (depends on T013, T028)
+
+**Checkpoint**: Policy core, shared modules, double, and lab commands are green. User story work can begin.
+
+---
+
+## Phase 3: User Story 1 - The human controls the autonomy level and nothing can raise it (Priority: P1) 🎯 MVP
+
+**Goal**: The owner sets the level in `.skill-policy.json`; no agent, flag, environment, or malformed file can raise it; R1 clamps to `shadow`
+
+**Independent Test**: `skill-lab/tests/integration/test_us1_policy.py` runs the containment harness on the fake skill with every hostile policy fixture
+
+- [ ] T036 [P] [US1] Write the example policy `skill-lab/config/policy/skill-policy.example.json` (`level: shadow`, `set_by: Cazador0`) and `skill-lab/tests/test_policy_examples.py` (validates against `autonomy-policy.v1`; loads to `shadow`) (depends on T017)
+- [ ] T037 [P] [US1] Add `agent.tool_permissions` always-deny rules for `edit_file` on `.skill-policy.json`, `skill-lab/benchmarks/criteria/**`, and `skill-lab/benchmarks/monitor-limits.json`, and for terminal commands mentioning them, to `skill-lab/config/zed/settings.example.jsonc` (FR-012) (depends on T001)
+- [ ] T038 [P] [US1] Add `permissions.deny` Edit and Write rules for `.skill-policy.json`, `skill-lab/benchmarks/criteria/**`, and `skill-lab/benchmarks/monitor-limits.json` to `skill-lab/config/claude/settings.example.json`, verifying the rule syntax against the Claude Code settings documentation and recording it in `skill-lab/specs/201-release-shadow/evidence/interface-notes.md` (depends on T001)
+- [ ] T039 [P] [US1] Write `skill-lab/tests/test_config_rules.py` first (deny rules for the policy file, the criteria files, and `monitor-limits.json` present in the Zed and Claude templates), then implement `skill-lab/lab/config_rules.py` behind `skill-lab validate --config zed,claude` (depends on T028)
+- [ ] T040 [P] [US1] Write the operator guide `skill-lab/docs/autonomy.md` (levels, clamp, how a human changes the level, restrict-only overrides, catalog table generated by `skill-lab policy catalog --format markdown`) and the drift test `skill-lab/tests/test_policy_docs_sync.py` comparing the catalog with `skill-lab/docs/autonomy.md` and the spec.md §Autonomy policy table (depends on T029)
+- [ ] T041 [US1] Write and pass the US1 acceptance test `skill-lab/tests/integration/test_us1_policy.py` covering spec.md US1 scenarios 1–6 (depends on T032, T036, T037, T038, T039)
+
+**Checkpoint**: US1 is independently verifiable. Policy enforcement is the MVP.
+
+---
+
+## Phase 4: User Story 2 - Deliver this release with `/speckit-development` and an independent review (Priority: P1)
+
+**Goal**: `speckit-development` (SPEC-013) executes tasks.md in dependency order with executed evidence, converges, drafts the PR body, emits the review request, collects the verdict, and refuses every delivery mutation at `shadow`
+
+**Independent Test**: `skill-lab/tests/integration/test_us2_speckit_development.py` on a scratch copy of the golden feature
+
+### Tests for User Story 2
+
+- [ ] T042 [US2] Write SPEC-013 in `skill-lab/specs/013-speckit-development/spec.md` and planned `skill-lab/specs/013-speckit-development/traceability.json` (FR-030, FR-031, FR-034–FR-038 capabilities; contracts development-report, convergence-report, rendered-document, review-request, review-verdict, mutation-plan, and the reviewer's `run-health.v1` comment)
+- [ ] T043 [US2] Vendor with `skill-lab sync --skill speckit-development`, copy the golden feature to `skills/speckit-development/evals/fixtures/golden/`, and write failing tests `skills/speckit-development/tests/test_dev_state.py`, `skills/speckit-development/tests/test_converge.py`, `skills/speckit-development/tests/test_pr_body.py` (depends on T027)
+
+### Implementation for User Story 2
+
+- [ ] T044 [US2] Implement `skills/speckit-development/scripts/dev_state.py` (`status`, `next`, `check --task --apply` running the declared verification through `_skillkit.checks` per plan.md §Verification derivation (action `state.write.local`), `mark --task --apply` with `workspace.write`; `TASK_NOT_VERIFIED`, `TASK_GRAPH_CYCLE`) until `test_dev_state.py` passes (depends on T019, T022)
+- [ ] T045 [P] [US2] Implement `skills/speckit-development/scripts/converge.py` (deterministic findings: untraced FR, unchecked task, missing planned path, missing `verified_by`, failed or absent check, changed file outside every task's paths; model findings via `--findings-file`; append-only `--apply`; byte-identical when clean) until `test_converge.py` passes (depends on T043, T019)
+- [ ] T046 [P] [US2] Implement `skills/speckit-development/scripts/pr_body.py` (gate table prints `not run` for `not_run`; embeds the live run's PR comment from `skill-lab report --run <dir>` when one is recorded, FR-038) until `test_pr_body.py` passes (depends on T043)
+- [ ] T047 [P] [US2] Write failing tests `skills/speckit-development/tests/test_review_request.py`, `test_review_collect.py`, `test_review_local.py`, `test_delivery_plan.py` with fixtures under `skills/speckit-development/evals/fixtures/review/` (verdict comments: approve, stale head, two json blocks, reviewer = author, reviewer in trailer; review-request instructions that forbid live keys and live re-runs and name the `doctor` check that returns `BLOCKED_BY_ENV`; evidence that carries the live run summary's sha256; a `claude -p` output sample marked "synthetic shape, to be replaced at T049 by a recorded sample") (depends on T043)
+- [ ] T048 [US2] Implement `skills/speckit-development/scripts/review_request.py` (deterministic `request_id`, round ≤ 3 and `REVIEW_ROUNDS_EXHAUSTED` above it, `--render-prompt`, FR-034 instructions (a) and (b); instruction (c), the reviewer's `run-monitor` self-report and its marked comment, is SPEC-105 T030's change and lands with T150) and `skills/speckit-development/scripts/review_collect.py` (FR-035 verdict checks via `_skillkit.gitrepo.session_trailers`; the run-health check follows in T159) until their tests pass (depends on T020)
+- [ ] T049 [US2] Implement `skills/speckit-development/scripts/review_local.py` (`claude -p … --output-format json --json-schema …`, read-only tools, env scrub, `CLAUDE_CLI_NOT_FOUND`) and `skills/speckit-development/scripts/delivery_plan.py` (`--step worktree|branch|commit|push|pr|review-request|review-session`, `Policy.refusals`) until their tests pass; when `claude` is installed, record `claude --help` flag spellings and a real output sample in `skill-lab/specs/201-release-shadow/evidence/interface-notes.md` and replace the synthetic sample (depends on T017)
+- [ ] T050 [US2] Write `skills/speckit-development/SKILL.md` (invocation `/speckit-development` in Zed and Claude Code, `$speckit-development` in Codex; one script per step; Runtime notes) with `skills/speckit-development/references/delivery-loop.md` and `skills/speckit-development/references/review-comment-format.md` (verdict comment and the separate `<!-- skill-lab:run-health:v1 request_id=<id> -->` comment); verify with `skill-lab validate --skill speckit-development` (depends on T044, T045, T046, T048)
+- [ ] T051 [US2] Add eval cases in `skills/speckit-development/evals/cases/` (≥ 4 deterministic incl. `next-wave-golden.json`, `mark-requires-passing-check.json`, `converge-clean-is-byte-identical.json`, `collect-approve-current-head.json`, `cycle-refused.json`; policy refusals tagged `action:git.worktree.create`, `action:git.branch.create`, `action:git.commit`, `action:git.push.branch`, `action:gitea.pr.create`, `action:gitea.pr.review.request`, `action:review.session.request`; ≥ 5 agentic incl. ≥ 1 `guardrail`, fixtures inside the skill folder; ≥ 10 trigger incl. ≥ 4 positive, ≥ 2 `expect_skill: null`, and ≥ 1 naming `lead-architect`), and set `planned: false` in `skill-lab/specs/013-speckit-development/traceability.json`; verify with `skill-lab bench --skill speckit-development --tier deterministic`
+- [ ] T052 [P] [US2] Write the factory runbook `skill-lab/docs/runbooks/release-delivery.md` (steps 5–8: the live gate run before the PR; export, branch, push, PR; `create_session` parameters with an `environment_id` whose environment holds none of `OLLAMA_API_KEY`, `TYPESAFE_API_KEY`, `JEV_API_KEY`; 10-minute `send_later` polling, 60-minute limit; `review_collect.py` and the reviewer's `run-health.v1` comment; ≤ 3 rounds, then the person decides; a new live gate run before a round whose fix changed any `SKILL.md` or eval case; `BLOCKED_BY_ENV`; human merge; evidence after the reviewed head stays out of the branch) and its structural test `skill-lab/tests/test_runbook.py` (depends on T048, T049)
+- [ ] T053 [US2] Write and pass the US2 acceptance test `skill-lab/tests/integration/test_us2_speckit_development.py` covering spec.md US2 scenarios 1–9 (scenario 5's reviewer health comment is asserted by T155 once `run-health.v1` exists) (depends on T051)
+- [ ] T054 [US2] Self-hosting switch-over (plan.md §Self-hosting switch-over): run `python3 skills/speckit-development/scripts/dev_state.py status --feature skill-lab/specs/201-release-shadow` into `skill-lab/specs/201-release-shadow/evidence/development-report.json`, re-run the verification of every task already checked (T001–T053, T144–T146) with `dev_state.py check --task Tnnn --apply` (records copied to `skill-lab/specs/201-release-shadow/evidence/checks/`), and uncheck any task without a passing record (depends on T052)
+
+**Checkpoint**: From here on `/speckit-development` drives every remaining task.
+
+---
+
+## Phase 5: User Story 3 - Lead plans a feature without touching Gitea (Priority: P1)
+
+**Goal**: lead-architect, speckit-gitea-taskstoissues, and speckit-gitea-sync produce readiness, DAG, contracts, dispatch recommendation, dry-run gitea-plan, and drift report
+
+**Independent Test**: `skill-lab/tests/integration/test_us3_lead_flow.py` on the golden feature against the read-only double
+
+### lead-architect (SPEC-001)
+
+- [ ] T055 [P] [US3] Write SPEC-001 in `skill-lab/specs/001-lead-architect/spec.md` and planned `skill-lab/specs/001-lead-architect/traceability.json` (FR-018, and FR-047 for `dispatch_recommend.py --event`) (depends on T054)
+- [ ] T056 [US3] Vendor with `skill-lab sync --skill lead-architect`, copy the golden feature to `skills/lead-architect/evals/fixtures/golden/`, and write failing tests `skills/lead-architect/tests/test_spec_readiness.py`, `test_plan_dag.py`, `test_issue_contract.py`, `test_dispatch_recommend.py`, `test_arbitrate.py`
+- [ ] T057 [US3] Implement `skills/lead-architect/scripts/spec_readiness.py` and `skills/lead-architect/scripts/plan_dag.py` on `_skillkit.speckit_tasks` until their tests pass (depends on T019)
+- [ ] T058 [US3] Implement `skills/lead-architect/scripts/issue_contract.py` with `skills/lead-architect/assets/templates/issue-body.md`, `skills/lead-architect/scripts/dispatch_recommend.py` (refusals for `gitea.issue.assign`, `lease.write.remote`; `--event` follows in T156), and `skills/lead-architect/scripts/arbitrate.py` (`--publish` refusal for `gitea.comment.create`) until their tests pass
+- [ ] T059 [US3] Write `skills/lead-architect/SKILL.md` and `skills/lead-architect/references/dag-and-waves.md`; verify with `skill-lab validate --skill lead-architect`
+- [ ] T060 [US3] Add eval cases in `skills/lead-architect/evals/cases/` (≥ 4 deterministic incl. `dag-flags-write-conflict.json`; refusals tagged `action:gitea.issue.assign`, `action:lease.write.remote`, `action:gitea.comment.create`; ≥ 5 agentic incl. ≥ 1 `guardrail`, fixtures inside the skill folder; ≥ 10 trigger incl. ≥ 4 positive, ≥ 2 `expect_skill: null`, and ≥ 1 naming `speckit-development`; tag `smoke` on exactly 1 agentic and 1 trigger case, SPEC-105 research R-15), and set `planned: false` in `skill-lab/specs/001-lead-architect/traceability.json`; verify with `skill-lab bench --skill lead-architect --tier deterministic`
+
+### speckit-gitea-taskstoissues (SPEC-004)
+
+- [ ] T061 [P] [US3] Write SPEC-004 in `skill-lab/specs/004-speckit-gitea-taskstoissues/spec.md` and planned `skill-lab/specs/004-speckit-gitea-taskstoissues/traceability.json` (FR-021) (depends on T054)
+- [ ] T062 [US3] Vendor with `skill-lab sync --skill speckit-gitea-taskstoissues`, add fixtures `skills/speckit-gitea-taskstoissues/evals/fixtures/` (golden tasks.md, an issues export equal to the double's seed: open T001–T003, closed T013, orphan T099; a map file), and write failing tests `skills/speckit-gitea-taskstoissues/tests/test_tasks_to_issues.py` (with the seed's issues: 10 creates, 4 dependency links, `skipped[]` T001–T003 plus closed T013, orphan T099 ignored, byte-identical rerun)
+- [ ] T063 [US3] Implement `skills/speckit-gitea-taskstoissues/scripts/tasks_to_issues.py` with `skills/speckit-gitea-taskstoissues/assets/templates/issue-body.md` (`--issues-file` or read-only `--gitea-url`; refusals for `gitea.issue.create`, `gitea.issue.dependency.set`, `gitea.label.define`, `gitea.labels.set`, `gitea.milestone.set`) until its tests pass (depends on T019, T025)
+- [ ] T064 [US3] Write `skills/speckit-gitea-taskstoissues/SKILL.md`; verify with `skill-lab validate --skill speckit-gitea-taskstoissues`
+- [ ] T065 [US3] Add eval cases in `skills/speckit-gitea-taskstoissues/evals/cases/` (≥ 4 deterministic incl. `plan-creates-missing-only.json`; refusal `apply-refused-at-shadow.json` tagged with the 5 actions above; ≥ 5 agentic incl. ≥ 1 `guardrail`, fixtures inside the skill folder; ≥ 10 trigger incl. ≥ 4 positive, ≥ 2 `expect_skill: null`, and ≥ 1 naming `speckit-gitea-sync`), and set `planned: false` in its traceability; verify with `skill-lab bench --skill speckit-gitea-taskstoissues --tier deterministic`
+
+### speckit-gitea-sync (SPEC-005)
+
+- [ ] T066 [P] [US3] Write SPEC-005 in `skill-lab/specs/005-speckit-gitea-sync/spec.md` and planned `skill-lab/specs/005-speckit-gitea-sync/traceability.json` (FR-022) (depends on T054)
+- [ ] T067 [US3] Vendor with `skill-lab sync --skill speckit-gitea-sync`, add drift fixtures to `skills/speckit-gitea-sync/evals/fixtures/` (T013 closed but unchecked, orphan `T099: stray`, stale map), and write failing tests `skills/speckit-gitea-sync/tests/test_sync_drift.py`, `skills/speckit-gitea-sync/tests/test_comment_plan.py`
+- [ ] T068 [US3] Implement `skills/speckit-gitea-sync/scripts/sync_drift.py` and `skills/speckit-gitea-sync/scripts/comment_plan.py` (refusal for `gitea.comment.create`) until their tests pass (depends on T019, T025)
+- [ ] T069 [US3] Write `skills/speckit-gitea-sync/SKILL.md`; verify with `skill-lab validate --skill speckit-gitea-sync`
+- [ ] T070 [US3] Add eval cases in `skills/speckit-gitea-sync/evals/cases/` (≥ 4 deterministic incl. `drift-orphan-and-state-mismatch.json`; refusal `comment-plan-apply-refused.json` tagged `action:gitea.comment.create`; ≥ 5 agentic incl. ≥ 1 `guardrail`, fixtures inside the skill folder; ≥ 10 trigger incl. ≥ 4 positive, ≥ 2 `expect_skill: null`, and ≥ 1 naming `speckit-gitea-taskstoissues`), and set `planned: false` in its traceability; verify with `skill-lab bench --skill speckit-gitea-sync --tier deterministic`
+- [ ] T071 [US3] Write and pass `skill-lab/tests/integration/test_us3_lead_flow.py` covering spec.md US3 scenarios 1–6 against `skill-lab/lab/gitea_double.py` (depends on T060, T065, T024)
+
+**Checkpoint**: The Lead's shadow workflow is independently verifiable.
+
+---
+
+## Phase 6: User Story 4 - PSE produces a proposed patch with executed evidence (Priority: P1)
+
+**Goal**: pse-implementer, work-lease, and session-checkpoint at R1 capability
+
+**Independent Test**: `skill-lab/tests/integration/test_us4_pse_flow.py` in a scratch git repository built from the golden fixture
+
+### pse-implementer (SPEC-002)
+
+- [ ] T072 [P] [US4] Write SPEC-002 in `skill-lab/specs/002-pse-implementer/spec.md` and planned `skill-lab/specs/002-pse-implementer/traceability.json` (FR-019) (depends on T054)
+- [ ] T073 [US4] Vendor with `skill-lab sync --skill pse-implementer`, add fixtures to `skills/pse-implementer/evals/fixtures/` (issue contract, spec with `[NEEDS CLARIFICATION`, unexecuted evidence draft, scratch repo recipe), and write failing tests `skills/pse-implementer/tests/test_preflight.py`, `test_run_check.py`, `test_evidence_manifest.py`, `test_propose_patch.py`, `test_delivery_plan.py`
+- [ ] T074 [US4] Implement `skills/pse-implementer/scripts/preflight.py`, `skills/pse-implementer/scripts/run_check.py` (on `_skillkit.checks`), and `skills/pse-implementer/scripts/evidence_manifest.py` (`CHECK_NOT_EXECUTED`; `head_commit: null` plus `patch_ref` in R1) until their tests pass (depends on T022, T020)
+- [ ] T075 [US4] Implement `skills/pse-implementer/scripts/propose_patch.py` (patch under `--out`, `SCOPE_VIOLATION`) and `skills/pse-implementer/scripts/delivery_plan.py` (`--step worktree|branch|commit|push|pr`, `Policy.refusals`) until their tests pass
+- [ ] T076 [US4] Write `skills/pse-implementer/SKILL.md`; verify with `skill-lab validate --skill pse-implementer`
+- [ ] T077 [US4] Add eval cases in `skills/pse-implementer/evals/cases/` (≥ 4 deterministic incl. `rejects-unexecuted-evidence.json` from CONVENTIONS §5 and `run-check-forbidden-push.json`; refusals incl. `delivery-commit-refused-at-shadow.json`, together tagged `action:git.worktree.create`, `action:git.branch.create`, `action:git.commit`, `action:git.push.branch`, `action:gitea.pr.create`; ≥ 5 agentic incl. ≥ 1 `guardrail`, fixtures inside the skill folder; ≥ 10 trigger incl. ≥ 4 positive, ≥ 2 `expect_skill: null`, and ≥ 1 naming `review-verifier`), and set `planned: false` in its traceability; verify with `skill-lab bench --skill pse-implementer --tier deterministic`
+
+### work-lease (SPEC-007)
+
+- [ ] T078 [P] [US4] Write SPEC-007 in `skill-lab/specs/007-work-lease/spec.md` and planned `skill-lab/specs/007-work-lease/traceability.json` (FR-024) (depends on T054)
+- [ ] T079 [US4] Vendor with `skill-lab sync --skill work-lease` and write failing tests `skills/work-lease/tests/test_lease.py` (acquire/renew/release/status/check, default TTL 1,800 s and the 300..7,200 s bound, renew extends `expires_at` from `--now`, CAS version conflict, write-domain overlap, `--mirror` refusal with a `gitea-plan` op `mirror_lease` in the plan, `overrides.deny state.write.local` refusal, concurrent acquire under `fsutil.file_lock`)
+- [ ] T080 [US4] Implement `skills/work-lease/scripts/lease.py` until `skills/work-lease/tests/test_lease.py` passes
+- [ ] T081 [US4] Write `skills/work-lease/SKILL.md`; verify with `skill-lab validate --skill work-lease`
+- [ ] T082 [US4] Add eval cases in `skills/work-lease/evals/cases/` (≥ 4 deterministic incl. `overlap-detected.json`; refusal tagged `action:lease.write.remote`; ≥ 5 agentic incl. ≥ 1 `guardrail`, fixtures inside the skill folder; ≥ 10 trigger incl. ≥ 4 positive, ≥ 2 `expect_skill: null`, and ≥ 1 naming `session-checkpoint`), and set `planned: false` in its traceability; verify with `skill-lab bench --skill work-lease --tier deterministic`
+
+### session-checkpoint (SPEC-010)
+
+- [ ] T083 [P] [US4] Write SPEC-010 in `skill-lab/specs/010-session-checkpoint/spec.md` and planned `skill-lab/specs/010-session-checkpoint/traceability.json` (FR-027) (depends on T054)
+- [ ] T084 [US4] Vendor with `skill-lab sync --skill session-checkpoint` and write failing tests `skills/session-checkpoint/tests/test_checkpoint.py` (write/read/render, resume-plan `stale` on head mismatch, rejection of a `reasoning` field, `publish` refusal)
+- [ ] T085 [US4] Implement `skills/session-checkpoint/scripts/checkpoint.py` until `skills/session-checkpoint/tests/test_checkpoint.py` passes (depends on T020)
+- [ ] T086 [US4] Write `skills/session-checkpoint/SKILL.md`; verify with `skill-lab validate --skill session-checkpoint`
+- [ ] T087 [US4] Add eval cases in `skills/session-checkpoint/evals/cases/` (≥ 4 deterministic incl. `rejects-chain-of-thought-fields.json`; refusal tagged `action:gitea.comment.create`; ≥ 5 agentic incl. ≥ 1 `guardrail`, fixtures inside the skill folder; ≥ 10 trigger incl. ≥ 4 positive, ≥ 2 `expect_skill: null`, and ≥ 1 naming `work-lease`), and set `planned: false` in its traceability; verify with `skill-lab bench --skill session-checkpoint --tier deterministic`
+- [ ] T088 [US4] Write and pass `skill-lab/tests/integration/test_us4_pse_flow.py` covering spec.md US4 scenarios 1–7 (`git apply --check` on the proposed patch; every reported check matches a `check-run.v1` digest) (depends on T077, T082)
+
+**Checkpoint**: PSE shadow workflow is independently verifiable.
+
+---
+
+## Phase 7: User Story 5 - Review returns an independent verdict and merge advice (Priority: P1)
+
+**Goal**: review-verifier and merge-policy-gate at R1 capability; the verdict comment round-trips through speckit-development's collector
+
+**Independent Test**: `skill-lab/tests/integration/test_us5_review_flow.py`
+
+### review-verifier (SPEC-003)
+
+- [ ] T089 [P] [US5] Write SPEC-003 in `skill-lab/specs/003-review-verifier/spec.md` and planned `skill-lab/specs/003-review-verifier/traceability.json` (FR-020) (depends on T054)
+- [ ] T090 [US5] Vendor with `skill-lab sync --skill review-verifier`, copy the golden feature to `skills/review-verifier/evals/fixtures/golden/`, and write failing tests `skills/review-verifier/tests/test_requirements_matrix.py`, `test_quality_gate.py`, `test_review_verdict.py`
+- [ ] T091 [US5] Implement `skills/review-verifier/scripts/requirements_matrix.py` (12 golden requirements plus SC-001..004, built from spec.md and traceability) and `skills/review-verifier/scripts/quality_gate.py` (`not_run` on applicable category fails) until their tests pass
+- [ ] T092 [US5] Implement `skills/review-verifier/scripts/review_verdict.py` (`APPROVE` rule, `REVIEW_NOT_INDEPENDENT` via `_skillkit.gitrepo.session_trailers`, `--render-comment` marker plus one fenced json block, `--comment-plan [--post]` refusals for `gitea.comment.create` and `gitea.pr.review.submit`) until its tests pass (depends on T020)
+- [ ] T093 [US5] Write `skills/review-verifier/SKILL.md` (opposing objective: "What evidence would prove that this implementation fails?"; never repair-and-approve; live gates are checked from the committed run and recordings only, with no live keys held and no live case re-run); verify with `skill-lab validate --skill review-verifier`
+- [ ] T094 [US5] Add eval cases in `skills/review-verifier/evals/cases/` (≥ 4 deterministic incl. `quality-gate-not-run-is-not-pass.json`, `verdict-self-review-refused.json`; refusals tagged `action:gitea.comment.create`, `action:gitea.pr.review.submit`; ≥ 5 agentic incl. ≥ 1 `guardrail`, fixtures inside the skill folder; ≥ 10 trigger incl. ≥ 4 positive, ≥ 2 `expect_skill: null`, and ≥ 1 naming `pse-implementer`; tag `smoke` on exactly 1 trigger case, SPEC-105 research R-15), and set `planned: false` in its traceability; verify with `skill-lab bench --skill review-verifier --tier deterministic`
+
+### merge-policy-gate (SPEC-009)
+
+- [ ] T095 [P] [US5] Write SPEC-009 in `skill-lab/specs/009-merge-policy-gate/spec.md` and planned `skill-lab/specs/009-merge-policy-gate/traceability.json` (FR-026, FR-012 policy paths) (depends on T054)
+- [ ] T096 [US5] Vendor with `skill-lab sync --skill merge-policy-gate` and write failing tests `skills/merge-policy-gate/tests/test_merge_decision.py` (every spec.md §Security policy path → `critical`, including `skill-lab/benchmarks/criteria/**` and `skill-lab/benchmarks/monitor-limits.json`; docs-only at `shadow` → `HUMAN_APPROVAL_REQUIRED` with `uncapped_decision: AUTO_MERGE`; missing verdict → `BLOCKED`; stale branch → `BLOCKED`), `skills/merge-policy-gate/tests/test_merge_plan.py`
+- [ ] T097 [US5] Implement `skills/merge-policy-gate/scripts/merge_decision.py`, `skills/merge-policy-gate/scripts/merge_plan.py` (refusal for `gitea.pr.merge_when_checks_succeed`), and `skills/merge-policy-gate/references/risk-classes.md` until their tests pass
+- [ ] T098 [US5] Write `skills/merge-policy-gate/SKILL.md` (decision is advisory at `shadow`; never act on `uncapped_decision`); verify with `skill-lab validate --skill merge-policy-gate`
+- [ ] T099 [US5] Add eval cases in `skills/merge-policy-gate/evals/cases/` (≥ 4 deterministic incl. `policy-file-change-is-critical.json`, `docs-change-low-capped-at-shadow.json`; refusal tagged `action:gitea.pr.merge-when-checks-succeed`; ≥ 5 agentic incl. ≥ 1 `guardrail`, fixtures inside the skill folder; ≥ 10 trigger incl. ≥ 4 positive, ≥ 2 `expect_skill: null`, and ≥ 1 naming `kanban-state-machine`), and set `planned: false` in its traceability; verify with `skill-lab bench --skill merge-policy-gate --tier deterministic`
+- [ ] T100 [US5] Write and pass `skill-lab/tests/integration/test_us5_review_flow.py` covering spec.md US5 scenarios 1–7, including the comment round trip through `skills/speckit-development/scripts/review_collect.py` (depends on T094, T048)
+
+**Checkpoint**: Review and merge advice are independently verifiable.
+
+---
+
+## Phase 8: User Story 6 - Control-plane decisions from offline events, behind four webhook defense layers (Priority: P2)
+
+**Goal**: gitea-event-normalizer and kanban-state-machine at R1 capability, with the four webhook layers the person chose ("All four layers in R1"), and every event-driven decision re-read from authoritative state
+
+**Independent Test**: `skill-lab/tests/integration/test_us6_events_flow.py`
+
+### gitea-event-normalizer (SPEC-008)
+
+- [ ] T101 [P] [US6] Write SPEC-008 in `skill-lab/specs/008-gitea-event-normalizer/spec.md` and planned `skill-lab/specs/008-gitea-event-normalizer/traceability.json` (FR-025 with its four layers) (depends on T054)
+- [ ] T102 [US6] Vendor with `skill-lab sync --skill gitea-event-normalizer`, add payload and header fixtures to `skills/gitea-event-normalizer/evals/fixtures/` (valid, tampered, the same body under a new delivery id, unknown event type, one fixture per vocabulary entry of FR-025; signatures computed with a fixture secret of ≥ 32 bytes by the test, not by hand), and write failing tests `skills/gitea-event-normalizer/tests/test_normalize.py` (every vocabulary entry, `body_sha256` of the raw bytes, `unmapped.<header>` with `blocking: false`); check the raw `X-Gitea-Event` and `action` values against the Gitea 28.x webhook docs and record them, or mark them unverified
+- [ ] T147 [US6] Write failing tests `skills/gitea-event-normalizer/tests/test_normalize_layers.py` with fixtures under `skills/gitea-event-normalizer/evals/fixtures/layers/` for the four layers of FR-025: a duplicate body under a new delivery id is `duplicate: true` and a reused delivery id with a new body is not; a body older than the recorded signed `updated_at`, or a PR body with the recorded `updated_at` and a different head SHA, is `stale: true` and leaves the record unchanged; the previous secret verifies 6 days after `GITEA_WEBHOOK_SECRET_ROTATED_AT` with `WEBHOOK_SECRET_PREVIOUS_USED`, and fails at 7 days or with no rotation time; a secret under 32 bytes exits 2 `WEBHOOK_SECRET_TOO_SHORT`; a burst over `--max-events-per-object` exits 4 `EVENT_RATE_LIMITED` with nothing recorded; a body failing its signature leaves no parsed value on stdout, stderr, or under `--state-dir`; digests older than 90 days are pruned on the next `--apply`
+- [ ] T103 [US6] Implement `skills/gitea-event-normalizer/scripts/normalize.py` (`normalize` with `hmac.compare_digest` over raw bytes; the four layers of FR-025: body-digest seen set, per-issue and per-PR freshness record, previous-secret window, minimum secret length, per-object rate window, all recorded under `--state-dir` via `state.write.local`; `serve` refusal for `events.gateway.serve`) and write the event-type vocabulary `skills/gitea-event-normalizer/references/event-types.md` (FR-025; the `X-Gitea-Event` and `action` values recorded at T102) until `test_normalize.py` and `test_normalize_layers.py` pass
+- [ ] T148 [P] [US6] Write `skills/gitea-event-normalizer/references/webhook-hygiene.md` (a random secret of at least 32 bytes, a TLS-only `https://` webhook endpoint, the rotation procedure with `GITEA_WEBHOOK_SECRET_PREVIOUS` and `GITEA_WEBHOOK_SECRET_ROTATED_AT` accepted for 7 days, the per-object rate limit, never logging a body that fails its signature, body digests kept 90 days, and that creating the webhook is a human-only action at every level) with a structural check in `skills/gitea-event-normalizer/tests/test_normalize_layers.py` (depends on T103)
+- [ ] T104 [US6] Write `skills/gitea-event-normalizer/SKILL.md` (links `references/webhook-hygiene.md`; an event is a hint, never a decision); verify with `skill-lab validate --skill gitea-event-normalizer`
+- [ ] T105 [US6] Add eval cases in `skills/gitea-event-normalizer/evals/cases/` (≥ 4 deterministic incl. `tampered-body.json`, `duplicate-body.json`, `stale-body.json`, `short-secret-refused.json`; refusal tagged `action:events.gateway.serve`; ≥ 5 agentic incl. ≥ 1 `guardrail`, fixtures inside the skill folder; ≥ 10 trigger incl. ≥ 4 positive, ≥ 2 `expect_skill: null`, and ≥ 1 naming `kanban-state-machine`), and set `planned: false` in its traceability; verify with `skill-lab bench --skill gitea-event-normalizer --tier deterministic`
+
+### kanban-state-machine (SPEC-006)
+
+- [ ] T106 [P] [US6] Write SPEC-006 in `skill-lab/specs/006-kanban-state-machine/spec.md` and planned `skill-lab/specs/006-kanban-state-machine/traceability.json` (FR-023, FR-047) (depends on T054)
+- [ ] T107 [US6] Vendor with `skill-lab sync --skill kanban-state-machine` and write failing tests `skills/kanban-state-machine/tests/test_transition.py` (10 states × owning roles; the report's `next_action` branches WAIT, DISPATCH_PSE, MOVE_TO_REVIEW, RETURN_TO_PSE, EVALUATE_MERGE_POLICY, COMPLETE_AND_UNLOCK_DEPENDENCIES, NOOP), `skills/kanban-state-machine/tests/test_labels_plan.py` (with a swagger fixture that exposes project-column paths, so `move_issue` is planned, and one that does not, so only `set_labels` is)
+- [ ] T108 [US6] Implement `skills/kanban-state-machine/scripts/transition.py`, `skills/kanban-state-machine/scripts/labels_plan.py` (refusals for `gitea.labels.set`, `gitea.project.move_issue`), and `skills/kanban-state-machine/references/states.md` until their tests pass
+- [ ] T149 [US6] Events as hints in kanban (FR-047): write failing tests `skills/kanban-state-machine/tests/test_transition_events.py` first (with `--event` and `--gitea-url` pointing at `skill-lab/lab/gitea_double.py`, `transition.py next|decide` re-reads the issue, PR, reviews, and check status with GET requests only and decides from that state; a `review.approved` event against a changes-requested head returns `RETURN_TO_PSE`; an unverified, duplicate, or stale event returns `NOOP` with `EVENT_UNVERIFIED`, `EVENT_DUPLICATE`, or `EVENT_STALE`; no `--gitea-url` exits 2 `EVENT_REREAD_REQUIRED`; an unreachable double exits 3 `GITEA_UNREACHABLE` with no decision), then extend `skills/kanban-state-machine/scripts/transition.py` until they pass (depends on T025, T024)
+- [ ] T109 [US6] Write `skills/kanban-state-machine/SKILL.md`; verify with `skill-lab validate --skill kanban-state-machine`
+- [ ] T110 [US6] Add eval cases in `skills/kanban-state-machine/evals/cases/` (≥ 4 deterministic incl. `review-changes-requested-returns-to-pse.json`, `illegal-transition-by-role.json`, `stale-event-decides-nothing.json`; refusals tagged `action:gitea.labels.set`, `action:gitea.project.move-issue`; ≥ 5 agentic incl. ≥ 1 `guardrail`, fixtures inside the skill folder; ≥ 10 trigger incl. ≥ 4 positive, ≥ 2 `expect_skill: null`, and ≥ 1 naming `merge-policy-gate`), and set `planned: false` in its traceability; verify with `skill-lab bench --skill kanban-state-machine --tier deterministic`
+- [ ] T156 [P] [US6] Events as hints in lead (FR-047): write failing tests `skills/lead-architect/tests/test_dispatch_recommend_events.py` first (the same re-read and refusal rules as T149 for `dispatch_recommend.py --event --gitea-url`; an unverified, duplicate, or stale event yields no recommendation), then extend `skills/lead-architect/scripts/dispatch_recommend.py` until they pass (depends on T058, T149)
+- [ ] T111 [US6] Write and pass `skill-lab/tests/integration/test_us6_events_flow.py` covering spec.md US6 scenarios 1–12 (normalized events fed into `transition.py next` against the read-only double, which logs 0 non-GET requests) (depends on T105, T110, T148)
+
+**Checkpoint**: Offline control-plane decisions are independently verifiable, and every webhook layer is tested.
+
+---
+
+## Phase 9: User Story 7 - Cloud-first runtime configuration and the live gate run (Priority: P1)
+
+**Goal**: All Zed profiles default to one Ollama Cloud model through the local Ollama app signed in to ollama.com; the local profile is present but disabled; SPEC-105's live benchmarking harness is delivered so the live gate run can decide the merge, and nothing is fabricated
+
+**Independent Test**: `skill-lab/tests/integration/test_us7_cloud_first.py` (offline, with fake servers)
+
+- [ ] T112 [P] [US7] Verify the cloud model ids (SPEC-105 T037, research R-14) when the network allows: list the models with `curl https://ollama.com/api/tags` using `OLLAMA_API_KEY`, choose the largest general model whose Ollama page lists tool support as M1 (one model for every profile, intake Q11), and record its id, context size, and whether Zed profiles can pin a model (Zed `agent-profiles.md`) with date and source in a new "Runtime facts verified for SPEC-201" section of `skill-lab/docs/research/SOURCES.md` and in `skill-lab/config/zed/cloud-models.json`. The endpoint is already decided (the local Ollama app signed in to ollama.com on `http://localhost:11434`, FR-039), so T112 verifies model ids and does not choose it. Without network, write `cloud-models.json` with `"verified": false` and the reason (depends on T054)
+- [ ] T113 [US7] Make `skill-lab/config/zed/settings.example.jsonc` cloud-first in the decided shape (plan.md §Zed configuration shape: `language_models.ollama.api_url` `http://localhost:11434`; `available_models` from `cloud-models.json` with no local model, the foundation template's local entries moved to T114's file; `agent.default_model` M1, and per-profile models for Lead, PSE, Review if T112 confirmed support), keeping T037's deny rules (depends on T037)
+- [ ] T114 [P] [US7] Write `skill-lab/config/zed/local-ollama.disabled.jsonc` (`http://localhost:11434`, local models with `max_tokens` ≥ 32768 per ADR-0003, header "DISABLED until SPEC-202 L1 gate") (depends on T112)
+- [ ] T115 [US7] Extend `skill-lab/tests/test_config_rules.py` first, then `skill-lab/lab/config_rules.py`, with the cloud-first rules of plan.md §Zed configuration shape (3 of 3 profiles cloud; endpoint `http://localhost:11434` with every default model id listed as cloud; local file not merged; unverified model ids → warning, not error) (depends on T113, T039)
+- [ ] T116 [P] [US7] Write `skill-lab/tests/test_install_inference.py` first, then make `skill-lab install --inference local` exit 4 `LOCAL_INFERENCE_GATED` in `skill-lab/lab/install.py` (depends on T054)
+- [ ] T150 [P] [US7] Deliver SPEC-105 per `skill-lab/specs/105-jev-live-benchmarking/tasks.md` (FR-049): execute SPEC-105 T001–T036 and T041–T042 in their order with their tests first (committed runs, `prices.json`, `monitor-limits.json`, `benchmark-streak.v1` and `run-health.v1`, the run log, the re-ask, outage and degraded runs that never count, the floor comparator with `score --catalog` and rule `criteria.below-floor`, the new eval minimums in `skill-lab validate`, usage and price-table cost, the data boundary, `skill-lab report`, `skill-lab streak`, `run-monitor`'s `snapshot.py` from SPEC-105 T025–T026 with target kind `local-container` from SPEC-105 T041–T042, the after-skill health checks, and the reviewer self-report instruction of SPEC-105 T030 in T048's `review_request.py`); SPEC-105 T031's smoke tags are the ones T060 and T094 wrote. SPEC-105's live tasks are carried out as T112 (model), T151 (smoke run and limits), and T137 (gate run). Done when SPEC-105 T036 has marked every SPEC-105 FR implemented and `skill-lab validate --specs` passes for SPEC-105 (depends on T054, T048, T060, T094, T152)
+- [ ] T157 [US7] Confirm the SPEC-105 metric and field names the R1 gates read (`bench.agentic.guardrail.pass_rate`, `bench.agentic.schema_valid_rate`, `bench.jev.uncertain_rate`, the `catalog.*`, `counts_toward_streak`, `exclusion_reasons`, and `suite_digest` fields of `benchmark-run.v1`) against the delivered harness; record any rename in plan.md §Interface alignment and `skill-lab/specs/201-release-shadow/evidence/interface-notes.md`, and update `skill-lab/specs/201-release-shadow/gates.json` and `skill-lab/lab/release.py` to the real names; verify with `python3 -m unittest skill-lab/tests/test_release_check.py`
+- [ ] T117 [US7] Write and pass `skill-lab/tests/integration/test_us7_cloud_first.py` covering spec.md US7 scenarios 1–3 and 5–7 offline against fake Ollama and TypeSafe servers (live scenario 4 is exercised by T137) (depends on T115, T034, T035)
+
+**Checkpoint**: Cloud-first configuration and the live harness are verifiable offline. The smoke run and the live gate run happen in Phase 13.
+
+---
+
+## Phase 10: User Story 8 - Standalone export to `Cazador0/skill-factory` (Priority: P2)
+
+**Goal**: `skill-lab/bin/export-repo` assembles a reproducible, standalone repository root
+
+**Independent Test**: `skill-lab/tests/integration/test_us8_export_standalone.py`
+
+- [ ] T118 [P] [US8] Write the export templates `skill-lab/config/export/README.md`, `skill-lab/config/export/AGENTS.md` (report §Authoritative repository knowledge: 8 questions only), `skill-lab/config/export/NOTICE` (MIT-vendored files, upstream concept attribution), `skill-lab/config/export/gitignore` (does not ignore `skill-lab/benchmarks/runs/`, whose runs are committed), `skill-lab/config/export/claude-settings.json` (from T038's rules), and `skill-lab/config/export/ci.yml` (plan.md §CI workflow: offline gates on every push and PR, live tiers only in a manually started job; pin action tags after checking their release pages) (depends on T054, T038)
+- [ ] T119 [P] [US8] Write failing tests `skill-lab/tests/test_export_repo.py` covering spec.md US8 scenarios 1–5 (28 relative symlinks; the committed live runs under `skill-lab/benchmarks/runs/` and the engineering-team report `skill-lab/docs/research/engineering-team-report.md` included), determinism (two exports → equal `manifest_digest`), `EXPORT_OUT_INSIDE_SOURCE`, `EXPORT_SYMLINK_ESCAPE`, executable bits, and `--verify-manifest` (depends on T054, T013)
+- [ ] T120 [US8] Implement `skill-lab/lab/export_repo.py` (plan.md §Export layout) and the wrapper `skill-lab/bin/export-repo` until `skill-lab/tests/test_export_repo.py` passes (depends on T118)
+- [ ] T121 [US8] Write and pass `skill-lab/tests/integration/test_us8_export_standalone.py`: export to a temp dir, then run `validate`, `sync --check`, `test`, `bench --tier deterministic`, `policy containment`, and `export-repo --verify-manifest` from the export root with no access to the source tree
+- [ ] T122 [P] [US8] Write `skills/README.md` (what each of the 14 skills does, family and secondary family, spec id, R1 capability, invocation per runtime; `run-monitor`'s row lands with T158 so the README, CONVENTIONS §6, and the runtime allowlists change together) (depends on T054)
+
+**Checkpoint**: Export is independently verifiable.
+
+---
+
+## Phase 11: User Story 9 - Audit and authoring helpers (Priority: P3)
+
+**Goal**: twelve-factor-audit and skill-forge at full capability
+
+**Independent Test**: their deterministic eval suites
+
+### twelve-factor-audit (SPEC-011)
+
+- [ ] T123 [P] [US9] Write SPEC-011 in `skill-lab/specs/011-twelve-factor-audit/spec.md` and planned `skill-lab/specs/011-twelve-factor-audit/traceability.json` (FR-028) (depends on T054)
+- [ ] T124 [US9] Vendor with `skill-lab sync --skill twelve-factor-audit`, add a small sample repository under `skills/twelve-factor-audit/evals/fixtures/sample-repo/`, and write failing tests `skills/twelve-factor-audit/tests/test_audit.py` (12 factor ids, scores 0..3, `max_total` 36, every evidence path exists, deterministic output)
+- [ ] T125 [US9] Implement `skills/twelve-factor-audit/scripts/audit.py`, `skills/twelve-factor-audit/assets/signals.json`, and `skills/twelve-factor-audit/references/factors.md` (paraphrase plus links to upstream, no verbatim text, synthesis.md D-19) until its tests pass
+- [ ] T126 [US9] Write `skills/twelve-factor-audit/SKILL.md`; verify with `skill-lab validate --skill twelve-factor-audit`
+- [ ] T127 [US9] Add eval cases in `skills/twelve-factor-audit/evals/cases/` (≥ 4 deterministic incl. `audit-sample-repo-scorecard.json`; ≥ 5 agentic incl. ≥ 1 `guardrail`, fixtures inside the skill folder; ≥ 10 trigger incl. ≥ 4 positive, ≥ 2 `expect_skill: null`, and ≥ 1 naming `skill-forge`), and set `planned: false` in its traceability; verify with `skill-lab bench --skill twelve-factor-audit --tier deterministic`
+
+### skill-forge (SPEC-012)
+
+- [ ] T128 [P] [US9] Write SPEC-012 in `skill-lab/specs/012-skill-forge/spec.md` and planned `skill-lab/specs/012-skill-forge/traceability.json` (FR-029) (depends on T054)
+- [ ] T129 [US9] Vendor with `skill-lab sync --skill skill-forge` and write failing tests `skills/skill-forge/tests/test_forge.py` (`new` scaffold validates with 0 errors; `SKILL_NAME_RESERVED` for `create-skill`; `check` finds a missing heading; `evals` skeleton meets FR-033 counts; `overrides.deny workspace.write` → exit 4)
+- [ ] T130 [US9] Implement `skills/skill-forge/scripts/forge.py` and the template folder `skills/skill-forge/assets/templates/skill/` (incl. `SKILL.md.tmpl`, named so no runtime discovers it as a skill) until its tests pass
+- [ ] T131 [US9] Write `skills/skill-forge/SKILL.md` (distinct from Zed's built-in `create-skill`); verify with `skill-lab validate --skill skill-forge`
+- [ ] T132 [US9] Add eval cases in `skills/skill-forge/evals/cases/` (≥ 4 deterministic incl. `rejects-create-skill-name.json`; ≥ 5 agentic incl. ≥ 1 `guardrail`, fixtures inside the skill folder; ≥ 10 trigger incl. ≥ 4 positive, ≥ 2 `expect_skill: null`, and ≥ 1 naming `twelve-factor-audit`), and set `planned: false` in its traceability; verify with `skill-lab bench --skill skill-forge --tier deterministic`
+
+**Checkpoint**: The 13 skills of US2–US9 exist at R1 capability; the 14th, `run-monitor`, follows in US10.
+
+---
+
+## Phase 12: User Story 10 - Run health monitoring with `run-monitor` (Priority: P2)
+
+**Goal**: The 14th skill, `run-monitor` (SPEC-014, family `control-plane`, secondary family `meta`), ships at R1 capability: SPEC-105 FR-019..FR-023 define it, SPEC-105 T025–T026 build its `snapshot.py`, and R1 writes its spec, `SKILL.md`, evals, and the reviewer health-comment check
+
+**Independent Test**: `skill-lab/tests/integration/test_us10_run_monitor.py`
+
+- [ ] T152 [P] [US10] Write SPEC-014 in `skill-lab/specs/014-run-monitor/spec.md` and planned `skill-lab/specs/014-run-monitor/traceability.json` (FR-048; capability from SPEC-105 FR-019..FR-023: `snapshot` emits `run-health.v1` for the container it runs in, the API health and sessions taken from a `run.log.jsonl`, `status: degraded` with `problems[]` when a limit in `skill-lab/benchmarks/monitor-limits.json` is crossed, the advisory assessment that never changes `status` or `problems[]`, the reviewer self-report with `--target reviewer-session`, and `--target local-container` for the person's Rancher Desktop local containers, read from inside each container through its own cgroup files with no Docker or containerd socket (SPEC-105 R-9); read-only, no catalog action; contracts `run-health`) (depends on T054)
+- [ ] T153 [US10] Write `skills/run-monitor/SKILL.md` (`metadata.family: control-plane`, `metadata.secondary_family: meta`, `metadata.spec: SPEC-014`, version `0.1.0`; procedure: run `scripts/snapshot.py` as SPEC-105 T025–T026 and T041–T042 built it (inside T150), with the target kind of the place it runs (`benchmark-container`, `reviewer-session`, or `local-container` inside a Rancher Desktop container), then write the advisory `assessment{summary, recommendations[]}` without changing `status` or `problems[]`; for the reviewer, `--target reviewer-session` and the separate marked comment `<!-- skill-lab:run-health:v1 request_id=<id> -->` with one fenced `json` block; guardrails: no environment values, no command lines with arguments, nothing written outside `--out`); verify with `skill-lab validate --skill run-monitor` (depends on T150, T146)
+- [ ] T154 [US10] Add eval cases in `skills/run-monitor/evals/cases/` (≥ 4 deterministic incl. `snapshot-ok-below-limits.json`, `snapshot-degraded-memory.json`, `snapshot-no-environment-values.json`, `snapshot-without-proc-is-null.json`, `snapshot-local-container-cgroup-v2.json`; no `policy` case, because `run-monitor` references no catalog action; ≥ 5 agentic incl. ≥ 1 `guardrail` (`assessment-keeps-status.json`: the assessment never changes `status` or `problems[]`), fixtures inside the skill folder; ≥ 10 trigger incl. ≥ 4 positive, ≥ 2 `expect_skill: null`, and ≥ 1 naming `skill-forge`), and set `planned: false` in `skill-lab/specs/014-run-monitor/traceability.json`; verify with `skill-lab bench --skill run-monitor --tier deterministic`
+- [ ] T158 [P] [US10] Register `run-monitor` across the runtime files in one change: add it to the `skill` and skill-script allowlists of `skill-lab/config/zed/settings.example.jsonc`, to the `Skill(...)` rules of `skill-lab/config/claude/settings.example.json`, and to the catalog table of `skills/README.md` (family `control-plane`, with its secondary family `meta` noted next to `skill-forge`), and make its CONVENTIONS §6 row machine-readable (drop the *(planned, R1)* mark, keep the secondary family in a note); verify with `python3 -m unittest skill-lab/tests/test_configs.py` (depends on T153, T122)
+- [ ] T159 [P] [US10] Write failing tests in `skills/speckit-development/tests/test_review_collect.py` first (an `APPROVE` verdict without a reviewer `run-health.v1` comment for the same request exits 1 `RUN_HEALTH_NOT_FOUND`; a schema-valid comment with `target.kind: reviewer-session` lets it exit 0; the health `status` never changes the verdict), then extend `skills/speckit-development/scripts/review_collect.py` with the FR-035 run-health check until they pass (depends on T150, T048)
+- [ ] T155 [US10] Write and pass `skill-lab/tests/integration/test_us10_run_monitor.py` covering spec.md US10 scenarios 1–6 (snapshot on the skill's fixtures, a fake-server bench of two skills with 2 health reports and one `run.log.jsonl`, and `review_collect.py` with and without the reviewer's health comment), and the run-health half of US2 scenario 5 (depends on T154, T158)
+
+**Checkpoint**: All 14 skills exist at R1 capability, and live runs and the reviewer report their own health.
+
+---
+
+## Phase 13: Polish, Gates & Delivery
+
+**Purpose**: Catalog and install, traceability, convergence, offline gates, the live smoke run, the live gate run that decides the merge, PR, independent review
+
+- [ ] T133 Generate `skills/CATALOG.json` with `skill-lab catalog` (`run-monitor` under `control-plane` and `meta`) and the 28 discovery symlinks `.agents/skills/<name>` and `.claude/skills/<name>` with `skill-lab install --project .`; write `skill-lab/tests/test_skills_r1.py` (14 skills present, `metadata.spec` SPEC-001..014 and version `0.1.0`, inventory present, no per-skill criteria file under `skill-lab/benchmarks/criteria/` (only `_defaults.json`) and rule `criteria.below-floor` reporting 0 (G-OFF-13), 28 symlinks resolve) and verify with `skill-lab validate --runtime zed,claude,codex` (catalog ≤ 51,200 bytes) (depends on T051, T060, T065, T070, T077, T082, T087, T094, T099, T105, T110, T127, T132, T154, T150, T158)
+- [ ] T134 Set `planned: false` for every requirement in `skill-lab/specs/201-release-shadow/traceability.json` whose paths now exist, fix any remaining gap, and pass `skill-lab validate --specs` for SPEC-001..014, SPEC-105, and SPEC-201 (G-OFF-08) (depends on T041, T053, T071, T088, T100, T111, T117, T121, T122, T155, T156, T157)
+- [ ] T135 Run `python3 skills/speckit-development/scripts/converge.py --feature skill-lab/specs/201-release-shadow --apply` into `skill-lab/specs/201-release-shadow/evidence/convergence-report.json`; execute any appended Convergence-phase tasks; repeat until `converged: true` (G-OFF-12)
+- [ ] T136 Run `skill-lab policy containment` into `skill-lab/specs/201-release-shadow/evidence/containment-report.json` and `skill-lab release check --spec SPEC-201 --stage merge --only G-OFF-01,G-OFF-02,G-OFF-03,G-OFF-04,G-OFF-05,G-OFF-06,G-OFF-07,G-OFF-08,G-OFF-09,G-OFF-12,G-OFF-13` into `skill-lab/specs/201-release-shadow/evidence/gate-report-offline.json`; every listed gate must be `pass` before any live spend (G-OFF-10 and G-OFF-11 run at T139)
+- [ ] T151 [P] Live smoke run and limits (FR-049; SPEC-105 T038, T039; intake Q12). If P-L holds, run `python3 skill-lab/bin/skill-lab bench --tag smoke --runtime ollama-cloud --model <M1> --jev live --record skill-lab/benchmarks/cassettes` on the 3 smoke cases, render its report with `skill-lab report --run <dir>`, and show it to the person. Propose a change to `skill-lab/benchmarks/monitor-limits.json` only if the measured normal levels require it, with the measurements, and apply it only after the person approves. Without P-L the task stays open and the gate run cannot start. Never fabricate (depends on T150, T112, T115)
+- [ ] T137 Live gate run (FR-041, FR-049; SPEC-105 T040; it decides whether the R1 PR can merge). With P-L, run `python3 skill-lab/bin/skill-lab bench --tier agentic,trigger --runtime ollama-cloud --model <M1> --jev live` over every agentic and trigger case of all 14 skills (results, run summary, `run.log.jsonl`, 14 `run-health.v1` reports, and redacted cassettes under `skill-lab/benchmarks/runs/<run_id>/` and `skill-lab/benchmarks/cassettes/`), then `skill-lab score --skill <name> --run <dir> --strict` for each skill and the catalog score, `skill-lab streak`, and `skill-lab report --run <dir>`; commit the run where it was written (R1 evidence never copies it); run `skill-lab release record-run --run <dir>` to reference it by digest in `skill-lab/specs/201-release-shadow/evidence/live-runs.json`; then run `skill-lab release check --spec SPEC-201 --stage merge` into `skill-lab/specs/201-release-shadow/evidence/gate-report-merge.json`. Every merge gate, G-LIVE-01..12 included, must be `pass`. A replayed, partial, outage, or degraded run does not count: fix the cause (descriptions, procedures, or scripts, never thresholds) and run again. Without P-L every G-LIVE gate stays `not_run` and R1 does not merge. Never fabricate (depends on T136, T151, T157, T133, T035)
+- [ ] T138 Render the PR body with `python3 skills/speckit-development/scripts/pr_body.py --feature skill-lab/specs/201-release-shadow --out skill-lab/specs/201-release-shadow/evidence/pr-body.md` from the development, convergence, and gate reports, including the live run's PR comment (per-skill and catalog results, unsure and flagged cases, unstable cases, tokens and cost basis, degraded or outage status, `suite_digest`; FR-038) (depends on T136, T137)
+- [ ] T139 Export with `skill-lab/bin/export-repo --out <scratchpad>/skill-factory` (28 symlinks; the committed live runs and the engineering-team report included), write `skill-lab/specs/201-release-shadow/evidence/export-manifest.json`, and pass `skill-lab/bin/export-repo --check <scratchpad>/skill-factory` (G-OFF-10, G-OFF-11; requires `dirty: false`)
+- [ ] T140 Release PR (factory delivery, synthesis.md D-1): run `python3 skills/speckit-development/scripts/delivery_plan.py --step branch|commit|push|pr` to emit the refused-at-shadow `mutation-plan.v1`, then the orchestrator executes it on `Cazador0/skill-factory`: branch `release/r1-shadow` from the export, one commit with the attribution trailers, push, PR into `main` with body `evidence/pr-body.md`. Keep the PR record (number, URL, head SHA) out of the branch (D-17) (requires P-6, synthesis.md Q3)
+- [ ] T141 Emit the round-1 review request with `python3 skills/speckit-development/scripts/review_request.py --pr-number <N> --pr-url <URL> --head <sha> --base main --spec SPEC-201 --spec SPEC-001 … --spec SPEC-014 --spec SPEC-105 --round 1 --author-session <this session id>` into `<scratchpad>/r1-post-review/review-request.json` (kept out of the branch, D-17); its `evidence[]` carries the sha256 of the counting live run's summary, and its instructions tell the reviewer to check the live gates from the committed run and recordings only, to hold no `OLLAMA_API_KEY`, `TYPESAFE_API_KEY`, or `JEV_API_KEY` (checked with `skill-lab doctor`, `BLOCKED_BY_ENV` when set), never to re-run a live case, and to post its own `run-health.v1` as a separate marked comment; render the reviewer prompt with `--render-prompt`
+- [ ] T142 Independent review (runbook `skill-lab/docs/runbooks/release-delivery.md`): the orchestrator calls `create_session` (rendered prompt, `source_url` `https://github.com/Cazador0/skill-factory`, `source_revision` `release/r1-shadow`, no `permission_mode: plan`, an `environment_id` whose environment holds no live key); the reviewer session runs review-verifier and the offline gates, re-computes the live gates from the committed run, posts the verdict comment, runs `run-monitor`'s `snapshot.py --target reviewer-session`, and posts its health comment; the orchestrator polls and runs `python3 skills/speckit-development/scripts/review_collect.py --request <rr.json> --comment-file <comment.md> --repo-dir <export>`. On `CHANGES_REQUESTED`: fix in the authoring session, run a new live gate run (T137) when the fix changed any `SKILL.md` or eval case, re-run T134–T139, push, next round. At most 3 rounds; after that the person decides. If `create_session` is unavailable, use `review_local.py --apply` and post its comment (requires P-7)
+- [ ] T143 Run `skill-lab release check --spec SPEC-201 --stage post-review --ci-checks <checks.json> --verdict <verdict.json>` (G-POST-01, G-POST-02) into `<scratchpad>/r1-post-review/gate-report-post-review.json`, which stays out of the R1 branch (D-17) and is attached to the PR thread, and hand the PR to the human for merge. R1 is merged, and complete, after the human merge: its live gates already passed at the merge stage (release-plan.md §4), and there is no "merged, live-pending" state. With the verdict `APPROVE` and the live gates passed, SPEC-202 may create its stacked branch from `release/r1-shadow` (SPEC-200 §Sequencing); the R2 PR is retargeted to `main` when R1 merges
+
+---
+
+## Dependencies & Execution Order
+
+### Phase Dependencies
+
+- **Setup (Phase 1)**: T001 first; T002–T007, T144, T145 in parallel after it; T008 after the ADRs it cites
+- **Foundational (Phase 2)**: depends on Setup and BLOCKS all user stories. Inside it: schemas (T010–T014) after T009; policy (T016–T017) after T010; shared modules (incl. T146) in parallel; lab commands after T028
+- **US1 (Phase 3)** and **US2 (Phase 4)**: start after Foundational, independently
+- **US3–US10 (Phases 5–12)**: start after Foundational. Each phase's opening tasks additionally depend on **T054** (self-hosting switch-over), so `/speckit-development` drives them (synthesis.md D-11)
+- **Polish & Delivery (Phase 13)**: depends on every user-story phase. T151 can run in parallel with T133–T136. T137 needs T136 (offline gates green), T151 (smoke run seen by the person), and T157. T137–T143 are strictly sequential, and a review round whose fix changed any `SKILL.md` or eval case goes back through T137
+
+### User Story Dependencies
+
+- **US1 (P1)**: Foundational only
+- **US2 (P1)**: Foundational only (its review collector is later reused by the US5 integration test and extended by T159)
+- **US3, US4, US9**: Foundational plus T054
+- **US5 (P1)**: Foundational plus T054. Its integration test T100 also uses US2's `review_collect.py` (T048)
+- **US6 (P2)**: Foundational plus T054. T156 extends US3's `dispatch_recommend.py` (T058) with the event re-read of T149
+- **US7 (P1)**: Foundational plus T054. T150 (SPEC-105) builds on US2's `review_request.py` (T048), on US3's and US5's smoke-tagged cases (T060, T094), and on US10's SPEC-014 (T152). Its live scenario runs in T137
+- **US8 (P2)**: Foundational plus T054. It uses US1's Claude deny rules (T038)
+- **US10 (P2)**: Foundational plus T054. T153 and T159 need `snapshot.py` and `run-health.v1` from T150; T158 also edits US8's `skills/README.md` (T122)
+
+### Within Each Skill Track
+
+- Spec → vendor plus failing tests → scripts → SKILL.md → evals plus traceability (no per-skill criteria file)
+- Tests MUST fail before implementation
+- `SKILL.md` is written after its scripts exist, so every procedure step names a real command
+
+### Parallel Opportunities
+
+- T002–T007, T144, T145 (ADRs and checklist)
+- T010–T015 (schema groups), T018/T020/T021/T023/T146 (shared-module tests), T028–T031/T033/T035 (lab commands)
+- After T054: the opening spec tasks of all 13 remaining skills (T055, T061, T066, T072, T078, T083, T089, T095, T101, T106, T123, T128, T152) plus T112, T116, T118, T119, T122
+- T150 runs beside the skill tracks once T048, T060, T094, and T152 are done; T151 beside T133–T136
+
+---
+
+## Parallel Example: after the switch-over (T054)
+
+```bash
+# Thirteen independent skill tracks can start together:
+Task: "Write SPEC-001 in skill-lab/specs/001-lead-architect/spec.md"
+Task: "Write SPEC-002 in skill-lab/specs/002-pse-implementer/spec.md"
+Task: "Write SPEC-003 in skill-lab/specs/003-review-verifier/spec.md"
+Task: "Write SPEC-008 in skill-lab/specs/008-gitea-event-normalizer/spec.md"
+Task: "Write SPEC-014 in skill-lab/specs/014-run-monitor/spec.md"
+# Runtime and export work in parallel with them:
+Task: "Verify the cloud model ids → skill-lab/config/zed/cloud-models.json"
+Task: "Write failing tests skill-lab/tests/test_export_repo.py"
+```
+
+---
+
+## Implementation Strategy
+
+### MVP first (US1)
+
+1. Phase 1 Setup, then Phase 2 Foundational
+2. Phase 3 US1 → **STOP and VALIDATE**: the containment harness proves no `--apply` above `shadow` has an effect
+
+### Self-hosting next (US2)
+
+3. Phase 4 US2 → T054 switch-over. Every later task is opened by `dev_state.py next` and closed by `dev_state.py mark --apply`
+
+### Incremental delivery
+
+4. US3 → US4 → US5 (P1 role skills), US7 with T150 (SPEC-105), then US6, US8, US10 (P2), then US9 (P3). Each phase ends with its integration test
+5. Phase 13: offline gates, the live smoke run the person sees, the live gate run that decides the merge, PR, independent review, human merge
+
+---
+
+## Coverage: requirements → tasks
+
+| FR | Tasks | FR | Tasks |
+|---|---|---|---|
+| FR-001..FR-005 | T016, T017 | FR-026 | T095–T099 |
+| FR-006 | T004, T017, T040 | FR-027 | T083–T087 |
+| FR-007 | T017, T031, T032, every skill script task | FR-028 | T123–T127 |
+| FR-008 | T025 | FR-029 | T128–T132 |
+| FR-009 | T029 | FR-030 | T042–T044, T049, T054 |
+| FR-010 | T028, T030 | FR-031 | T045, T135 |
+| FR-011 | T031, T032, T136 | FR-032 | every SPEC and SKILL.md task, T146, T153, T158, T133 |
+| FR-012 | T037, T038, T039, T097, T118 | FR-033 | every eval task (T051 … T132, T154), T030, T150, T133 |
+| FR-013 | T009–T014 | FR-034 | T047, T048, T150, T141 |
+| FR-014 | T018, T019 | FR-035 | T048, T092, T100, T159, T142 |
+| FR-015 | T020 | FR-036 | T047, T049 |
+| FR-016 | T021, T022 | FR-037 | T052, T142 |
+| FR-017 | T023, T024 | FR-038 | T046, T138 |
+| FR-018 | T055–T060 | FR-039 | T005, T112–T117 |
+| FR-019 | T072–T077 | FR-040 | T133 |
+| FR-020 | T089–T094 | FR-041 | T035, T137 |
+| FR-021 | T061–T065 | FR-042 | T015, T033, T034, T136, T137, T143, T157 |
+| FR-022 | T066–T070 | FR-043 | T119, T120, T139 |
+| FR-023 | T106–T110, T149 | FR-044 | T118, T121 |
+| FR-024 | T078–T082 | FR-045 | T040, T118, T122, T133 |
+| FR-025 | T101–T105, T145, T147, T148 | FR-046 | T003–T008, T144, T145 |
+| FR-047 | T149, T156, T111 | FR-048 | T150, T152–T155, T158, T159 |
+| FR-049 | T150, T151, T157, T137 | | |
+
+---
+
+## Notes
+
+- [P] tasks = different files, no dependency on an incomplete task
+- Every task is sized for one agent session; a skill track is 5–6 tasks. T150 is the exception: it is the umbrella for SPEC-105's own task list and is checked off only when that list is
+- Verify tests fail before implementing
+- At `shadow`, `/speckit-development` never commits or pushes. Commits on `release/r1-shadow` are made by the orchestrator at T140 (synthesis.md D-1); the committed live runs are part of the tree that T139 exports
+- Evidence produced at or after T140 is not committed to the R1 branch (D-17)
+- Creating a Gitea webhook is human-only at every level; no task creates one
+- Avoid: vague tasks, same-file conflicts between [P] tasks, cross-story dependencies other than those listed

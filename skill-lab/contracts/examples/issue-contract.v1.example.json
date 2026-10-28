@@ -1,0 +1,58 @@
+{
+  "acceptance_criteria": [
+    {
+      "id": "AC-01",
+      "text": "Each refresh returns a new refresh token and invalidates the old one."
+    },
+    {
+      "id": "AC-02",
+      "text": "Reusing an invalidated token revokes the whole token family."
+    },
+    {
+      "id": "AC-03",
+      "text": "A duplicate webhook delivery does not rotate the token twice."
+    }
+  ],
+  "current_pr": null,
+  "dependencies": [
+    177,
+    "T030"
+  ],
+  "feature": "042-session-refresh",
+  "intent": "Stolen refresh tokens must stop working after first use, so a session cannot be silently cloned.",
+  "issue_ref": 184,
+  "labels": [
+    "state/ready-for-build",
+    "risk/medium"
+  ],
+  "non_goals": [
+    "Changing access-token lifetime.",
+    "Single sign-out across devices."
+  ],
+  "ownership": {
+    "lead": "lead-main",
+    "pse": "sess_pse_184_01",
+    "review": null
+  },
+  "repository": "acme/factory",
+  "required_verification": [
+    "unit",
+    "integration",
+    "browser-e2e",
+    "security-baseline"
+  ],
+  "risk": "medium",
+  "schema_version": 1,
+  "spec_id": "SPEC-042",
+  "story": "US3",
+  "task_ids": [
+    "T031",
+    "T032",
+    "T034"
+  ],
+  "title": "T031: Rotate refresh tokens on every use",
+  "write_domains": [
+    "packages/auth/**",
+    "apps/api/session/**"
+  ]
+}

@@ -1,20 +1,6 @@
 # AGENTS.md
 
-A map, not a manual. Follow the links for detail.
-
-## What is this repository?
-
-The *12-Factor Agents* guide (`README.md`, `content/`, `workshops/`), plus a Spec-Driven Development
-workstation for designing an **engineering team of coding-agent sessions** (Lead, PSE, Review) that
-coordinate through the repository and a Gitea 28.x control plane. The design source is
-`docs/research/agent-engineering-team.md`.
-
-## Governing principles
-
-`.specify/memory/constitution.md` (v1.1.0), Articles I–IX. Short form: the repository is the memory;
-separated authority (nobody approves their own work); agents propose and policy decides; evidence over
-assertion ("not run" never means passed); spec before build; rules are not self-amendable; retrieval
-accelerates but never overrides; mistakes become mechanisms; traces, not hidden thoughts.
+**A map, not a manual. Follow the links for detail.**
 
 ## Where things are
 
@@ -53,6 +39,13 @@ Cloud sessions run `.claude/hooks/session-start.sh`, which does all of the above
 `sdd-decision-ledger`) puts what the phase decided alone back to the person. Not sure which skill
 fits? `/speckit-intake-route` (engine: `sdd-skill-router`, `python3 bin/intakespec find '…'`).
 
+## What is this repository?
+
+The *12-Factor Agents* guide (`README.md`, `content/`, `workshops/`), plus a Spec-Driven Development
+workstation for designing an **engineering team of coding-agent sessions** (Lead, PSE, Review) that
+coordinate through the repository and a Gitea 28.x control plane. The design source is
+`docs/research/agent-engineering-team.md`.
+
 ## What an agent may never do
 
 - Approve, merge or mark as passed its own work, or record a check as passed that was not run.
@@ -75,3 +68,11 @@ Before stopping, write what the next session needs: answers into the intake or s
 open items as `[NEEDS CLARIFICATION: …]`, and a session checkpoint
 (`sdd_harness.reasoning.SessionCheckpoint`) for long-running work. Nothing important lives only in a
 conversation.
+
+## Governing principles
+
+`.specify/memory/constitution.md` (v1.1.0), Articles I–IX. Short form: the repository is the memory;
+separated authority (nobody approves their own work); agents propose and policy decides; evidence over
+assertion ("not run" never means passed); spec before build; rules are not self-amendable; retrieval
+accelerates but never overrides; mistakes become mechanisms; traces, not hidden thoughts.
+

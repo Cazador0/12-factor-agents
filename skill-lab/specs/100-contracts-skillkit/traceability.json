@@ -1,0 +1,389 @@
+{
+  "spec": "SPEC-100",
+  "requirements": [
+    {
+      "id": "FR-001",
+      "implemented_by": [
+        "skill-lab/contracts/schemas/envelope.v1.schema.json",
+        "skill-lab/contracts/examples/envelope.v1.example.json"
+      ],
+      "verified_by": [
+        "skill-lab/tests/test_contracts.py::TestContractFamilies::test_envelope_family",
+        "skill-lab/tests/test_skillkit_envelope.py::TestMakeEnvelope::test_fields_and_schema_validity"
+      ]
+    },
+    {
+      "id": "FR-002",
+      "implemented_by": [
+        "skill-lab/contracts/schemas/mutation-request.v1.schema.json",
+        "skill-lab/contracts/examples/mutation-request.v1.example.json",
+        "skill-lab/contracts/schemas/lease.v1.schema.json",
+        "skill-lab/contracts/examples/lease.v1.example.json",
+        "skill-lab/contracts/schemas/normalized-event.v1.schema.json",
+        "skill-lab/contracts/examples/normalized-event.v1.example.json",
+        "skill-lab/contracts/schemas/transition-decision.v1.schema.json",
+        "skill-lab/contracts/examples/transition-decision.v1.example.json",
+        "skill-lab/contracts/schemas/merge-decision.v1.schema.json",
+        "skill-lab/contracts/examples/merge-decision.v1.example.json",
+        "skill-lab/contracts/schemas/session-checkpoint.v1.schema.json",
+        "skill-lab/contracts/examples/session-checkpoint.v1.example.json"
+      ],
+      "verified_by": [
+        "skill-lab/tests/test_contracts.py::TestContractFamilies::test_coordination_family"
+      ]
+    },
+    {
+      "id": "FR-003",
+      "implemented_by": [
+        "skill-lab/contracts/schemas/task-graph.v1.schema.json",
+        "skill-lab/contracts/examples/task-graph.v1.example.json",
+        "skill-lab/contracts/schemas/spec-readiness.v1.schema.json",
+        "skill-lab/contracts/examples/spec-readiness.v1.example.json",
+        "skill-lab/contracts/schemas/issue-contract.v1.schema.json",
+        "skill-lab/contracts/examples/issue-contract.v1.example.json",
+        "skill-lab/contracts/schemas/task-issue-map.v1.schema.json",
+        "skill-lab/contracts/examples/task-issue-map.v1.example.json",
+        "skill-lab/contracts/schemas/sync-drift-report.v1.schema.json",
+        "skill-lab/contracts/examples/sync-drift-report.v1.example.json",
+        "skill-lab/contracts/schemas/gitea-plan.v1.schema.json",
+        "skill-lab/contracts/examples/gitea-plan.v1.example.json"
+      ],
+      "verified_by": [
+        "skill-lab/tests/test_contracts.py::TestContractFamilies::test_planning_family"
+      ]
+    },
+    {
+      "id": "FR-004",
+      "implemented_by": [
+        "skill-lab/contracts/schemas/implementation-evidence.v1.schema.json",
+        "skill-lab/contracts/examples/implementation-evidence.v1.example.json",
+        "skill-lab/contracts/schemas/review-verdict.v1.schema.json",
+        "skill-lab/contracts/examples/review-verdict.v1.example.json",
+        "skill-lab/contracts/schemas/quality-gate.v1.schema.json",
+        "skill-lab/contracts/examples/quality-gate.v1.example.json"
+      ],
+      "verified_by": [
+        "skill-lab/tests/test_contracts.py::TestContractFamilies::test_evidence_family"
+      ]
+    },
+    {
+      "id": "FR-005",
+      "implemented_by": [
+        "skill-lab/contracts/schemas/twelve-factor-scorecard.v1.schema.json",
+        "skill-lab/contracts/examples/twelve-factor-scorecard.v1.example.json",
+        "skill-lab/contracts/schemas/validation-report.v1.schema.json",
+        "skill-lab/contracts/examples/validation-report.v1.example.json"
+      ],
+      "verified_by": [
+        "skill-lab/tests/test_contracts.py::TestContractFamilies::test_audit_family"
+      ]
+    },
+    {
+      "id": "FR-006",
+      "implemented_by": [
+        "skill-lab/contracts/schemas/benchmark-case.v1.schema.json",
+        "skill-lab/contracts/examples/benchmark-case.v1.example.json",
+        "skill-lab/contracts/schemas/benchmark-result.v1.schema.json",
+        "skill-lab/contracts/examples/benchmark-result.v1.example.json",
+        "skill-lab/contracts/schemas/benchmark-run.v1.schema.json",
+        "skill-lab/contracts/examples/benchmark-run.v1.example.json",
+        "skill-lab/contracts/schemas/success-criteria.v1.schema.json",
+        "skill-lab/contracts/examples/success-criteria.v1.example.json",
+        "skill-lab/contracts/schemas/skill-score.v1.schema.json",
+        "skill-lab/contracts/examples/skill-score.v1.example.json"
+      ],
+      "verified_by": [
+        "skill-lab/tests/test_contracts.py::TestContractFamilies::test_benchmark_family",
+        "skill-lab/tests/test_contracts.py::TestSchemaFiles::test_benchmark_run_embeds_benchmark_result",
+        "skill-lab/tests/test_contracts.py::TestExamples::test_benchmark_case_example_is_the_conventions_example"
+      ]
+    },
+    {
+      "id": "FR-007",
+      "implemented_by": [
+        "skill-lab/contracts/schemas",
+        "skill-lab/contracts/examples"
+      ],
+      "verified_by": [
+        "skill-lab/tests/test_contracts.py::TestSchemaFiles::test_identity_and_annotations",
+        "skill-lab/tests/test_contracts.py::TestSchemaFiles::test_only_the_keyword_subset",
+        "skill-lab/tests/test_contracts.py::TestSchemaFiles::test_every_object_schema_is_explicitly_closed",
+        "skill-lab/tests/test_contracts.py::TestSchemaFiles::test_open_object_allowlist_is_current",
+        "skill-lab/tests/test_contracts.py::TestSchemaFiles::test_top_level_is_closed",
+        "skill-lab/tests/test_contracts.py::TestSchemaFiles::test_schema_version_rules",
+        "skill-lab/tests/test_contracts.py::TestSchemaFiles::test_refs_resolve_and_defs_are_used",
+        "skill-lab/tests/test_contracts.py::TestExamples::test_every_example_validates",
+        "skill-lab/tests/test_contracts.py::TestExamples::test_envelope_example_wraps_a_valid_review_verdict"
+      ]
+    },
+    {
+      "id": "FR-008",
+      "implemented_by": [
+        "skill-lab/contracts/schemas/envelope.v1.schema.json",
+        "skill-lab/contracts/examples/envelope.v1.example.json",
+        "skill-lab/contracts/schemas/review-verdict.v1.schema.json",
+        "skill-lab/contracts/examples/review-verdict.v1.example.json",
+        "skill-lab/contracts/schemas/quality-gate.v1.schema.json",
+        "skill-lab/contracts/examples/quality-gate.v1.example.json",
+        "skill-lab/contracts/schemas/merge-decision.v1.schema.json",
+        "skill-lab/contracts/examples/merge-decision.v1.example.json",
+        "skill-lab/contracts/schemas/benchmark-result.v1.schema.json",
+        "skill-lab/contracts/examples/benchmark-result.v1.example.json",
+        "skill-lab/contracts/schemas/skill-score.v1.schema.json",
+        "skill-lab/contracts/examples/skill-score.v1.example.json"
+      ],
+      "verified_by": [
+        "skill-lab/tests/test_contracts.py::TestContractFamilies::test_envelope_family",
+        "skill-lab/tests/test_contracts.py::TestContractFamilies::test_evidence_family",
+        "skill-lab/tests/test_contracts.py::TestContractFamilies::test_coordination_family",
+        "skill-lab/tests/test_contracts.py::TestContractFamilies::test_benchmark_family"
+      ]
+    },
+    {
+      "id": "FR-009",
+      "implemented_by": [
+        "skill-lab/contracts/README.md",
+        "skill-lab/docs/CONVENTIONS.md"
+      ],
+      "verified_by": [
+        "skill-lab/tests/test_contracts.py::TestCatalog::test_catalog_has_the_23_documented_contracts",
+        "skill-lab/tests/test_contracts.py::TestCatalog::test_every_catalog_contract_has_a_schema",
+        "skill-lab/tests/test_contracts.py::TestCatalog::test_every_schema_has_an_example",
+        "skill-lab/tests/test_contracts.py::TestCatalog::test_readme_lists_every_contract",
+        "skill-lab/tests/test_contracts.py::TestCatalog::test_crafted_cases_cover_every_contract",
+        "skill-lab/tests/test_contracts.py::TestContractFamilies::test_families_partition_the_catalog",
+        "skill-lab/tests/test_contracts.py::TestSchemaFiles::test_common_definitions_agree_across_files",
+        "skill-lab/tests/test_contracts.py::TestSchemaFiles::test_tier_summary_is_shared"
+      ]
+    },
+    {
+      "id": "FR-010",
+      "implemented_by": [
+        "skill-lab/shared/_skillkit/envelope.py"
+      ],
+      "verified_by": [
+        "skill-lab/tests/test_skillkit_envelope.py::TestErrorHelpers::test_error_shape",
+        "skill-lab/tests/test_skillkit_envelope.py::TestErrorHelpers::test_error_message_is_compacted",
+        "skill-lab/tests/test_skillkit_envelope.py::TestErrorHelpers::test_script_error",
+        "skill-lab/tests/test_skillkit_envelope.py::TestEmit::test_one_sorted_document_with_trailing_newline",
+        "skill-lab/tests/test_skillkit_envelope.py::TestEmit::test_emit_redacts",
+        "skill-lab/tests/test_skillkit_envelope.py::TestRunScript::test_success",
+        "skill-lab/tests/test_skillkit_envelope.py::TestRunScript::test_completed_but_failing",
+        "skill-lab/tests/test_skillkit_envelope.py::TestRunScript::test_ok_is_exactly_exit_zero",
+        "skill-lab/tests/test_skillkit_envelope.py::TestRunScript::test_script_error",
+        "skill-lab/tests/test_skillkit_envelope.py::TestRunScript::test_unexpected_exception_is_internal_without_traceback",
+        "skill-lab/tests/test_skillkit_envelope.py::TestRunScript::test_debug_prints_traceback_to_stderr_only",
+        "skill-lab/tests/test_skillkit_envelope.py::TestRunScript::test_secrets_are_redacted_everywhere",
+        "skill-lab/tests/test_skillkit_envelope.py::TestRunScript::test_usage_error_from_base_parser",
+        "skill-lab/tests/test_skillkit_envelope.py::TestRunScript::test_contract_violations_by_main_are_internal",
+        "skill-lab/tests/test_skillkit_envelope.py::TestRunScript::test_non_json_payload_is_internal",
+        "skill-lab/tests/test_skillkit_vendored_script.py::TestVendoredScript::test_crash_is_internal_redacted_and_traceback_free",
+        "skill-lab/tests/test_skillkit_vendored_script.py::TestVendoredScript::test_usage_error",
+        "skill-lab/tests/test_skillkit_vendored_script.py::TestVendoredScript::test_help",
+        "skill-lab/tests/test_skillkit_vendored_script.py::TestVendoredScript::test_missing_input_file"
+      ]
+    },
+    {
+      "id": "FR-011",
+      "implemented_by": [
+        "skill-lab/shared/_skillkit/cli.py"
+      ],
+      "verified_by": [
+        "skill-lab/tests/test_skillkit_cli.py::TestParser::test_common_flags_and_defaults",
+        "skill-lab/tests/test_skillkit_cli.py::TestParser::test_usage_errors_raise_script_error",
+        "skill-lab/tests/test_skillkit_cli.py::TestParser::test_subparsers_inherit_behaviour_and_can_take_common_flags",
+        "skill-lab/tests/test_skillkit_cli.py::TestReadJson::test_missing_file",
+        "skill-lab/tests/test_skillkit_cli.py::TestReadJson::test_bad_json_reports_line_and_column",
+        "skill-lab/tests/test_skillkit_cli.py::TestReadJson::test_nan_and_infinity_are_rejected",
+        "skill-lab/tests/test_skillkit_cli.py::TestReadJson::test_duplicate_keys_are_rejected",
+        "skill-lab/tests/test_skillkit_cli.py::TestNow::test_parse_now_given",
+        "skill-lab/tests/test_skillkit_cli.py::TestNow::test_parse_now_invalid",
+        "skill-lab/tests/test_skillkit_cli.py::TestNow::test_to_iso",
+        "skill-lab/tests/test_skillkit_cli.py::TestReadJson::test_overflowing_numbers_are_rejected",
+        "skill-lab/tests/test_skillkit_cli.py::TestReadJson::test_pathological_nesting_is_rejected",
+        "skill-lab/tests/test_skillkit_cli.py::TestLoadsStrict::test_rejections_are_value_errors"
+      ]
+    },
+    {
+      "id": "FR-012",
+      "implemented_by": [
+        "skill-lab/shared/_skillkit/jsonschema_mini.py"
+      ],
+      "verified_by": [
+        "skill-lab/tests/test_skillkit_jsonschema_mini.py::TestTypeKeyword::test_booleans_are_not_integers_or_numbers",
+        "skill-lab/tests/test_skillkit_jsonschema_mini.py::TestTypeKeyword::test_integral_float_is_an_integer",
+        "skill-lab/tests/test_skillkit_jsonschema_mini.py::TestCombinators::test_one_of_exactly_one",
+        "skill-lab/tests/test_skillkit_jsonschema_mini.py::TestRef::test_ref_resolves_nested_defs",
+        "skill-lab/tests/test_skillkit_jsonschema_mini.py::TestRef::test_unresolvable_and_remote_refs_are_schema_errors",
+        "skill-lab/tests/test_skillkit_jsonschema_mini.py::TestFormatDateTime::test_valid",
+        "skill-lab/tests/test_skillkit_jsonschema_mini.py::TestFormatDateTime::test_invalid",
+        "skill-lab/tests/test_skillkit_jsonschema_mini.py::TestDeterminismAndHelpers::test_issue_order_is_stable",
+        "skill-lab/tests/test_skillkit_jsonschema_mini.py::TestUnsupportedKeywords::test_reports_nested_unsupported_keywords_sorted",
+        "skill-lab/tests/test_skillkit_jsonschema_mini.py::TestUnsupportedKeywords::test_reports_unsupported_format_and_remote_ref",
+        "skill-lab/tests/test_skillkit_jsonschema_mini.py::TestDeterminismAndHelpers::test_too_deep_instance_is_an_issue_not_a_crash",
+        "skill-lab/tests/test_skillkit_jsonschema_mini.py::TestCombinators::test_failure_messages_quote_rule_and_branch_descriptions"
+      ]
+    },
+    {
+      "id": "FR-013",
+      "implemented_by": [
+        "skill-lab/shared/_skillkit/schemas.py"
+      ],
+      "verified_by": [
+        "skill-lab/tests/test_skillkit_schemas.py::TestLocation::test_canonical_copy_has_no_skill_root",
+        "skill-lab/tests/test_skillkit_schemas.py::TestLocation::test_vendored_copy_finds_its_skill",
+        "skill-lab/tests/test_skillkit_schemas.py::TestLoad::test_missing_schema",
+        "skill-lab/tests/test_skillkit_schemas.py::TestLoad::test_names_cannot_traverse",
+        "skill-lab/tests/test_skillkit_schemas.py::TestValidate::test_validate_payload",
+        "skill-lab/tests/test_skillkit_schemas.py::TestValidate::test_validate_envelope_checks_payload_when_ok",
+        "skill-lab/tests/test_skillkit_schemas.py::TestValidate::test_validate_envelope_checks_payload_for_exit_1_only",
+        "skill-lab/tests/test_skillkit_vendored_script.py::TestVendoredScript::test_valid_input",
+        "skill-lab/tests/test_skillkit_vendored_script.py::TestVendoredScript::test_schema_invalid_input_is_an_input_error",
+        "skill-lab/tests/test_skillkit_vendored_script.py::TestVendoredScript::test_stdin_input"
+      ]
+    },
+    {
+      "id": "FR-014",
+      "implemented_by": [
+        "skill-lab/shared/_skillkit/frontmatter.py"
+      ],
+      "verified_by": [
+        "skill-lab/tests/test_skillkit_frontmatter.py::TestAccept::test_canonical_example",
+        "skill-lab/tests/test_skillkit_frontmatter.py::TestAccept::test_crlf_line_endings",
+        "skill-lab/tests/test_skillkit_frontmatter.py::TestAccept::test_leading_bom_and_whitespace_like_zed_trim_start",
+        "skill-lab/tests/test_skillkit_frontmatter.py::TestReject::test_delimiters",
+        "skill-lab/tests/test_skillkit_frontmatter.py::TestReject::test_line_constructs",
+        "skill-lab/tests/test_skillkit_frontmatter.py::TestReject::test_scalar_constructs",
+        "skill-lab/tests/test_skillkit_frontmatter.py::TestReject::test_ambiguous_plain_scalars_must_be_quoted",
+        "skill-lab/tests/test_skillkit_frontmatter.py::TestReject::test_metadata_map_rules",
+        "skill-lab/tests/test_skillkit_frontmatter.py::TestLint::test_unknown_and_missing_keys",
+        "skill-lab/tests/test_skillkit_frontmatter.py::TestLint::test_name_rules",
+        "skill-lab/tests/test_skillkit_frontmatter.py::TestLint::test_description_must_be_double_quoted_and_bounded",
+        "skill-lab/tests/test_skillkit_frontmatter.py::TestLint::test_metadata_rules"
+      ]
+    },
+    {
+      "id": "FR-015",
+      "implemented_by": [
+        "skill-lab/shared/_skillkit/jsonpointer.py"
+      ],
+      "verified_by": [
+        "skill-lab/tests/test_skillkit_jsonpointer.py::TestResolve::test_rfc6901_examples",
+        "skill-lab/tests/test_skillkit_jsonpointer.py::TestResolve::test_missing_member_and_index",
+        "skill-lab/tests/test_skillkit_jsonpointer.py::TestResolve::test_syntax_errors",
+        "skill-lab/tests/test_skillkit_jsonpointer.py::TestExistsAndHelpers::test_exists_propagates_syntax_errors"
+      ]
+    },
+    {
+      "id": "FR-016",
+      "implemented_by": [
+        "skill-lab/shared/_skillkit/redact.py"
+      ],
+      "verified_by": [
+        "skill-lab/tests/test_skillkit_redact.py::TestEnvironmentSecrets::test_masks_values_of_every_listed_variable",
+        "skill-lab/tests/test_skillkit_redact.py::TestEnvironmentSecrets::test_lists_the_documented_variables",
+        "skill-lab/tests/test_skillkit_redact.py::TestPatterns::test_bearer_tokens",
+        "skill-lab/tests/test_skillkit_redact.py::TestPatterns::test_authorization_header_schemes",
+        "skill-lab/tests/test_skillkit_redact.py::TestPatterns::test_url_credentials",
+        "skill-lab/tests/test_skillkit_redact.py::TestSensitiveKeys::test_values_under_sensitive_keys",
+        "skill-lab/tests/test_skillkit_redact.py::TestPurity::test_input_is_not_modified"
+      ]
+    },
+    {
+      "id": "FR-017",
+      "implemented_by": [
+        "skill-lab/shared/_skillkit/fsutil.py"
+      ],
+      "verified_by": [
+        "skill-lab/tests/test_skillkit_fsutil.py::TestAtomicWrite::test_failed_replace_keeps_old_content_and_cleans_up",
+        "skill-lab/tests/test_skillkit_fsutil.py::TestAtomicWrite::test_concurrent_writers_never_tear_the_file",
+        "skill-lab/tests/test_skillkit_fsutil.py::TestFileLock::test_second_holder_times_out_with_lock_timeout",
+        "skill-lab/tests/test_skillkit_fsutil.py::TestFileLock::test_exclusive_file_fallback",
+        "skill-lab/tests/test_skillkit_fsutil.py::TestSafeJoin::test_traversal_is_refused",
+        "skill-lab/tests/test_skillkit_fsutil.py::TestSafeJoin::test_symlink_escape_is_refused",
+        "skill-lab/tests/test_skillkit_fsutil.py::TestEnsureNotInside::test_refuses_paths_inside_and_the_root_itself"
+      ]
+    },
+    {
+      "id": "FR-018",
+      "implemented_by": [
+        "skill-lab/shared/_skillkit/ids.py"
+      ],
+      "verified_by": [
+        "skill-lab/tests/test_skillkit_ids.py::TestCanonicalJson::test_sorted_compact_utf8",
+        "skill-lab/tests/test_skillkit_ids.py::TestDigest::test_digest_format_and_value",
+        "skill-lab/tests/test_skillkit_ids.py::TestIdempotencyKey::test_format",
+        "skill-lab/tests/test_skillkit_ids.py::TestIdempotencyKey::test_deterministic_and_sensitive_to_parts"
+      ]
+    },
+    {
+      "id": "FR-019",
+      "implemented_by": [
+        "skill-lab/shared/_skillkit/stdlib_modules.py"
+      ],
+      "verified_by": [
+        "skill-lab/tests/test_skillkit_stdlib_modules.py::TestIsStdlib::test_fallback_without_stdlib_module_names",
+        "skill-lab/tests/test_skillkit_stdlib_modules.py::TestIsStdlib::test_portable_requires_python39_and_current",
+        "skill-lab/tests/test_skillkit_stdlib_modules.py::TestPython39List::test_list_shape",
+        "skill-lab/tests/test_skillkit_stdlib_modules.py::TestPython39List::test_consistent_with_running_interpreter",
+        "skill-lab/tests/test_skillkit_stdlib_modules.py::TestIsStdlib::test_known_stdlib_does_not_depend_on_the_interpreter",
+        "skill-lab/tests/test_skillkit_stdlib_modules.py::TestPython39List::test_post_39_list_holds_only_newer_modules",
+        "skill-lab/tests/test_lab_core_validate.py::TestScriptRules::test_newer_stdlib_module_is_not_portable_when_validating_on_python_39"
+      ]
+    },
+    {
+      "id": "FR-020",
+      "implemented_by": [
+        "skill-lab/shared/_skillkit/assertions.py"
+      ],
+      "verified_by": [
+        "skill-lab/tests/test_skillkit_assertions.py::TestPresenceAndType::test_missing_path_fails_every_other_op",
+        "skill-lab/tests/test_skillkit_assertions.py::TestPresenceAndType::test_type",
+        "skill-lab/tests/test_skillkit_assertions.py::TestInvalidAssertions::test_malformed_assertions_raise",
+        "skill-lab/tests/test_skillkit_assertions.py::TestInvalidAssertions::test_ops_match_conventions",
+        "skill-lab/tests/test_skillkit_assertions.py::TestEvaluateAll::test_records"
+      ]
+    },
+    {
+      "id": "FR-021",
+      "implemented_by": [
+        "skill-lab/shared/_skillkit/timeutil.py"
+      ],
+      "verified_by": [
+        "skill-lab/tests/test_skillkit_timeutil.py::TestIsRfc3339::test_leap_second_only_at_utc_end_of_day",
+        "skill-lab/tests/test_skillkit_timeutil.py::TestParse::test_parse_rfc3339_converts_to_utc",
+        "skill-lab/tests/test_skillkit_timeutil.py::TestParse::test_parse_iso8601_relaxations",
+        "skill-lab/tests/test_skillkit_timeutil.py::TestParse::test_parse_iso8601_rejects",
+        "skill-lab/tests/test_skillkit_timeutil.py::TestFormat::test_to_iso_is_canonical_utc_seconds"
+      ]
+    },
+    {
+      "id": "FR-022",
+      "implemented_by": [
+        "skill-lab/shared/_skillkit/__init__.py"
+      ],
+      "verified_by": [
+        "skill-lab/tests/test_skillkit_package.py::TestPackageConstants::test_version_and_exit_codes",
+        "skill-lab/tests/test_skillkit_package.py::TestPackageConstants::test_module_inventory",
+        "skill-lab/tests/test_skillkit_package.py::TestPackageConstants::test_root_import_is_light",
+        "skill-lab/tests/test_skillkit_package.py::TestSourceRules::test_docstring_then_future_import",
+        "skill-lab/tests/test_skillkit_package.py::TestSourceRules::test_python39_grammar",
+        "skill-lab/tests/test_skillkit_package.py::TestSourceRules::test_no_runtime_pep604_unions",
+        "skill-lab/tests/test_skillkit_package.py::TestSourceRules::test_imports_are_portable_stdlib_or_relative",
+        "skill-lab/tests/test_skillkit_package.py::TestSourceRules::test_no_eval_exec_or_shell",
+        "skill-lab/tests/test_skillkit_package.py::TestSourceRules::test_no_python310_only_apis"
+      ]
+    },
+    {
+      "id": "FR-023",
+      "implemented_by": [
+        "skill-lab/shared/_skillkit/jsonschema_mini.py"
+      ],
+      "verified_by": [
+        "skill-lab/tests/test_contracts.py::TestDifferential::test_validity_agrees_on_every_instance",
+        "skill-lab/tests/test_contracts.py::TestDifferential::test_keyword_level_agreement",
+        "skill-lab/tests/test_contracts.py::TestDifferential::test_schemas_are_valid_draft_2020_12"
+      ]
+    }
+  ]
+}

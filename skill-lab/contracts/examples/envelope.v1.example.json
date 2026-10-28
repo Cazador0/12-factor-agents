@@ -1,0 +1,53 @@
+{
+  "created_at": "2026-10-22T08:00:00Z",
+  "errors": [],
+  "idempotency_key": null,
+  "kind": "review-verdict",
+  "kind_schema": "urn:skill-lab:schema:review-verdict:v1",
+  "ok": true,
+  "payload": {
+    "blockers": [],
+    "evidence": [
+      {
+        "artifact": "e2e-results.json",
+        "digest": "sha256:9e40bd3e4a3035118d19c3a76d2b0be39cd9a96b53c70690890ea44861194046"
+      },
+      {
+        "artifact": "security-report.sarif",
+        "digest": "sha256:518feb6086f1da59f20cfb4a5f7b160d2b341f1eaa1f5b9c49b7453097a13f57"
+      },
+      {
+        "artifact": "benchmark.json"
+      }
+    ],
+    "issue": 184,
+    "non_blocking_findings": [
+      "Consider reducing duplicate serialization logic in web/session/serialize.ts."
+    ],
+    "pr": 211,
+    "requirements": {
+      "covered": 14,
+      "failed": 0,
+      "unverified": 0
+    },
+    "result": "APPROVE",
+    "reviewed_at": "2026-10-22T08:00:00Z",
+    "reviewed_commit": "4f2c9a1e7b3d5f60a8c2e1d9b7f4a3c2e1d0b9a8",
+    "reviewer_session": "review-184-03",
+    "schema_version": 1,
+    "spec_id": "SPEC-042"
+  },
+  "producer": {
+    "script": "review_verdict.py",
+    "skill": "review-verifier",
+    "version": "0.1.0"
+  },
+  "schema": "urn:skill-lab:schema:envelope:v1",
+  "warnings": [
+    {
+      "code": "EVIDENCE_WITHOUT_DIGEST",
+      "message": "benchmark.json has no digest; it was not re-verified",
+      "path": "/payload/evidence/2"
+    }
+  ]
+}

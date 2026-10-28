@@ -1,0 +1,110 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:skill-lab:schema:success-criteria:v1",
+  "title": "Success criteria",
+  "description": "The explicit release gates for one skill (benchmarks/criteria/<skill>.json). '100 % success' means every gate here passes; a gate that did not run never counts as passed.",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "skill",
+    "gates"
+  ],
+  "properties": {
+    "schema_version": {
+      "description": "Contract major version.",
+      "type": "integer",
+      "const": 1
+    },
+    "skill": {
+      "$ref": "#/$defs/skill_name"
+    },
+    "version": {
+      "$ref": "#/$defs/semver"
+    },
+    "gates": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "id",
+          "metric",
+          "op",
+          "threshold",
+          "rationale"
+        ],
+        "properties": {
+          "id": {
+            "$ref": "#/$defs/identifier"
+          },
+          "metric": {
+            "description": "Dotted metric name, e.g. bench.deterministic.pass_rate, bench.trigger.accuracy, tests.failed, static.errors.",
+            "type": "string",
+            "pattern": "^[a-z][a-z0-9_]*(\\.[a-z][a-z0-9_]*)*$",
+            "maxLength": 100
+          },
+          "op": {
+            "enum": [
+              "gte",
+              "lte",
+              "eq",
+              "gt",
+              "lt"
+            ]
+          },
+          "threshold": {
+            "type": "number"
+          },
+          "tier": {
+            "$ref": "#/$defs/tier"
+          },
+          "rationale": {
+            "$ref": "#/$defs/line"
+          }
+        },
+        "additionalProperties": false
+      },
+      "minItems": 1
+    },
+    "notes": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/line"
+      }
+    }
+  },
+  "additionalProperties": false,
+  "$defs": {
+    "identifier": {
+      "description": "Short stable identifier, e.g. unit, B-01, has-acceptance-criteria.",
+      "type": "string",
+      "pattern": "^[A-Za-z0-9]+([._:-][A-Za-z0-9]+)*$",
+      "maxLength": 100
+    },
+    "line": {
+      "description": "One line of text (no line breaks), at most 500 characters.",
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 500,
+      "pattern": "^[^\\r\\n]+$"
+    },
+    "semver": {
+      "description": "Semantic version, e.g. 0.1.0.",
+      "type": "string",
+      "pattern": "^(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)(-[0-9A-Za-z.-]+)?(\\+[0-9A-Za-z.-]+)?$"
+    },
+    "skill_name": {
+      "description": "Skill name (also its folder name).",
+      "type": "string",
+      "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$",
+      "maxLength": 64
+    },
+    "tier": {
+      "description": "Benchmark tier.",
+      "enum": [
+        "deterministic",
+        "agentic",
+        "trigger"
+      ]
+    }
+  }
+}

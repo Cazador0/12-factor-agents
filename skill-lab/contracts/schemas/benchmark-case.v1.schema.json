@@ -1,0 +1,647 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:skill-lab:schema:benchmark-case:v1",
+  "title": "Benchmark case",
+  "description": "One eval case, stored as skills/<name>/evals/cases/<id>.json. deterministic runs a script (graded by exit code, schema validity, assertions); agentic runs a model with the skill loaded (schema validity, assertions, Jev judgments); trigger checks which skill a query routes to. Identified by the 'schema' URN (CONVENTIONS section 5); schema_version is optional here.",
+  "type": "object",
+  "required": [
+    "schema",
+    "id",
+    "skill",
+    "tier",
+    "description"
+  ],
+  "properties": {
+    "schema": {
+      "const": "urn:skill-lab:schema:benchmark-case:v1"
+    },
+    "schema_version": {
+      "description": "Contract major version.",
+      "type": "integer",
+      "const": 1
+    },
+    "id": {
+      "$ref": "#/$defs/case_id"
+    },
+    "skill": {
+      "$ref": "#/$defs/skill_name"
+    },
+    "tier": {
+      "$ref": "#/$defs/tier"
+    },
+    "description": {
+      "$ref": "#/$defs/line"
+    },
+    "tags": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/identifier"
+      },
+      "uniqueItems": true
+    },
+    "run": {
+      "$ref": "#/$defs/run"
+    },
+    "prompt": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 8000
+    },
+    "fixtures": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/rel_path"
+      },
+      "uniqueItems": true,
+      "description": "Skill-relative paths given to the model."
+    },
+    "output_schema": {
+      "description": "URN of the contract the model's JSON must satisfy.",
+      "type": "string",
+      "pattern": "^urn:skill-lab:schema:[a-z0-9]+(-[a-z0-9]+)*:v[1-9][0-9]*$"
+    },
+    "expect": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/deterministic_expect"
+        },
+        {
+          "$ref": "#/$defs/model_expect"
+        }
+      ]
+    },
+    "judgments": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/judgment"
+      }
+    },
+    "query": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 1000
+    },
+    "expect_skill": {
+      "description": "Skill the query must route to; null means no skill.",
+      "type": [
+        "string",
+        "null"
+      ],
+      "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$",
+      "maxLength": 64
+    },
+    "timeout_s": {
+      "type": "number",
+      "exclusiveMinimum": 0,
+      "maximum": 3600
+    }
+  },
+  "additionalProperties": false,
+  "allOf": [
+    {
+      "description": "The tier decides which members are required and allowed.",
+      "oneOf": [
+        {
+          "$ref": "#/$defs/deterministic_tier"
+        },
+        {
+          "$ref": "#/$defs/agentic_tier"
+        },
+        {
+          "$ref": "#/$defs/trigger_tier"
+        }
+      ]
+    }
+  ],
+  "$defs": {
+    "agentic_tier": {
+      "description": "agentic: prompt + fixtures + output_schema + expect{schema_valid, assertions} + judgments.",
+      "properties": {
+        "tier": {
+          "const": "agentic"
+        },
+        "expect": {
+          "$ref": "#/$defs/model_expect"
+        }
+      },
+      "required": [
+        "prompt",
+        "fixtures",
+        "output_schema",
+        "expect",
+        "judgments"
+      ],
+      "not": {
+        "description": "agentic cases have no run, query or expect_skill",
+        "anyOf": [
+          {
+            "required": [
+              "run"
+            ]
+          },
+          {
+            "required": [
+              "query"
+            ]
+          },
+          {
+            "required": [
+              "expect_skill"
+            ]
+          }
+        ]
+      }
+    },
+    "assertion": {
+      "description": "An assertion; value is required for every op except exists and not_exists.",
+      "type": "object",
+      "required": [
+        "path",
+        "op"
+      ],
+      "properties": {
+        "path": {
+          "$ref": "#/$defs/json_pointer"
+        },
+        "op": {
+          "enum": [
+            "eq",
+            "ne",
+            "in",
+            "not_in",
+            "contains",
+            "not_contains",
+            "regex",
+            "gte",
+            "lte",
+            "gt",
+            "lt",
+            "len_eq",
+            "len_gte",
+            "len_lte",
+            "exists",
+            "not_exists",
+            "type"
+          ]
+        },
+        "value": {
+          "description": "Expected value; required for every op except exists and not_exists."
+        },
+        "description": {
+          "$ref": "#/$defs/line"
+        }
+      },
+      "additionalProperties": false,
+      "anyOf": [
+        {
+          "properties": {
+            "op": {
+              "enum": [
+                "exists",
+                "not_exists"
+              ]
+            }
+          }
+        },
+        {
+          "required": [
+            "value"
+          ]
+        }
+      ]
+    },
+    "case_id": {
+      "description": "Benchmark case ID; equals the case file name without .json.",
+      "type": "string",
+      "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$",
+      "maxLength": 80
+    },
+    "choice_criteria": {
+      "description": "Map from choice label to when it applies (null: the label speaks for itself).",
+      "type": "object",
+      "additionalProperties": {
+        "anyOf": [
+          {
+            "$ref": "#/$defs/jev_content"
+          },
+          {
+            "type": "null"
+          }
+        ]
+      }
+    },
+    "deterministic_expect": {
+      "type": "object",
+      "required": [
+        "exit_code",
+        "schema_valid",
+        "assertions"
+      ],
+      "properties": {
+        "exit_code": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 4
+        },
+        "schema_valid": {
+          "description": "Whether the envelope (and its payload where required) must validate.",
+          "type": "boolean"
+        },
+        "assertions": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/assertion"
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    "deterministic_tier": {
+      "description": "deterministic: run + expect{exit_code, schema_valid, assertions}; no judgments.",
+      "properties": {
+        "tier": {
+          "const": "deterministic"
+        },
+        "expect": {
+          "$ref": "#/$defs/deterministic_expect"
+        },
+        "judgments": {
+          "maxItems": 0
+        }
+      },
+      "required": [
+        "run",
+        "expect"
+      ],
+      "not": {
+        "description": "deterministic cases have no prompt, fixtures, output_schema, query or expect_skill",
+        "anyOf": [
+          {
+            "required": [
+              "prompt"
+            ]
+          },
+          {
+            "required": [
+              "fixtures"
+            ]
+          },
+          {
+            "required": [
+              "output_schema"
+            ]
+          },
+          {
+            "required": [
+              "query"
+            ]
+          },
+          {
+            "required": [
+              "expect_skill"
+            ]
+          }
+        ]
+      }
+    },
+    "eq_rule": {
+      "type": "object",
+      "required": [
+        "eq"
+      ],
+      "properties": {
+        "eq": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 100
+        }
+      },
+      "additionalProperties": false
+    },
+    "gte_rule": {
+      "type": "object",
+      "required": [
+        "gte"
+      ],
+      "properties": {
+        "gte": {
+          "type": "number"
+        }
+      },
+      "additionalProperties": false
+    },
+    "identifier": {
+      "description": "Short stable identifier, e.g. unit, B-01, has-acceptance-criteria.",
+      "type": "string",
+      "pattern": "^[A-Za-z0-9]+([._:-][A-Za-z0-9]+)*$",
+      "maxLength": 100
+    },
+    "jev_content": {
+      "description": "Jev instructions or criterion text: a string, an object or an array.",
+      "anyOf": [
+        {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 4000
+        },
+        {
+          "type": "object",
+          "additionalProperties": true
+        },
+        {
+          "type": "array"
+        }
+      ]
+    },
+    "json_pointer": {
+      "description": "RFC 6901 JSON Pointer ('' is the whole document).",
+      "type": "string",
+      "maxLength": 500,
+      "pattern": "^(?:/(?:[^~/]|~[01])*)*$"
+    },
+    "judgment": {
+      "description": "A Jev question plus its pass rule; the type decides the criteria shape and pass rule.",
+      "type": "object",
+      "required": [
+        "id",
+        "type",
+        "instructions",
+        "criteria",
+        "state_from",
+        "pass_if"
+      ],
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/identifier"
+        },
+        "type": {
+          "enum": [
+            "noul",
+            "score",
+            "choice"
+          ]
+        },
+        "instructions": {
+          "$ref": "#/$defs/jev_content"
+        },
+        "criteria": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/noul_criteria"
+            },
+            {
+              "$ref": "#/$defs/score_criteria"
+            },
+            {
+              "$ref": "#/$defs/choice_criteria"
+            }
+          ]
+        },
+        "state_from": {
+          "type": "array",
+          "items": {
+            "enum": [
+              "output",
+              "prompt",
+              "fixtures",
+              "skill"
+            ]
+          },
+          "minItems": 1,
+          "uniqueItems": true,
+          "description": "What the runner puts in the Jev state."
+        },
+        "pass_if": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/gte_rule"
+            },
+            {
+              "$ref": "#/$defs/eq_rule"
+            }
+          ]
+        },
+        "description": {
+          "$ref": "#/$defs/line"
+        }
+      },
+      "additionalProperties": false,
+      "oneOf": [
+        {
+          "description": "noul: criteria {true, false}; pass_if {gte} above 0.35.",
+          "properties": {
+            "type": {
+              "const": "noul"
+            },
+            "criteria": {
+              "$ref": "#/$defs/noul_criteria"
+            },
+            "pass_if": {
+              "$ref": "#/$defs/noul_rule"
+            }
+          }
+        },
+        {
+          "description": "score: ordered criteria levels; pass_if {gte}.",
+          "properties": {
+            "type": {
+              "const": "score"
+            },
+            "criteria": {
+              "$ref": "#/$defs/score_criteria"
+            },
+            "pass_if": {
+              "$ref": "#/$defs/gte_rule"
+            }
+          }
+        },
+        {
+          "description": "choice: criteria {label: description}; pass_if {eq: label}.",
+          "properties": {
+            "type": {
+              "const": "choice"
+            },
+            "criteria": {
+              "$ref": "#/$defs/choice_criteria"
+            },
+            "pass_if": {
+              "$ref": "#/$defs/eq_rule"
+            }
+          }
+        }
+      ]
+    },
+    "line": {
+      "description": "One line of text (no line breaks), at most 500 characters.",
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 500,
+      "pattern": "^[^\\r\\n]+$"
+    },
+    "model_expect": {
+      "type": "object",
+      "required": [
+        "schema_valid",
+        "assertions"
+      ],
+      "properties": {
+        "schema_valid": {
+          "type": "boolean"
+        },
+        "assertions": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/assertion"
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    "noul_criteria": {
+      "description": "What counts as yes and as no.",
+      "type": "object",
+      "required": [
+        "true",
+        "false"
+      ],
+      "properties": {
+        "true": {
+          "$ref": "#/$defs/jev_content"
+        },
+        "false": {
+          "$ref": "#/$defs/jev_content"
+        }
+      },
+      "additionalProperties": false
+    },
+    "noul_rule": {
+      "type": "object",
+      "required": [
+        "gte"
+      ],
+      "properties": {
+        "gte": {
+          "description": "Pass threshold for the yes-probability; above the 0.35 uncertainty floor.",
+          "type": "number",
+          "exclusiveMinimum": 0.35,
+          "maximum": 1
+        }
+      },
+      "additionalProperties": false
+    },
+    "rel_path": {
+      "description": "Relative path with '/' separators; no leading '/', drive letter, '..' segment or backslash.",
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 500,
+      "pattern": "^(?!/)(?![A-Za-z]:)(?!.*(?:^|/)\\.\\.(?:/|$))[^\\\\\\x00]+$"
+    },
+    "run": {
+      "type": "object",
+      "required": [
+        "script",
+        "args"
+      ],
+      "properties": {
+        "script": {
+          "description": "Skill-relative script path.",
+          "type": "string",
+          "pattern": "^scripts/(?:[A-Za-z0-9_-]+/)*[A-Za-z0-9_-]+\\.py$",
+          "maxLength": 200
+        },
+        "args": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "maxLength": 1000
+          }
+        },
+        "stdin_file": {
+          "$ref": "#/$defs/rel_path"
+        },
+        "env": {
+          "description": "Extra environment variables. Never secrets: those come from the runner's environment.",
+          "type": "object",
+          "additionalProperties": {
+            "type": "string",
+            "maxLength": 1000
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    "score_criteria": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/jev_content"
+      },
+      "minItems": 2,
+      "maxItems": 11,
+      "description": "Ordered score levels; position is the score, from 0."
+    },
+    "skill_name": {
+      "description": "Skill name (also its folder name).",
+      "type": "string",
+      "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$",
+      "maxLength": 64
+    },
+    "tier": {
+      "description": "Benchmark tier.",
+      "enum": [
+        "deterministic",
+        "agentic",
+        "trigger"
+      ]
+    },
+    "trigger_tier": {
+      "description": "trigger: query + expect_skill; nothing else is graded.",
+      "properties": {
+        "tier": {
+          "const": "trigger"
+        },
+        "judgments": {
+          "maxItems": 0
+        }
+      },
+      "required": [
+        "query",
+        "expect_skill"
+      ],
+      "not": {
+        "description": "trigger cases have no run, prompt, fixtures, output_schema, expect or timeout_s",
+        "anyOf": [
+          {
+            "required": [
+              "run"
+            ]
+          },
+          {
+            "required": [
+              "prompt"
+            ]
+          },
+          {
+            "required": [
+              "fixtures"
+            ]
+          },
+          {
+            "required": [
+              "output_schema"
+            ]
+          },
+          {
+            "required": [
+              "expect"
+            ]
+          },
+          {
+            "required": [
+              "timeout_s"
+            ]
+          }
+        ]
+      }
+    }
+  }
+}

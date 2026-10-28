@@ -1,0 +1,55 @@
+{
+  "feature": "042-session-refresh",
+  "generated_at": "2026-10-22T08:00:00Z",
+  "operations": [
+    {
+      "depends_on": [],
+      "idempotency_key": "idem-fee5ac30e0a079818e0c82737cec3ac0",
+      "op": "create_issue",
+      "reason": "T035 has no issue yet",
+      "request": {
+        "body": {
+          "body": "## Spec\nSPEC-042 / User Story 3\n\n## Tasks\nT035",
+          "labels": [
+            12,
+            31
+          ],
+          "title": "T035: Expire idle token families after 30 days"
+        },
+        "method": "POST",
+        "path": "/api/v1/repos/acme/factory/issues"
+      },
+      "task_id": "T035"
+    },
+    {
+      "depends_on": [],
+      "idempotency_key": "idem-5859e354450207779585a5cfa80fa46e",
+      "op": "add_dependency",
+      "reason": "T034 is blocked by T031 (#184) but the dependency link is missing",
+      "request": {
+        "body": {
+          "index": 184,
+          "owner": "acme",
+          "repo": "factory"
+        },
+        "method": "POST",
+        "path": "/api/v1/repos/acme/factory/issues/187/dependencies"
+      },
+      "task_id": "T034"
+    }
+  ],
+  "repository": "acme/factory",
+  "schema_version": 1,
+  "skipped": [
+    {
+      "issue": 184,
+      "reason": "Issue #184 already exists with title prefix T031:",
+      "task_id": "T031"
+    },
+    {
+      "issue": 185,
+      "reason": "Issue #185 already exists with title prefix T032:",
+      "task_id": "T032"
+    }
+  ]
+}

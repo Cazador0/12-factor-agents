@@ -1,0 +1,30 @@
+{
+  "description": "Evidence that claims a check passed without a recorded command must fail.",
+  "expect": {
+    "assertions": [
+      {
+        "op": "eq",
+        "path": "/errors/0/code",
+        "value": "CHECK_NOT_EXECUTED"
+      }
+    ],
+    "exit_code": 1,
+    "schema_valid": true
+  },
+  "id": "rejects-unexecuted-evidence",
+  "judgments": [],
+  "run": {
+    "args": [
+      "validate",
+      "--input",
+      "evals/fixtures/unexecuted.json"
+    ],
+    "script": "scripts/evidence_manifest.py"
+  },
+  "schema": "urn:skill-lab:schema:benchmark-case:v1",
+  "skill": "pse-implementer",
+  "tags": [
+    "guardrail"
+  ],
+  "tier": "deterministic"
+}

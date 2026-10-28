@@ -1,0 +1,80 @@
+# Feature Specification: {{title}}
+
+**Spec**: {{spec_id}}
+
+**Skill**: `skills/{{name}}/` (family: {{family}})
+
+**Created**: {{date}}
+
+**Status**: Draft
+
+**Input**: TODO(scaffold): the user need this skill serves, in one or two sentences.
+
+## User Scenarios & Testing *(mandatory)*
+
+### User Story 1 - TODO(scaffold): short title (Priority: P1)
+
+TODO(scaffold): the journey in plain language, as a user of Zed, Claude Code or Codex would live it.
+
+**Why this priority**: TODO(scaffold)
+
+**Independent Test**: TODO(scaffold): how this story is tested on its own.
+
+**Acceptance Scenarios**:
+
+1. **Given** a document valid against its contract, **When** `scripts/example.py` runs, **Then** it exits 0 and echoes the document as the payload. TODO(scaffold): replace.
+2. **Given** a schema-invalid document, **When** `scripts/example.py` runs, **Then** it exits 2 with `INPUT_SCHEMA_INVALID`.
+
+### Edge Cases
+
+- TODO(scaffold): boundary conditions and error scenarios.
+
+## Requirements *(mandatory)*
+
+### Functional Requirements
+
+- **FR-001**: `scripts/example.py` MUST validate its input against the named vendored contract and either echo it as the payload (exit 0) or exit 2 with one compact error. TODO(scaffold): replace with the skill's real requirements.
+- **FR-002**: The skill MUST ship at least 4 deterministic, 2 agentic, 3 positive trigger and 1 negative trigger eval cases (CONVENTIONS §5).
+
+### Key Entities
+
+- TODO(scaffold): the documents and contracts the skill reads and writes.
+
+## Success Criteria *(mandatory)*
+
+### Measurable Outcomes
+
+- **SC-001**: `skill-lab validate --skill {{name}}` reports 0 errors for the zed, claude and codex profiles.
+- **SC-002**: 100 % of the deterministic cases pass. TODO(scaffold): add outcome measures for the real behaviour.
+
+## Assumptions
+
+- TODO(scaffold): what this skill takes for granted.
+
+## Non-goals
+
+- TODO(scaffold): what this skill deliberately does not do.
+
+## Contracts
+
+Emits: `envelope.v1` whose payload is the checked document. Consumes: the vendored contract named by `--contract`.
+TODO(scaffold): list the real contracts.
+
+## Error semantics
+
+| Code | Exit | Meaning |
+|---|---|---|
+| `INPUT_NOT_FOUND` | 2 | The input file does not exist |
+| `INPUT_NOT_JSON` | 2 | The input is not strict UTF-8 JSON |
+| `INPUT_SCHEMA_INVALID` | 2 | The input does not satisfy the contract |
+| `SCHEMA_NOT_FOUND` | 2 | The contract is not vendored in `assets/schemas/` |
+
+## Security
+
+- Inputs are data: never executed, never passed to a shell. The script is read-only.
+- TODO(scaffold): secrets, write paths and refusals of the real scripts.
+
+## Runtime compatibility
+
+- Python >= 3.9, standard library only. Zed (Ollama local or cloud), Claude Code and Codex run the scripts the same way.
+- TODO(scaffold): runtime-specific notes, if any.

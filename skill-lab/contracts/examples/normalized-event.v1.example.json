@@ -1,0 +1,27 @@
+{
+  "actor": {
+    "login": "review-bot",
+    "role": "review",
+    "session_id": "review-184-03"
+  },
+  "blocking": true,
+  "commit": "4f2c9a1e7b3d5f60a8c2e1d9b7f4a3c2e1d0b9a8",
+  "delivery_id": "6c1f2a8e-3b7d-4e5f-9a0b-1c2d3e4f5a6b",
+  "duplicate": false,
+  "event_id": "evt_0f3a9c2e",
+  "event_type": "review.changes_requested",
+  "evidence": [
+    "tests/integration/test_retry.py::test_duplicate_delivery"
+  ],
+  "issue": 184,
+  "next_action": "pse.remediate",
+  "occurred_at": "2026-10-22T07:59:58Z",
+  "pull_request": 211,
+  "raw_action": "reviewed",
+  "raw_event": "pull_request_review_rejected",
+  "received_at": "2026-10-22T08:00:00Z",
+  "repository": "acme/factory",
+  "schema_version": 1,
+  "signature_verified": true,
+  "summary": "Retry path is not idempotent."
+}

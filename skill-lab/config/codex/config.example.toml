@@ -1,0 +1,22 @@
+# Codex CLI settings for this repository's skills. Explanation: skill-lab/config/codex/README.md.
+#
+# Copy the keys into ~/.codex/config.toml, or into a profile file (see the README). The provider
+# block follows Ollama's Codex integration page (docs/integrations/codex.mdx, "Profile-based setup").
+# approval_policy and sandbox_mode are long-standing Codex keys, but they are not verified against
+# the current Codex config reference here. Check `codex --help` before relying on them.
+# The model name is an example. List what your signed-in daemon offers with `ollama list`.
+
+# Cloud first (SPEC-200): an Ollama Cloud model reached through the signed-in local Ollama daemon
+# (`ollama signin`). Ollama recommends at least 64k context for Codex, so local models under 24 GB
+# of VRAM are a poor fit here.
+model = "gpt-oss:120b-cloud"
+model_provider = "ollama-launch"
+
+# Ask before leaving the sandbox; the sandbox may write only inside the workspace.
+approval_policy = "on-request"
+sandbox_mode = "workspace-write"
+
+[model_providers.ollama-launch]
+name = "Ollama"
+base_url = "http://localhost:11434/v1/"
+wire_api = "responses"
