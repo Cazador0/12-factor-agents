@@ -1,0 +1,107 @@
+// Zed agent settings for this repository (project-scoped).
+//
+// Governor decision, 2026-10-28: every agent thread opened on this project runs
+// unattended. Tool calls are auto-allowed, the OS sandbox is bypassed, and new
+// threads start on the "bypass" profile with every native tool enabled
+// ("autopilot"). This replaces the earlier tiered posture, where push, delete,
+// installs, sudo and edits to governing documents paused for confirmation.
+//
+// Scope: `.zed/settings.json` is the project settings file. Zed loads it for
+// every agent thread (current and future) opened on this project; no per-thread
+// opt-in is needed. User settings (`~/.config/zed/settings.json`) are merged in
+// as the base layer.
+//
+// What this file cannot turn off, by design in Zed v1.25.3:
+// - Built-in terminal security rules: recursive deletion of `/`, `~`, `.` and
+//   `..` is hardcoded and cannot be overridden by any setting.
+// - Git metadata: unrestricted filesystem writes still exclude `.git`.
+// - External ACP agents (claude-acp, codex-acp, antigravity-acp) take their
+//   permission mode from `agent_servers.*.default_config_options.mode` in the
+//   USER settings, not from this file. Those are already permissive there
+//   (`bypassPermissions` for claude-acp, `yolo` for antigravity-acp).
+// - Directories excluded from Zed's file scanner/watcher.
+{
+  "document_symbols": "on",
+  "document_folding_ranges": "on",
+  "semantic_tokens": "combined",
+  "prettier": {
+    "allowed": true
+  },
+  "file_scan_exclusions": [
+    "**/.git",
+    "**/.mypy_cache",
+    "**/.playwright-mcp",
+    "**/.agents/worktrees",
+    "**/.codex",
+    "**/.claude",
+    "**/specs/**/.claude",
+    "**/.specify/extensions/**/.specify-dev",
+    "**/node_modules",
+    "core"
+  ],
+  "agent": {
+    // Autopilot: new threads in this project start on a profile that enables
+    // every native tool. Defined here rather than referenced from the user
+    // settings so the project stays self-contained.
+    "default_profile": "bypass",
+    "profiles": {
+      "bypass": {
+        "name": "Bypass",
+        // Mirrors the model in the user-level `full-send` profile so the
+        // project does not depend on that profile existing or keeping its model.
+        "default_model": {
+          "provider": "ollama",
+          "model": "deepseek-v4.1-flash:cloud",
+          "enable_thinking": true
+        },
+        "enable_all_context_servers": true,
+        "tools": {
+          "ask_user": true,
+          "copy_path": true,
+          "create_directory": true,
+          "delete_path": true,
+          "diagnostics": true,
+          "edit_file": true,
+          "fetch": true,
+          "find_path": true,
+          "grep": true,
+          "list_agents_and_models": true,
+          "list_directory": true,
+          "move_path": true,
+          "read_file": true,
+          "skill": true,
+          "spawn_agent": true,
+          "terminal": true,
+          "write_file": true
+        }
+      }
+    },
+    // Bypass permissions: no OS sandbox, unrestricted writes, unrestricted
+    // network. Zed still refuses to write Git metadata.
+    "sandbox_permissions": {
+      "allow_all_hosts": true,
+      "allow_fs_write_all": true,
+      "allow_unsandboxed": true
+    },
+    // Auto-allow: nothing in this project prompts. Every always_confirm and
+    // always_deny rule that used to pin push, reset, rm, installs, pipe-to-shell,
+    // sudo, .gitignore and the governing documents has been removed.
+    // Precedence: built-in security rules > always_deny > always_confirm >
+    // always_allow > tool `default` > global `default`.
+    "tool_permissions": {
+      "default": "allow",
+      "tools": {
+        "terminal": { "default": "allow" },
+        "edit_file": { "default": "allow" },
+        "write_file": { "default": "allow" },
+        "delete_path": { "default": "allow" },
+        "move_path": { "default": "allow" },
+        "copy_path": { "default": "allow" },
+        "create_directory": { "default": "allow" },
+        "fetch": { "default": "allow" },
+        "search_web": { "default": "allow" },
+        "skill": { "default": "allow" }
+      }
+    }
+  }
+}
