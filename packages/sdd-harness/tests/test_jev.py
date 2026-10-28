@@ -378,6 +378,15 @@ class FakeGitea:
             {"id": 41, "name": "jev/warning"},
             {"id": 42, "name": "jev/stuck"},
             {"id": 43, "name": "jev/parked"},
+            {"id": 61, "name": "jev/lead/warning"},
+            {"id": 62, "name": "jev/lead/stuck"},
+            {"id": 63, "name": "jev/lead/parked"},
+            {"id": 71, "name": "jev/pse/warning"},
+            {"id": 72, "name": "jev/pse/stuck"},
+            {"id": 73, "name": "jev/pse/parked"},
+            {"id": 81, "name": "jev/review/warning"},
+            {"id": 82, "name": "jev/review/stuck"},
+            {"id": 83, "name": "jev/review/parked"},
         ]
         self.org_label_list: list[dict] = []
         self.issue_labels: dict[int, set[int]] = {}
@@ -445,10 +454,20 @@ class FakeGitea:
             raise GiteaError(f"GET /orgs/{owner}/labels → HTTP {self.org_error}", self.org_error)
         return self.org_label_list
 
+    # Exclusive scope groups: adding any label in a group removes the others in the same group.
+    _EXCLUSIVE_SCOPES: list[set[int]] = [
+        {41, 42, 43},  # jev/   (summary)
+        {61, 62, 63},  # jev/lead/
+        {71, 72, 73},  # jev/pse/
+        {81, 82, 83},  # jev/review/
+    ]
+
     def add_labels(self, owner, repo, issue, label_ids):
         have = self.issue_labels.setdefault(issue, set())
-        for lid in label_ids:  # jev/* labels are exclusive within their scope
-            have -= {41, 42, 43, 51, 52, 53}
+        for lid in label_ids:
+            for scope in self._EXCLUSIVE_SCOPES:
+                if lid in scope:
+                    have -= scope
             have.add(lid)
         return sorted(have)
 
@@ -502,12 +521,12 @@ def test_scan_posts_one_living_comment_per_episode(tmp_path):
     r1 = run_scan(tmp_path, [s], g, db, T0)
     m1 = r1["results"][0]["message"]
     assert m1["kind"] == "health.warn" and Reason.HUNG.value in m1["reasons"]
-    assert g.posts == 1 and g.issue_labels[184] == {41}
+    assert g.posts == 1 and g.issue_labels[184] == {41, 71}
     r2 = run_scan(tmp_path, [s], g, db, T0 + timedelta(minutes=10))
     m2 = r2["results"][0]["message"]
     assert m2["kind"] == "health.stuck" and m2["next_action"] == "request_stop" and m2["episode_id"] == m1["episode_id"]
     assert g.posts == 1 and len(g.comments[184]) == 1, "the episode comment is edited in place, not re-posted"
-    assert g.issue_labels[184] == {42}
+    assert g.issue_labels[184] == {42, 72}
     body = g.comments[184][0]["body"]
     assert marker(episode_key("pse-184", m1["episode_id"], "acme", "factory", 184)) in body and "```json" in body
 
@@ -567,7 +586,7 @@ def test_episode_resolution_clears_labels(tmp_path):
     db = tmp_path / "j.sqlite"
     write_log(tmp_path, failing_loop(T0, 3))
     run_scan(tmp_path, [s], g, db, T0)
-    assert g.issue_labels[184] == {41}
+    assert g.issue_labels[184] == {41, 71}
     for i, minutes in enumerate((10, 20)):
         at = T0 + timedelta(minutes=minutes)
         g.commits[s.branch] = [{"sha": f"s{i}", "created": (at - timedelta(minutes=1)).isoformat()}]
@@ -836,7 +855,7 @@ def test_deleted_comment_is_recreated_and_label_still_moves(tmp_path):
     g.comments[184] = []  # a person deleted Jev's comment
     write_log(tmp_path, failing_loop(T0 + timedelta(minutes=10), 4))
     run_scan(tmp_path, [s], g, db, T0 + timedelta(minutes=10))
-    assert g.posts == 2 and len(g.comments[184]) == 1 and g.issue_labels[184] == {42}
+    assert g.posts == 2 and len(g.comments[184]) == 1 and g.issue_labels[184] == {42, 72}
 
 
 def test_comment_follows_the_work_item(tmp_path):
@@ -846,7 +865,7 @@ def test_comment_follows_the_work_item(tmp_path):
     run_scan(tmp_path, [session()], g, db, T0)
     write_log(tmp_path, failing_loop(T0 + timedelta(minutes=10), 4))
     run_scan(tmp_path, [session(issue=190)], g, db, T0 + timedelta(minutes=10))
-    assert len(g.comments.get(190, [])) == 1 and g.issue_labels[190] == {42}
+    assert len(g.comments.get(190, [])) == 1 and g.issue_labels[190] == {42, 72}
 
 
 def test_failed_resolution_is_retried(tmp_path):
@@ -969,7 +988,7 @@ def test_fifty_unknown_scans_do_not_lose_the_episode(tmp_path):
     write_log(tmp_path, failing_loop(at, 4))
     m = run_scan(tmp_path, [s], g, db, at)["results"][0]["message"]
     assert m["kind"] == "health.stuck" and m["episode_id"] == first["episode_id"]
-    assert g.posts == 1 and g.issue_labels[184] == {42}
+    assert g.posts == 1 and g.issue_labels[184] == {42, 72}
 
 
 def test_an_unknown_retry_never_overwrites_an_observed_scan(tmp_path):
@@ -1011,7 +1030,7 @@ def test_label_is_cleared_even_when_the_comment_was_never_written(tmp_path):
     write_log(tmp_path, failing_loop(T0, 3))
     g.fail_list_comments = 1
     r = run_scan(tmp_path, [s], g, db, T0)
-    assert any("comment write failed" in p for p in r["results"][0]["problems"]) and g.issue_labels[184] == {41}
+    assert any("comment write failed" in p for p in r["results"][0]["problems"]) and g.issue_labels[184] == {41, 71}
     for i in range(1, 3):
         at = T0 + timedelta(minutes=10 * i)
         g.commits[s.branch] = [{"sha": f"s{i}", "created": (at - timedelta(minutes=1)).isoformat()}]
@@ -1026,7 +1045,7 @@ def test_an_unsupervised_sessions_episode_ends_and_frees_its_label(tmp_path):
     stopped = session(started_at=T0 - timedelta(hours=3))
     write_log(tmp_path, failing_loop(T0, 3))
     run_scan(tmp_path, [stopped], g, db, T0)
-    assert g.issue_labels[184] == {41}
+    assert g.issue_labels[184] == {41, 71}
     successor = session(
         session_id="pse-200", branch="agent/pse/184-y", commands_log=".specify/sessions/commands/x.jsonl"
     )
@@ -1059,7 +1078,7 @@ def test_repository_labels_need_no_organisation_scope(tmp_path):
     g.org_error = 403  # the token lacks read:organization
     write_log(tmp_path, failing_loop(T0, 3))
     run_scan(tmp_path, [session()], g, tmp_path / "j.sqlite", T0)
-    assert g.issue_labels[184] == {41}
+    assert g.issue_labels[184] == {41, 71}
     g = FakeGitea()
     g.labels, g.org_error = [], 500
     r = run_scan(tmp_path, [session()], g, tmp_path / "k.sqlite", T0)  # a label read failure stays per session
@@ -1159,3 +1178,85 @@ def test_non_json_response_is_a_gitea_error(monkeypatch):
     monkeypatch.setattr("urllib.request.urlopen", lambda req, timeout: Resp())
     with pytest.raises(GiteaError):
         HttpGiteaClient("http://gitea.invalid", "t").me()
+
+
+# ---------------------------------------------------------------------------
+# R8: role labels + summary label (spec 008 FR-036, SC-015)
+# ---------------------------------------------------------------------------
+
+
+def test_r8_pse_warn_and_stuck_use_role_and_summary_labels(tmp_path):
+    """A single PSE session: warn gets {jev/pse/warning, jev/warning}; stuck gets {jev/pse/stuck, jev/stuck}."""
+    g = FakeGitea()
+    s = session(started_at=T0 - timedelta(hours=3))
+    db = tmp_path / "j.sqlite"
+    write_log(tmp_path, failing_loop(T0, 3))
+    run_scan(tmp_path, [s], g, db, T0)
+    assert g.issue_labels[184] == {41, 71}, "warn: jev/warning (41) + jev/pse/warning (71)"
+    run_scan(tmp_path, [s], g, db, T0 + timedelta(minutes=10))
+    assert g.issue_labels[184] == {42, 72}, "stuck: jev/stuck (42) + jev/pse/stuck (72)"
+
+
+def test_r8_single_session_resolve_removes_both_labels(tmp_path):
+    """When the only open episode resolves, both the role label and the summary label are removed."""
+    g = FakeGitea()
+    s = session(started_at=T0 - timedelta(hours=3))
+    db = tmp_path / "j.sqlite"
+    write_log(tmp_path, failing_loop(T0, 3))
+    run_scan(tmp_path, [s], g, db, T0)
+    assert g.issue_labels[184] == {41, 71}
+    # recover
+    for i in range(1, 3):
+        at = T0 + timedelta(minutes=10 * i)
+        g.commits[s.branch] = [{"sha": f"s{i}", "created": (at - timedelta(minutes=1)).isoformat()}]
+        write_log(tmp_path, [end_row(at - timedelta(minutes=1), f"step {i}", outcome=f"ok:{i}")])
+        run_scan(tmp_path, [s], g, db, at)
+    assert g.issue_labels[184] == set(), "both labels removed after resolve"
+
+
+def test_r8_role_and_summary_never_replace_each_other(tmp_path):
+    """Adding a role label does not remove the summary label, and vice versa (different exclusive scopes)."""
+    g = FakeGitea()
+    s = session(started_at=T0 - timedelta(hours=3))
+    db = tmp_path / "j.sqlite"
+    write_log(tmp_path, failing_loop(T0, 3))
+    run_scan(tmp_path, [s], g, db, T0)
+    labels = g.issue_labels[184]
+    assert 41 in labels, "summary label present"
+    assert 71 in labels, "role label present"
+    assert len(labels) == 2, "exactly two: role + summary, no accidental removal"
+
+
+def test_r8_two_sessions_on_same_issue_summary_reflects_worst(tmp_path):
+    """PSE stuck + Review warn → summary is stuck; PSE resolves → summary is warn; Review resolves → no summary."""
+    g = FakeGitea()
+    db = tmp_path / "j.sqlite"
+    pse = session(started_at=T0 - timedelta(hours=3))
+    rev = session(
+        session_id="rev-1",
+        role="review",
+        branch=None,
+        commands_log=".specify/sessions/commands/rev-1.jsonl",
+        started_at=T0 - timedelta(hours=3),
+    )
+    for name in ("pse-184", "rev-1"):
+        path = tmp_path / f".specify/sessions/commands/{name}.jsonl"
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text("".join(json.dumps(r) + "\n" for r in failing_loop(T0, 3)))
+    # T0: both sessions get stuck (PSE branch-based → stuck; Review no branch → also stuck after 4 bad scans)
+    # Run twice so both sessions reach stuck (stuck needs prior warn scan)
+    run_scan(tmp_path, [pse, rev], g, db, T0)
+    run_scan(tmp_path, [pse, rev], g, db, T0 + timedelta(minutes=5))
+    labels = g.issue_labels[184]
+    assert 72 in labels or 71 in labels, "PSE role label present"
+    assert 82 in labels or 81 in labels, "Review role label present"
+    # After PSE recovers (two ok scans), PSE role label gone; summary shows Review's level
+    for i in range(1, 3):
+        at = T0 + timedelta(minutes=10 + 10 * i)
+        g.commits[pse.branch] = [{"sha": f"s{i}", "created": (at - timedelta(minutes=1)).isoformat()}]
+        write_log(tmp_path, [end_row(at - timedelta(minutes=1), f"step {i}", outcome=f"ok:{i}")])
+        run_scan(tmp_path, [pse, rev], g, db, at)
+    labels_after_pse_resolve = g.issue_labels[184]
+    assert 72 not in labels_after_pse_resolve and 71 not in labels_after_pse_resolve, "PSE role label removed"
+    assert 41 in labels_after_pse_resolve or 42 in labels_after_pse_resolve, "summary label still present from Review"
+    assert 81 in labels_after_pse_resolve or 82 in labels_after_pse_resolve, "Review role label still present"

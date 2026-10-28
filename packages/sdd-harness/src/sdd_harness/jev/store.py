@@ -36,13 +36,15 @@ CREATE TABLE IF NOT EXISTS intents (
     episode_id TEXT NOT NULL,
     recovery_point TEXT NOT NULL,   -- intended → posted → resolved
     comment_id INTEGER,
-    updated_at TEXT NOT NULL
+    updated_at TEXT NOT NULL,
+    level TEXT NOT NULL DEFAULT 'warning'  -- warning | stuck | parked (the role label level)
 );
 """
 SCAN_COLUMNS = (
     "session_id, scan_id, at, kind, reasons, next_action, episode_id, durable_progress, head_sha, message, ci_streak"
 )
 ADDED_SCAN_COLUMNS = {"head_sha": "TEXT", "ci_streak": "INTEGER"}  # columns a database from an older Jev lacks
+ADDED_INTENT_COLUMNS = {"level": "TEXT NOT NULL DEFAULT 'warning'"}  # columns a database from an older Jev lacks
 
 
 def _iso(dt: datetime) -> str:
@@ -58,6 +60,7 @@ class Intent:
     episode_id: str
     recovery_point: str
     comment_id: int | None
+    level: str = "warning"  # warning | stuck | parked
 
 
 class ScanStore:
@@ -74,10 +77,15 @@ class ScanStore:
         for column, sql_type in ADDED_SCAN_COLUMNS.items():
             if column not in have:
                 self.db.execute(f"ALTER TABLE scans ADD COLUMN {column} {sql_type}")
-        if "owner" not in {row[1] for row in self.db.execute("PRAGMA table_info(intents)")}:
+        intent_cols = {row[1] for row in self.db.execute("PRAGMA table_info(intents)")}
+        if "owner" not in intent_cols:
             # intents are dedup records; a comment whose row is dropped is still found by its marker
             self.db.execute("DROP TABLE intents")
             self.db.executescript(SCHEMA)
+        else:
+            for column, sql_type in ADDED_INTENT_COLUMNS.items():
+                if column not in intent_cols:
+                    self.db.execute(f"ALTER TABLE intents ADD COLUMN {column} {sql_type}")
         self.db.commit()
 
     def close(self) -> None:
@@ -167,14 +175,15 @@ class ScanStore:
 
     def intent(self, key: str) -> Intent | None:
         row = self.db.execute(
-            "SELECT key, owner, repo, issue, episode_id, recovery_point, comment_id FROM intents WHERE key = ?", (key,)
+            "SELECT key, owner, repo, issue, episode_id, recovery_point, comment_id, level FROM intents WHERE key = ?",
+            (key,),
         ).fetchone()
         return Intent(*row) if row else None
 
     def unresolved(self, session_id: str) -> list[Intent]:
         """This session's episode comments not yet marked resolved, oldest first."""
         rows = self.db.execute(
-            "SELECT key, owner, repo, issue, episode_id, recovery_point, comment_id FROM intents "
+            "SELECT key, owner, repo, issue, episode_id, recovery_point, comment_id, level FROM intents "
             "WHERE session_id = ? AND recovery_point != 'resolved' ORDER BY updated_at",
             (session_id,),
         ).fetchall()
@@ -189,15 +198,26 @@ class ScanStore:
         point: str,
         comment_id: int | None,
         now: datetime,
+        level: str = "warning",
     ) -> None:
         owner, repo, issue = where
         self.db.execute(
-            "INSERT INTO intents VALUES (?,?,?,?,?,?,?,?,?) ON CONFLICT(key) DO UPDATE SET "
+            "INSERT INTO intents VALUES (?,?,?,?,?,?,?,?,?,?) ON CONFLICT(key) DO UPDATE SET "
             "recovery_point = excluded.recovery_point, comment_id = COALESCE(excluded.comment_id, intents.comment_id), "
-            "updated_at = excluded.updated_at",
-            (key, session_id, owner, repo, issue, episode_id, point, comment_id, _iso(now)),
+            "updated_at = excluded.updated_at, level = excluded.level",
+            (key, session_id, owner, repo, issue, episode_id, point, comment_id, _iso(now), level),
         )
         self.db.commit()
+
+    def open_levels_on(self, where: tuple[str, str, int], live: frozenset[str] | None = None) -> list[str]:
+        """Levels (warning/stuck/parked) of all open episodes on this issue, for recomputing the summary label."""
+        owner, repo, issue = where
+        rows = self.db.execute(
+            "SELECT session_id, level FROM intents "
+            "WHERE owner = ? AND repo = ? AND issue = ? AND recovery_point != 'resolved'",
+            (owner, repo, issue),
+        ).fetchall()
+        return [r[1] for r in rows if live is None or r[0] in live]
 
     def others_unresolved_on(self, where: tuple[str, str, int], key: str, live: frozenset[str] | None = None) -> bool:
         """Whether another unresolved episode still shares this issue, so its labels must stay.
@@ -216,7 +236,7 @@ class ScanStore:
     def unresolved_elsewhere(self, live: frozenset[str]) -> list[tuple[str, Intent]]:
         """Unresolved episodes of sessions no longer supervised (stopped and reassigned, or delisted), oldest first."""
         rows = self.db.execute(
-            "SELECT session_id, key, owner, repo, issue, episode_id, recovery_point, comment_id FROM intents "
+            "SELECT session_id, key, owner, repo, issue, episode_id, recovery_point, comment_id, level FROM intents "
             "WHERE recovery_point != 'resolved' ORDER BY updated_at"
         ).fetchall()
         return [(r[0], Intent(*r[1:])) for r in rows if r[0] not in live]

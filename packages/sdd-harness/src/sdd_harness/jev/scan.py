@@ -34,7 +34,30 @@ from .signals import collect
 from .store import Intent, ScanStore
 
 LABEL_WARN, LABEL_STUCK, LABEL_PARKED = "jev/warning", "jev/stuck", "jev/parked"
-JEV_LABELS = [LABEL_WARN, LABEL_STUCK, LABEL_PARKED]
+_SUMMARY_LABELS = [LABEL_WARN, LABEL_STUCK, LABEL_PARKED]
+_ROLES = ("lead", "pse", "review")
+_LEVELS = ("warning", "stuck", "parked")
+_ROLE_LABELS = [f"jev/{role}/{level}" for role in _ROLES for level in _LEVELS]
+JEV_LABELS = [*_ROLE_LABELS, *_SUMMARY_LABELS]  # all 12: 9 role + 3 summary
+_SEVERITY = {"warning": 0, "stuck": 1, "parked": 2}
+
+
+def role_label(role: str, level: str) -> str:
+    return f"jev/{role}/{level}"
+
+
+def _level_of(kind: JevKind, next_action: NextAction) -> str:
+    if next_action is NextAction.PARK:
+        return "parked"
+    return "warning" if kind is JevKind.WARN else "stuck"
+
+
+def _summary_from_levels(levels: list[str]) -> str | None:
+    """Most severe (parked > stuck > warning) of the given levels; None when the list is empty."""
+    if not levels:
+        return None
+    return max(levels, key=lambda lv: _SEVERITY.get(lv, 0))
+
 
 Explainer = Callable[[JevMessage], str | None]
 LabelMaps = dict[tuple[str, str], dict[str, int]]
@@ -105,6 +128,7 @@ def _upsert_comment(
     login: str,
     body: str,
     now: datetime,
+    level: str = "warning",
 ) -> str:
     """One living comment per episode: find it by the stored id or the marker, then edit; post only if absent."""
     where = (s.owner, s.repo, issue)
@@ -112,7 +136,7 @@ def _upsert_comment(
     known = store.intent(key)
     comment_id = known.comment_id if known else None
     # Recorded before any Gitea call, so the episode is resolved (and its label cleared) even if every write fails.
-    store.mark_intent(key, s.session_id, where, episode, "intended", comment_id, now)
+    store.mark_intent(key, s.session_id, where, episode, "intended", comment_id, now, level)
     if comment_id is None:
         comment_id = find_comment(gitea, s.owner, s.repo, issue, key, login)  # crashed after POST last time
     action = ""
@@ -128,7 +152,7 @@ def _upsert_comment(
     if comment_id is None:
         comment_id = gitea.create_comment(s.owner, s.repo, issue, body)
         action = f"posted comment {comment_id}"
-    store.mark_intent(key, s.session_id, where, episode, "posted", comment_id, now)
+    store.mark_intent(key, s.session_id, where, episode, "posted", comment_id, now, level)
     return action
 
 
@@ -158,7 +182,7 @@ def _resolve_closed(
             continue
         try:
             body = render_comment(msg, intent.key, resolved=True)
-            _close(gitea, store, s.session_id, intent, login, maps, now, body, live)
+            _close(gitea, store, s.session_id, intent, login, maps, now, body, live, s.role)
             result.actions.append(f"resolved episode {intent.episode_id}")
         except GiteaError as exc:
             result.problems.append(f"episode {intent.episode_id} not resolved yet, will retry next ok scan: {exc}")
@@ -174,14 +198,37 @@ def _close(
     now: datetime,
     body: str,
     live: frozenset[str] | None,
+    role: str | None = None,
 ) -> None:
-    """Clear the episode's labels (unless another episode still shares the issue), rewrite its comment, mark it."""
+    """Remove this episode's role label, recompute the summary, rewrite its comment, and mark it resolved.
+
+    The role label is always removed (unless it is a parked label, which stays until a person resets the breaker).
+    The summary is recomputed from the remaining open episodes on the issue; the label writes are independent.
+    """
     where = (intent.owner, intent.repo, intent.issue)
-    if not store.others_unresolved_on(where, intent.key, live):
-        labels = _labels_for(gitea, maps, intent.owner, intent.repo)
-        for name in (LABEL_WARN, LABEL_STUCK):  # parked needs a person's reset
-            if name in labels:
-                gitea.remove_label(intent.owner, intent.repo, intent.issue, labels[name])  # absent label: no-op
+    labels = _labels_for(gitea, maps, intent.owner, intent.repo)
+    # Remove the episode's role label(s), unless it is a parked label (stays until a person resets the breaker).
+    if intent.level != "parked":
+        candidate_roles = [role] if role is not None else list(_ROLES)
+        for r in candidate_roles:
+            role_lbl = role_label(r, intent.level)
+            if role_lbl in labels:
+                gitea.remove_label(intent.owner, intent.repo, intent.issue, labels[role_lbl])
+    # Recompute summary from remaining open episodes (after this one is gone, live-scoped).
+    # Mark resolved FIRST so open_levels_on excludes this intent's level from the recomputed summary.
+    store.mark_intent(
+        intent.key, session_id, where, intent.episode_id, "resolved", intent.comment_id, now, intent.level
+    )
+    remaining = store.open_levels_on(where, live)
+    new_summary = _summary_from_levels(remaining)
+    for name in (LABEL_WARN, LABEL_STUCK):  # parked summary stays until a person resets
+        if name in labels:
+            if new_summary is None or name != f"jev/{new_summary}":
+                gitea.remove_label(intent.owner, intent.repo, intent.issue, labels[name])
+    if new_summary is not None and new_summary != "parked":
+        summary_lbl = f"jev/{new_summary}"
+        if summary_lbl in labels:
+            gitea.add_labels(intent.owner, intent.repo, intent.issue, [labels[summary_lbl]])
     cid = intent.comment_id or find_comment(gitea, intent.owner, intent.repo, intent.issue, intent.key, login)
     if cid is not None:
         try:
@@ -189,7 +236,7 @@ def _close(
         except GiteaError as exc:
             if exc.status != 404:  # a deleted comment has nothing left to resolve
                 raise
-    store.mark_intent(intent.key, session_id, where, intent.episode_id, "resolved", cid, now)
+    store.mark_intent(intent.key, session_id, where, intent.episode_id, "resolved", cid, now, intent.level)
 
 
 def _end_unsupervised(
@@ -211,7 +258,7 @@ def _end_unsupervised(
             continue
         try:
             body = render_ended(intent.key, session_id, intent.episode_id, scan_id)
-            _close(gitea, store, session_id, intent, login, maps, now, body, live)
+            _close(gitea, store, session_id, intent, login, maps, now, body, live, None)
             actions.append(f"ended episode {intent.episode_id} of {session_id}: no longer supervised")
         except GiteaError as exc:
             problems.append(f"episode {intent.episode_id} of {session_id} not ended yet, will retry next run: {exc}")
@@ -273,11 +320,19 @@ def scan_session(
         result.problems.append("no issue to comment on; verdict recorded locally only")
         return result, ev
     key = episode_key(s.session_id, v.episode_id, s.owner, s.repo, s.issue)
-    label = (
-        LABEL_PARKED if v.next_action is NextAction.PARK else (LABEL_WARN if v.kind is JevKind.WARN else LABEL_STUCK)
-    )
+    level = _level_of(v.kind, v.next_action)
+    rlabel = role_label(s.role, level)
+    where = (s.owner, s.repo, s.issue)
     if dry_run:
-        result.actions += [f"would upsert episode comment {key}", f"would add label {label}"]
+        all_levels = store.open_levels_on(where, live)
+        all_levels = [lv for lv in all_levels if lv != level]  # treat this episode as already present
+        all_levels.append(level)
+        slabel = _summary_from_levels(all_levels) or f"jev/{level}"
+        result.actions += [
+            f"would upsert episode comment {key}",
+            f"would add label {rlabel}",
+            f"would set summary {slabel}",
+        ]
         return result, ev
     explanation = None
     if explain is not None:
@@ -287,25 +342,46 @@ def scan_session(
             result.problems.append(f"explanation skipped: {exc}")
     try:
         result.actions.append(
-            _upsert_comment(gitea, store, s, s.issue, msg, key, login, render_comment(msg, key, explanation), now)
+            _upsert_comment(
+                gitea, store, s, s.issue, msg, key, login, render_comment(msg, key, explanation), now, level
+            )
         )
     except GiteaError as exc:
         result.problems.append(f"comment write failed, will retry next scan: {exc}")
-    try:  # independent of the comment: a failed comment never holds back the label, nor the reverse
+    try:  # role label: independent of comment and summary
         labels = _labels_for(gitea, maps, s.owner, s.repo)
-        if label in labels:
-            applied = gitea.add_labels(s.owner, s.repo, s.issue, [labels[label]])
-            if labels[label] in applied:
-                result.actions.append(f"label {label}")
+        if rlabel in labels:
+            applied = gitea.add_labels(s.owner, s.repo, s.issue, [labels[rlabel]])
+            if labels[rlabel] in applied:
+                result.actions.append(f"label {rlabel}")
             else:
-                result.problems.append(f"label {label} not present after POST")
+                result.problems.append(f"label {rlabel} not present after POST")
         else:
             result.problems.append(
-                f"label {label} not found in {s.owner}/{s.repo} or its organisation: a person creates it once "
+                f"label {rlabel} not found in {s.owner}/{s.repo} or its organisation: a person creates it once "
                 "(exclusive); organisation labels also need the token scope read:organization"
             )
     except GiteaError as exc:
-        result.problems.append(f"label write failed, will retry next scan: {exc}")
+        result.problems.append(f"role label write failed, will retry next scan: {exc}")
+    try:  # summary label: recomputed from all open episodes on this issue (store is the source of truth)
+        labels = _labels_for(gitea, maps, s.owner, s.repo)
+        all_levels = store.open_levels_on(where, live)
+        slabel = _summary_from_levels(all_levels)
+        if slabel is not None:
+            slabel_name = f"jev/{slabel}"
+            if slabel_name in labels:
+                applied = gitea.add_labels(s.owner, s.repo, s.issue, [labels[slabel_name]])
+                if labels[slabel_name] in applied:
+                    result.actions.append(f"summary label {slabel_name}")
+                else:
+                    result.problems.append(f"summary label {slabel_name} not present after POST")
+            else:
+                result.problems.append(
+                    f"label {slabel_name} not found in {s.owner}/{s.repo} or its organisation: "
+                    "a person creates it once (exclusive)"
+                )
+    except GiteaError as exc:
+        result.problems.append(f"summary label write failed, will retry next scan: {exc}")
     return result, ev
 
 
