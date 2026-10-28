@@ -2,7 +2,7 @@
 
 **Purpose**: Validate specification completeness and quality before proceeding to planning
 **Created**: 2026-10-22
-**Updated**: 2026-10-22 (refinement: verified review findings, project intake Q6–Q22 and R3–R4, data-model intake Q8, Q14, Q20 and Q26, fixed dependency map)
+**Updated**: 2026-10-22 (refinement: verified review findings, project intake Q6–Q22 and R1–R5 and R7, data-model intake Q8, Q14, Q20 and Q26, fixed dependency map)
 **Feature**: [spec.md](../spec.md)
 
 ## Content Quality
@@ -41,6 +41,8 @@ The marker is the person's to answer, because it changes a role's authority (Art
   - (b) the Lead commits on a branch the control plane creates, and a person opens the pull request;
   - (c) a PSE session opens the pull request under a specification-change issue.
 
+  The person's R7 answer adds a second thing the answer must settle. Once a person makes `lease-epoch` a required check, the mapping's pull request needs a passing `lease-epoch` status. The control plane posts success only on an agent-branch head that records the current epoch of a write lease (spec 001 FR-038; spec 002 FR-038; who posts it and this rule are inferred there). In (a) and (b) the Lead commits under no write lease, so its commit records no epoch and could not merge unless the answer also gives the Lead a lease on that branch. In (c) the PSE session commits under its own lease, but only outside Shadow mode. With one session per role and at most one issue in build at a time (project intake R1; spec 001 FR-035), any write lease used for the mapping commit, whether Lead's or PSE's under (c), makes its issue the one issue in build. The mapping change then waits for, and holds, the single build slot (inferred). In Shadow mode, where the first release runs, no write lease is granted and no `lease-epoch` status is posted (spec 001 FR-030, FR-038). A person's plan approval never covers branch creation or lease grants (spec 007 FR-002), and PSE cannot open the pull request without a write lease (spec 002 FR-005). So in Shadow mode, under every option, the mapping's pull request cannot merge once the check is required, and the answer must cover Shadow mode too. This reading is inferred (FR-027). The Lead's implementation-worker mode is no shortcut: the owner approves it per issue (project intake R2). The marker's question is unchanged and still the person's.
+
 ### Markers resolved
 
 - **FR-023**: the person answered "Both Create issues by hand and Approve; gateway writes it" (project intake R3). In Shadow mode a person either creates the planned issues by hand, which the Lead then confirms into the mapping, or approves the plan so that the gateway carries it out as human-approved writes (spec 002 FR-037). The question named Shadow mode only. Applying the same two ways in Agent implementation and Guarded autonomous modes is inferred, as spec 002 FR-037 also reads it.
@@ -55,7 +57,7 @@ The marker is the person's to answer, because it changes a role's authority (Art
   - FR-004 takes the risk class from the Lead's declaration, recorded in the feature folder, with any per-task override on the task line (inferred).
 
   The item stays unticked for three reasons:
-  - FR-027's route to `main` is open.
+  - FR-027's route to `main` is open, and so is how the mapping's pull request meets the required `lease-epoch` check, in Shadow mode as well as later modes (project intake R7).
   - FR-019's CI-only rule and its binding to the plan, tasks and analysis commits have no enforcing gate: spec 001 FR-029 checks only the spec commit.
   - FR-006's placement in Backlog has no row in spec 001's transition table, and spec 002 does not let the Lead make it, so the gateway may refuse it.
 - **"All functional requirements have clear acceptance criteria"**: FR-027 cannot have a final acceptance criterion until it is answered. FR-019's CI-only rule has a criterion (US2 AS-5, SC-004) that cannot pass until spec 001 FR-029 checks the producer. Every other requirement has at least one scenario, edge case or success criterion:
@@ -107,7 +109,11 @@ The previous note said "the report settles every behavior". That was wrong: the 
 - the four command outcomes (FR-033);
 - format versions, and the completeness result's schema belonging to spec 009 (FR-034);
 - human-owned milestones (FR-035);
-- the Python reading of the stack answer (Assumptions).
+- the Python reading of the stack answer (Assumptions);
+- the Lead's mapping commit recording no lease epoch under FR-027 options (a) and (b), and so failing a required `lease-epoch` check (FR-027; project intake R7);
+- the mapping's pull request failing a required `lease-epoch` check under every FR-027 option in Shadow mode, and any write lease used for the mapping commit taking the single build slot (FR-027; project intake R1, R7);
+- concurrent runs coming chiefly from the one Lead session and its subagents, or from a stopped Lead session's in-flight run overlapping its replacement, and the one-issue-in-build limit not limiting Backlog creation (Edge Cases; Assumptions: Host and scale; project intake R1);
+- the headline target of R5 not covering this spec's numbers (Assumptions: Success-criteria numbers).
 
 The Backlog entry column is no longer the spec's own decision. It now comes from spec 001 (FR-006). Dry-run is kept, and in Shadow mode a person applies its plan by hand or approves it (FR-022, FR-023; project intake R3).
 
@@ -122,7 +128,7 @@ The Backlog entry column is no longer the spec's own decision. It now comes from
 
 ### Success criteria
 
-- The numbers in SC-001 to SC-005 are proposed defaults, not confirmed (Assumptions; project intake row S9 is still open). SC-003 no longer cites an unmeasured "baseline of manual entry".
+- The numbers in SC-001 to SC-010 (SC-006 withdrawn) are proposed defaults, not confirmed (Assumptions). The intake's open item on a headline target is now resolved by R5, "+30% in 3 months (Recommended)", but that target is spec 007 SC-004's and sets none of this spec's numbers (inferred, as specs 001 and 002 read it). SC-003 no longer cites an unmeasured "baseline of manual entry".
 - SC-006 is withdrawn. "Requirements changed after implementation began" belongs to spec 007's scorecard, and 004 has no downstream edge to 007.
 - SC-007 to SC-010 are new. They cover Shadow-mode behavior, gate failures, injection resistance and run reports. SC-007 now excludes runs with a plan a person approved (project intake R3).
 
@@ -140,4 +146,15 @@ The Dependencies section now matches the fixed dependency map: upstream 001 and 
 - **Spec 001's transition table and spec 002 FR-005** need an initial placement of a new issue in Backlog, or a statement that adding a new issue to Backlog is not a move. Spec 002's matrix must then allow it for the Lead. Today spec 001 FR-009 refuses every move not in the table, and the Lead's `gitea.project.move_issue` covers only TR-01 to TR-03 and Blocked (FR-006).
 - **Specs 002 and 003** do not say how a commit the Lead writes, the mapping or any other specification change, reaches a branch and a pull request (FR-027 marker).
 - **Spec 009 FR-002** does not list the completeness result among the shared record schemas. Spec 004 writes it and spec 001 reads it, so its schema, at least the fields spec 001 reads, belongs there (FR-034).
-- **Spec 007 FR-002** still says a human performs every consequential mutation in Shadow mode. The intake records that R3 changes it, and spec 002 FR-037 already carries the human-approved plan write.
+- **Spec 001 FR-038 and spec 002 FR-038** post `lease-epoch` success only on an agent-branch head whose commit records the current epoch of a write lease, and failure on any other agent-branch head (fail closed). Their open marker asks only about pull requests from branches a person pushed. A Lead commit made under no write lease, such as the mapping commit under FR-027 options (a) and (b), is not covered, so once a person makes `lease-epoch` required such a pull request could not merge. In Shadow mode, where the first release runs, no write lease is granted and no `lease-epoch` status is posted, so the mapping's pull request could not merge under any option, (c) included (project intake R7; inferred).
+- **Spec 007 FR-002**: corrected. The earlier note said it still had a human perform every consequential mutation in Shadow mode. It now names the human-approved bridge plan as the one exception (project intake R3; spec 002 FR-037), so nothing is outstanding there.
+
+### Answers applied this round (project intake R1–R8)
+
+- **R1** ("One per role (Recommended)"): applied. There is one Lead session, so the bridge runs in that session or in at most 2 of its subagents. The one-issue-in-build limit governs dispatch, not how many Backlog issues the bridge creates (inferred). Two concurrent runs are now explained chiefly as the Lead session and one of its subagents, or two of its subagents, and also as a stopped Lead session's in-flight run overlapping its replacement (inferred). FR-027 now says that any write lease used for the mapping commit takes the single build slot (inferred). US2's "PSE sessions" now reads "the PSE session" (Assumptions: Host and scale; Edge Cases).
+- **R2** ("Owner, per issue (Recommended)"): this was applied in specs 003 and 001 in the last round, but this file's FR-027 still named the implementation-worker branch without the owner's per-issue approval. It now has it.
+- **R3, R4**: still reflected correctly (FR-023, FR-024, US1 AS-8, Dependencies). Their Clarifications lines now use the exact "(project intake, R<n>)" form.
+- **R5** ("+30% in 3 months (Recommended)"): applied to Assumptions (Success-criteria numbers). It sets spec 007's headline target, not this spec's numbers.
+- **R6** (Jev's 60-minute window): not applicable. This spec names no window; session stopping is left to spec 008 (Assumptions: Session stopping).
+- **R7** ("Both"): applied to FR-027 and Dependencies, where the mapping's pull request must also meet the required `lease-epoch` check. FR-027 now marks the status design as inferred, as specs 001 and 002 do, and says that in Shadow mode no option lets the mapping's pull request meet the check. The bridge posts no status and configures no branch protection (FR-020; Non-goals). This spec never said the forge-side fence was an open question, so there was no such wording to remove.
+- **R8** (per-role `jev/` labels plus a summary label): not applicable. This spec names no `jev/` label, never creates label definitions (FR-035) and sets labels only on issues it creates (FR-004). It treats labels that others set as untrusted data (FR-030).
